@@ -1,20 +1,22 @@
-import axios from "axios"
+// client/src/services/freelancerService.js
+
+import API from "../api/axiosInstance"
 
 // ── Fetch all freelancers ──────────────────────────────────
 const fetchFreelancers = async () => {
-    const response = await axios.get('/api/freelancer')
+    const response = await API.get('/api/freelancer')
     return response.data
 }
 
 // ── Fetch single freelancer ────────────────────────────────
 const fetchFreelancer = async (id) => {
-    const response = await axios.get(`/api/freelancer/profile/${id}`)
+    const response = await API.get(`/api/freelancer/profile/${id}`)
     return response.data
 }
 
 // ── Add previous project ───────────────────────────────────
 const addProject = async (formData, token) => {
-    const response = await axios.post(`/api/freelancer/my-work`, formData, {
+    const response = await API.post(`/api/freelancer/my-work`, formData, {
         headers: { authorization: `Bearer ${token}` }
     })
     return response.data
@@ -22,7 +24,7 @@ const addProject = async (formData, token) => {
 
 // ── Remove previous work ───────────────────────────────────
 const removeWork = async (id, token) => {
-    const response = await axios.delete(`/api/freelancer/my-work/${id}`, {
+    const response = await API.delete(`/api/freelancer/my-work/${id}`, {
         headers: { authorization: `Bearer ${token}` }
     })
     return response.data
@@ -30,8 +32,8 @@ const removeWork = async (id, token) => {
 
 // ── Apply for bid / project ────────────────────────────────
 const applyForBid = async (formData, token) => {
-    const response = await axios.post(
-        `/api/freelancer/project/${formData.projectId}`,formData,
+    const response = await API.post(
+        `/api/freelancer/project/${formData.projectId}`, formData,
         { headers: { authorization: `Bearer ${token}` } }
     )
     return response.data

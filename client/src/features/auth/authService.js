@@ -1,27 +1,19 @@
-import axios from 'axios'
+// client/src/services/authService.js
 
-
+import API from "../api/axiosInstance"
 
 const register = async (formData) => {
-
-    const response = await axios.post("/api/auth/register", formData)
-
+    const response = await API.post("/api/auth/register", formData)
     localStorage.setItem('user', JSON.stringify(response.data))
-
     return response.data
 }
 
 const login = async (formData) => {
-
-    const response = await axios.post("/api/auth/login", formData)
-
+    const response = await API.post("/api/auth/login", formData)
     localStorage.setItem('user', JSON.stringify(response.data))
-
     return response.data
 }
 
+const authService = { register, login }
 
-const authService = { register , login}
-
-
-export default authService; 
+export default authService
