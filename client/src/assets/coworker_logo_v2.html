@@ -1,0 +1,104 @@
+
+<div style="display:flex;flex-direction:column;align-items:center;gap:28px;padding:32px 0;">
+
+  <!-- Logo Preview -->
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 72" style="width:260px;height:72px;">
+    <defs>
+      <linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#1a1a2e"/>
+        <stop offset="100%" stop-color="#16213e"/>
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="260" height="72" rx="14" fill="url(#lg2)"/>
+    <!-- Co -->
+    <text x="22" y="38" font-family="Georgia,serif" font-size="30" font-weight="700" fill="white" dominant-baseline="central" letter-spacing="-0.5">Co</text>
+    <!-- dot separator -->
+    <text x="72" y="36" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#378ADD" dominant-baseline="central">.</text>
+    <!-- worker -->
+    <text x="84" y="38" font-family="Georgia,serif" font-size="30" font-weight="400" fill="#5DB8F0" dominant-baseline="central" letter-spacing="-0.5">worker</text>
+  </svg>
+
+  <!-- Variants row -->
+  <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
+
+    <!-- Variant 1: Dark pill -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" style="width:200px;height:48px;">
+      <rect x="0" y="0" width="200" height="48" rx="24" fill="#0f0f1a"/>
+      <text x="20" y="24" font-family="Georgia,serif" font-size="20" font-weight="700" fill="white" dominant-baseline="central">Co</text>
+      <text x="48" y="23" font-family="Georgia,serif" font-size="20" font-weight="700" fill="#378ADD" dominant-baseline="central">.</text>
+      <text x="57" y="24" font-family="Georgia,serif" font-size="20" font-weight="400" fill="#8ecfef" dominant-baseline="central">worker</text>
+    </svg>
+
+    <!-- Variant 2: Blue accent -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" style="width:200px;height:48px;">
+      <rect x="0" y="0" width="200" height="48" rx="10" fill="#0d1b2e"/>
+      <rect x="0" y="0" width="5" height="48" rx="3" fill="#378ADD"/>
+      <text x="20" y="24" font-family="Georgia,serif" font-size="20" font-weight="700" fill="white" dominant-baseline="central">Co</text>
+      <text x="48" y="23" font-family="Georgia,serif" font-size="20" font-weight="700" fill="#378ADD" dominant-baseline="central">.</text>
+      <text x="57" y="24" font-family="Georgia,serif" font-size="20" font-weight="300" fill="#a0c8e8" dominant-baseline="central">worker</text>
+    </svg>
+
+    <!-- Variant 3: Transparent / outline -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" style="width:200px;height:48px;">
+      <rect x="1" y="1" width="198" height="46" rx="10" fill="none" stroke="#378ADD" stroke-width="1.5"/>
+      <text x="20" y="24" font-family="Georgia,serif" font-size="20" font-weight="700" fill="var(--color-text-primary)" dominant-baseline="central">Co</text>
+      <text x="48" y="23" font-family="Georgia,serif" font-size="20" font-weight="700" fill="#378ADD" dominant-baseline="central">.</text>
+      <text x="57" y="24" font-family="Georgia,serif" font-size="20" font-weight="400" fill="var(--color-text-secondary)" dominant-baseline="central">worker</text>
+    </svg>
+
+  </div>
+
+  <p style="font-size:12px;color:var(--color-text-tertiary);font-family:sans-serif;margin:0;">Pick a variant → download below</p>
+
+  <!-- Download Buttons -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+    <button onclick="dl(0)" style="padding:10px 20px;background:#1a1a2e;border:1.5px solid #378ADD;border-radius:8px;color:white;font-size:13px;cursor:pointer;font-family:sans-serif;">↓ Main Logo</button>
+    <button onclick="dl(1)" style="padding:10px 20px;background:#0f0f1a;border:1.5px solid #444;border-radius:8px;color:white;font-size:13px;cursor:pointer;font-family:sans-serif;">↓ Dark Pill</button>
+    <button onclick="dl(2)" style="padding:10px 20px;background:#0d1b2e;border:1.5px solid #378ADD;border-radius:8px;color:white;font-size:13px;cursor:pointer;font-family:sans-serif;">↓ Blue Accent</button>
+    <button onclick="dl(3)" style="padding:10px 20px;background:transparent;border:1.5px solid #378ADD;border-radius:8px;color:var(--color-text-primary);font-size:13px;cursor:pointer;font-family:sans-serif;">↓ Outline</button>
+  </div>
+</div>
+
+<script>
+const svgs = [
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 72" width="260" height="72">
+  <defs>
+    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213e"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="260" height="72" rx="14" fill="url(#lg)"/>
+  <text x="22" y="38" font-family="Georgia,serif" font-size="30" font-weight="700" fill="white" dominant-baseline="central" letter-spacing="-0.5">Co</text>
+  <text x="72" y="36" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#378ADD" dominant-baseline="central">.</text>
+  <text x="84" y="38" font-family="Georgia,serif" font-size="30" font-weight="400" fill="#5DB8F0" dominant-baseline="central" letter-spacing="-0.5">worker</text>
+</svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48">
+  <rect x="0" y="0" width="200" height="48" rx="24" fill="#0f0f1a"/>
+  <text x="20" y="24" font-family="Georgia,serif" font-size="20" font-weight="700" fill="white" dominant-baseline="central">Co</text>
+  <text x="48" y="23" font-family="Georgia,serif" font-size="20" font-weight="700" fill="#378ADD" dominant-baseline="central">.</text>
+  <text x="57" y="24" font-family="Georgia,serif" font-size="20" font-weight="400" fill="#8ecfef" dominant-baseline="central">worker</text>
+</svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48">
+  <rect x="0" y="0" width="200" height="48" rx="10" fill="#0d1b2e"/>
+  <rect x="0" y="0" width="5" height="48" rx="3" fill="#378ADD"/>
+  <text x="20" y="24" font-family="Georgia,serif" font-size="20" font-weight="700" fill="white" dominant-baseline="central">Co</text>
+  <text x="48" y="23" font-family="Georgia,serif" font-size="20" font-weight="700" fill="#378ADD" dominant-baseline="central">.</text>
+  <text x="57" y="24" font-family="Georgia,serif" font-size="20" font-weight="300" fill="#a0c8e8" dominant-baseline="central">worker</text>
+</svg>`,
+`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48">
+  <rect x="1" y="1" width="198" height="46" rx="10" fill="white" stroke="#378ADD" stroke-width="1.5"/>
+  <text x="20" y="24" font-family="Georgia,serif" font-size="20" font-weight="700" fill="#1a1a2e" dominant-baseline="central">Co</text>
+  <text x="48" y="23" font-family="Georgia,serif" font-size="20" font-weight="700" fill="#378ADD" dominant-baseline="central">.</text>
+  <text x="57" y="24" font-family="Georgia,serif" font-size="20" font-weight="400" fill="#444" dominant-baseline="central">worker</text>
+</svg>`
+];
+const names = ['coworker-main','coworker-dark-pill','coworker-blue-accent','coworker-outline'];
+function dl(i){
+  const blob = new Blob([svgs[i]],{type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=names[i]+'.svg'; a.click();
+  URL.revokeObjectURL(url);
+}
+</script>

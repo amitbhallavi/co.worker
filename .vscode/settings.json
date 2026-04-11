@@ -1,0 +1,38 @@
+{
+    "github.copilot.enable": {
+        "plaintext": true,
+        "markdown": true,
+        "scminput": true
+    },
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "cSpell.words": [
+        "aane",
+        "alag",
+        "Amit",
+        "amitbhallavi",
+        "Applicatons",
+        "baad",
+        "bahar",
+        "Bhallavi",
+        "chalega",
+        "dikhao",
+        "femail",
+        "HAMESHA",
+        "hoga",
+        "hota",
+        "kaam",
+        "karna",
+        "kiya",
+        "Laravel",
+        "mern",
+        "Myprevious",
+        "nahi",
+        "Priya",
+        "raha",
+        "Rahul",
+        "rakho",
+        "rightfull",
+        "saath",
+        "timestaps"
+    ]
+}

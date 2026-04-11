@@ -1,0 +1,17 @@
+import express from "express"
+import authController from "../controllers/authController.js"
+import upload from "../middlewere/imageUploadMiddleware.js"
+import protect from "../middlewere/authMiddleware.js"
+
+
+
+const router = express.Router()
+
+
+router.post("/register",  authController.registerUser)
+router.post("/login", authController.loginUser)
+router.post("/private", protect.forAdmin, authController.privateController)
+
+
+
+export default router 
