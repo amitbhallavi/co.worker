@@ -6,7 +6,7 @@ import LoaderGradient from "../components/LoaderGradient"
 import { getBids, getProjects } from "../features/project/projectSlice"
 import ListProject from "./ListProject"
 import axios from "axios"
-import BecomeFreelancerModal from "../components/Becomefreelancermodal"
+import BecomeFreelancerModal from "../components/BecomeFreelancerModal"
 
 const BASE_URL = import.meta.env.VITE_API_URL || ""
 

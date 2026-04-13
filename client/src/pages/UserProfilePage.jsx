@@ -6,7 +6,7 @@ import { toast } from "react-toastify"
 import LoaderGradient from "../components/LoaderGradient"
 import { getProjects, getBids, updateBidStatus, resetUpdate } from "../features/project/projectSlice"
 import ListProject from "../components/ListProject"
-import BecomeFreelancerModal from "../components/Becomefreelancermodal"
+import BecomeFreelancerModal from "../components/BecomeFreelancerModal"
 
 // ── Status maps ────────────────────────────────────────────
 const STATUS_COLORS = {

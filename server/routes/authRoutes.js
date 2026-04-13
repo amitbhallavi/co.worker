@@ -1,6 +1,5 @@
 import express from "express"
 import authController from "../controllers/authController.js"
-import upload from "../middlewere/imageUploadMiddleware.js"
 import protect from "../middlewere/authMiddleware.js"
 
 

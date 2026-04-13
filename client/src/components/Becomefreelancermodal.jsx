@@ -23,7 +23,6 @@ const SKILLS_LIST = [
 
 // ═══════════════════════════════════════════════════════════
 const BecomeFreelancerModal = ({ onClose, onSuccess }) => {
-    
     const dispatch = useDispatch()
     const { freelancerLoading, freelancerSuccess, freelancerError, freelancerErrorMessage } =
         useSelector(state => state.freelancer)
@@ -32,9 +31,9 @@ const BecomeFreelancerModal = ({ onClose, onSuccess }) => {
 
     const [form, setForm] = useState({
         description: "",
-        skills: [],        // array of selected skill strings
-        category: "",
-        experience: "",
+        skills:      [],        // array of selected skill strings
+        category:    "",
+        experience:  "",
     })
 
     const [errors, setErrors] = useState({})
@@ -95,9 +94,9 @@ const BecomeFreelancerModal = ({ onClose, onSuccess }) => {
 
         const payload = {
             description: form.description.trim(),
-            skills: form.skills.join(", "),   // backend expects string
-            category: form.category,
-            experience: Number(form.experience),
+            skills:      form.skills.join(", "),   // backend expects string
+            category:    form.category,
+            experience:  Number(form.experience),
         }
 
         try {
@@ -128,7 +127,7 @@ const BecomeFreelancerModal = ({ onClose, onSuccess }) => {
                 {step < 3 && (
                     <div className="h-1 bg-gray-100">
                         <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-500"
-                            style={{ width: step === 1 ? "50%" : "100%" }} />
+                            style={{ width: step === 1 ? "50%" : "100%" }}/>
                     </div>
                 )}
 
@@ -164,7 +163,7 @@ const BecomeFreelancerModal = ({ onClose, onSuccess }) => {
                     <>
                         {/* Header */}
                         <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-5 relative overflow-hidden">
-                            <div className="absolute w-24 h-24 rounded-full bg-white/10 -top-8 -right-6 pointer-events-none" />
+                            <div className="absolute w-24 h-24 rounded-full bg-white/10 -top-8 -right-6 pointer-events-none"/>
                             <button onClick={onClose}
                                 className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/20 hover:bg-white/35 text-white flex items-center justify-center text-sm font-bold transition cursor-pointer border-none">
                                 ✕
@@ -230,7 +229,7 @@ const BecomeFreelancerModal = ({ onClose, onSuccess }) => {
                                 <div className="flex justify-between mt-1">
                                     {errors.description
                                         ? <p className="text-xs text-rose-600 font-medium">⚠ {errors.description}</p>
-                                        : <span />
+                                        : <span/>
                                     }
                                     <span className={`text-xs ml-auto ${form.description.length < 20 ? "text-rose-400" : "text-emerald-500"}`}>
                                         {form.description.length}/20 min
@@ -258,7 +257,7 @@ const BecomeFreelancerModal = ({ onClose, onSuccess }) => {
                     <>
                         {/* Header */}
                         <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-5 relative overflow-hidden">
-                            <div className="absolute w-24 h-24 rounded-full bg-white/10 -top-8 -right-6 pointer-events-none" />
+                            <div className="absolute w-24 h-24 rounded-full bg-white/10 -top-8 -right-6 pointer-events-none"/>
                             <button onClick={onClose}
                                 className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/20 hover:bg-white/35 text-white flex items-center justify-center text-sm font-bold transition cursor-pointer border-none">
                                 ✕
@@ -325,7 +324,7 @@ const BecomeFreelancerModal = ({ onClose, onSuccess }) => {
                                         : "bg-gradient-to-r from-blue-600 to-cyan-500 hover:opacity-90 cursor-pointer"
                                     }`}>
                                 {freelancerLoading
-                                    ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Activating...</>
+                                    ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Activating...</>
                                     : "✦ Activate Now"
                                 }
                             </button>
