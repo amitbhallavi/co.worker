@@ -157,12 +157,7 @@ const FreelancerProfile = () => {
     useEffect(() => { if (freelancerError && freelancerErrorMessage) toast.error(freelancerErrorMessage) }, [freelancerError, freelancerErrorMessage])
 
     if (freelancerLoading) return <LoaderGradient />
-    // ✅ Profile nahi mila — crash nahi hoga
-    if (!profile) return (
-        <div className="min-h-screen flex items-center justify-center">
-            <p className="text-gray-500">Profile not found.</p>
-        </div>
-    )
+  
     const profile = freelancer?.profile
     const user = profile?.user
     const works = freelancer?.previousWorks || []
