@@ -1,429 +1,634 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { Link, useNavigate } from 'react-router-dom'
-import { logoutUser } from '../features/auth/authSlice'
-// import CoLogo from '../assets/coworker-outline.svg'
-// import Logo from './Logo'
-// import CoworkerIcon from './CoworkerIcon'
-import { CoLogo } from './CoLogo'
+// ===== FILE: client/src/components/Navbar.jsx =====
+// Single-file, fully responsive navbar — mobile/tablet/desktop
+// React + Tailwind only, no external UI libs
 
+import { useState, useEffect, useRef, useCallback } from "react"
+import { Link, useNavigate, useLocation } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux"
+import { logoutUser } from "../features/auth/authSlice"
 
-// ── Find Talent categories ──────────────────────────────────────────────────
-const CATEGORIES = [
-    {
-        label: 'Web Development',
-        sub: '5,200+ experts',
-        icon: '⚡',
-        bg: 'from-blue-500 to-cyan-500',
-        light: 'bg-blue-50',
-        text: 'text-blue-600',
-        link: '/talent?cat=web',
-    },
-    {
-        label: 'Design & Creative',
-        sub: '3,800+ experts',
-        icon: '🎨',
-        bg: 'from-violet-500 to-purple-500',
-        light: 'bg-violet-50',
-        text: 'text-violet-600',
-        link: '/talent?cat=design',
-    },
-    {
-        label: 'Marketing & Sales',
-        sub: '2,400+ experts',
-        icon: '📈',
-        bg: 'from-emerald-500 to-teal-500',
-        light: 'bg-emerald-50',
-        text: 'text-emerald-600',
-        link: '/talent?cat=marketing',
-    },
-    {
-        label: 'Data & AI',
-        sub: '1,900+ experts',
-        icon: '🤖',
-        bg: 'from-orange-500 to-amber-500',
-        light: 'bg-orange-50',
-        text: 'text-orange-600',
-        link: '/talent?cat=ai',
-    },
+// ── Brand ─────────────────────────────────────────────────────────────────────
+const Logo = () => (
+    <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
+        <div className="relative w-8 h-8 sm:w-9 sm:h-9">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-shadow duration-300" />
+            <span className="absolute inset-0 flex items-center justify-center text-white font-black text-sm sm:text-base leading-none" style={{ fontFamily: "Georgia, serif" }}>
+                Co.
+            </span>
+        </div>
+        <span className="hidden sm:block font-bold text-base sm:text-lg text-gray-900 tracking-tight">
+            <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Co</span>
+            <span className="text-gray-800">.worker</span>
+        </span>
+    </Link>
+)
+
+// ── Find Talent dropdown data ──────────────────────────────────────────────────
+const TALENT_ITEMS = [
+    { label: "Hire Developers", icon: "⚡", sub: "5,200+ experts", href: "/talent?cat=web", color: "from-blue-500 to-cyan-500", badge: null },
+    { label: "Hire Designers", icon: "🎨", sub: "3,800+ experts", href: "/talent?cat=design", color: "from-violet-500 to-purple-500", badge: "Trending" },
+    { label: "Hire Marketers", icon: "📈", sub: "2,400+ experts", href: "/talent?cat=marketing", color: "from-emerald-500 to-teal-500", badge: null },
+    { label: "Hire AI/Data Experts", icon: "🤖", sub: "1,900+ experts", href: "/talent?cat=ai", color: "from-orange-500 to-amber-500", badge: "Hot" },
+    { label: "Hire Writers", icon: "✍️", sub: "1,200+ experts", href: "/talent?cat=writing", color: "from-rose-500 to-pink-500", badge: null },
+    { label: "Hire Video Editors", icon: "🎬", sub: "900+ experts", href: "/talent?cat=video", color: "from-indigo-500 to-blue-500", badge: null },
 ]
 
-const TICKER = [
-    'Rahul hired a React Dev',
-    'Priya posted a UI project',
-    'Amit found a Node.js expert',
-    'Sara hired a logo designer',
-    'Dev team hired in 3 hrs',
+// ── Nav links ─────────────────────────────────────────────────────────────────
+const NAV_LINKS = [
+    { label: "Find Work", href: "/find/work" },
+    { label: "How It Works", href: "/how-it-works" },
+    { label: "Pricing", href: "/pricing" },
 ]
 
-// ── Main Component ──────────────────────────────────────────────────────────
+// ── Avatar initials ───────────────────────────────────────────────────────────
+const getInitials = (name = "") =>
+    name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "U"
+
+// ── Find Talent Mega Dropdown ─────────────────────────────────────────────────
+const TalentDropdown = ({ onClose }) => {
+    const navigate = useNavigate()
+    const [search, setSearch] = useState("")
+
+    const handleSearch = (e) => {
+        e.preventDefault()
+        if (search.trim()) {
+            navigate(`/talent?q=${encodeURIComponent(search.trim())}`)
+            onClose()
+        }
+    }
+
+    return (
+        <div
+            className="absolute top-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-[540px] max-w-[96vw] z-50"
+            style={{ animation: "dropIn .22s cubic-bezier(.34,1.56,.64,1) both" }}
+        >
+            {/* Arrow */}
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-white border-l border-t border-gray-100 rounded-sm" />
+
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-4 relative overflow-hidden">
+                    <div className="absolute w-28 h-28 rounded-full bg-white/10 -top-10 -right-8 pointer-events-none" />
+                    <div className="absolute w-16 h-16 rounded-full bg-white/10 bottom-0 left-8 pointer-events-none" />
+                    <p className="text-white font-bold text-sm relative z-10">Find the right talent, fast</p>
+                    <p className="text-blue-100 text-xs mt-0.5 relative z-10">10,000+ verified experts ready to start</p>
+                </div>
+
+                <div className="p-4">
+                    {/* Search */}
+                    <form onSubmit={handleSearch} className="flex gap-2 mb-4">
+                        <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">🔍</span>
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="e.g. React developer, UI designer..."
+                                className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all placeholder-gray-400 text-gray-800"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-4 py-2 rounded-lg text-xs font-bold hover:shadow-md hover:shadow-blue-200 hover:-translate-y-0.5 transition-all"
+                        >
+                            Search ↗
+                        </button>
+                    </form>
+
+                    {/* Grid */}
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                        {TALENT_ITEMS.map((item) => (
+                            <Link
+                                key={item.label}
+                                to={item.href}
+                                onClick={onClose}
+                                className="group relative flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-100 hover:border-transparent transition-all duration-200 hover:-translate-y-0.5 overflow-hidden"
+                            >
+                                {/* hover gradient bg */}
+                                <span className={`absolute inset-0 bg-gradient-to-r ${item.color} opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl`} />
+
+                                <div className={`relative z-10 w-8 h-8 rounded-lg bg-gradient-to-br ${item.color} flex items-center justify-center text-sm flex-shrink-0 shadow-sm`}>
+                                    {item.icon}
+                                </div>
+                                <div className="relative z-10 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                        <p className="text-xs font-bold text-gray-800 group-hover:text-white transition-colors leading-tight truncate">
+                                            {item.label}
+                                        </p>
+                                        {item.badge && (
+                                            <span className="text-[9px] font-bold bg-orange-100 text-orange-600 group-hover:bg-white/25 group-hover:text-white px-1.5 py-0.5 rounded-full transition-colors flex-shrink-0">
+                                                {item.badge}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 group-hover:text-white/80 transition-colors">{item.sub}</p>
+                                </div>
+                                <span className="relative z-10 ml-auto opacity-0 group-hover:opacity-100 text-white text-xs transition-opacity">→</span>
+                            </Link>
+                        ))}
+                    </div>
+
+                    {/* CTA row */}
+                    <div className="flex gap-2">
+                        <Link
+                            to="/talent"
+                            onClick={onClose}
+                            className="flex-1 text-center py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-xs font-bold rounded-xl hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-200 transition-all"
+                        >
+                            Browse All Talent ↗
+                        </Link>
+                        <Link
+                            to="/browse-projects"
+                            onClick={onClose}
+                            className="flex-1 text-center py-2.5 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-100 hover:-translate-y-0.5 transition-all"
+                        >
+                            Browse Projects
+                        </Link>
+                    </div>
+
+                    {/* Trust badges */}
+                    <div className="flex justify-center gap-4 mt-3 pt-3 border-t border-gray-100">
+                        {["Verified profiles", "Secure payments", "24/7 support"].map(t => (
+                            <span key={t} className="text-[10px] text-gray-400 flex items-center gap-1">
+                                <span className="text-emerald-500 font-bold">✓</span> {t}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ── User Avatar + Dropdown ────────────────────────────────────────────────────
+const UserMenu = ({ user, onLogout }) => {
+    const [open, setOpen] = useState(false)
+    const ref = useRef(null)
+
+    useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+        document.addEventListener("mousedown", handler)
+        return () => document.removeEventListener("mousedown", handler)
+    }, [])
+
+    const dashboardHref =
+        user?.isAdmin ? "/admin/dashboard" :
+            user?.isFreelancer ? "/auth/profile" :
+                "/regularUser"
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                onClick={() => setOpen(v => !v)}
+                className="flex items-center gap-2 group"
+                aria-label="User menu"
+                aria-expanded={open}
+            >
+                {user?.profilePic ? (
+                    <img src={user.profilePic} alt={user.name}
+                        className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-cover ring-2 ring-blue-200 group-hover:ring-blue-400 transition-all" />
+                ) : (
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm ring-2 ring-blue-200 group-hover:ring-blue-400 transition-all shadow-md">
+                        {getInitials(user?.name)}
+                    </div>
+                )}
+                <span className="hidden lg:block text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors max-w-24 truncate">
+                    {user?.name?.split(" ")[0]}
+                </span>
+                <svg className={`hidden lg:block w-4 h-4 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            {open && (
+                <div
+                    className="absolute right-0 top-[calc(100%+10px)] w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50"
+                    style={{ animation: "dropIn .18s ease both" }}
+                >
+                    {/* User info */}
+                    <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-gray-100">
+                        <p className="text-sm font-bold text-gray-900 truncate">{user?.name}</p>
+                        <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                        {(user?.isAdmin || user?.isFreelancer) && (
+                            <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                                {user?.isAdmin ? "Admin" : "Freelancer"}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Links */}
+                    <div className="py-1.5">
+                        {[
+                            { icon: "⚡", label: "Dashboard", href: dashboardHref },
+                            { icon: "👤", label: "Profile", href: "/auth/profile" },
+                            { icon: "🔍", label: "Find Work", href: "/find/work" },
+                        ].map(item => (
+                            <Link
+                                key={item.label}
+                                to={item.href}
+                                onClick={() => setOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                            >
+                                <span className="text-base">{item.icon}</span>
+                                {item.label}
+                            </Link>
+                        ))}
+                    </div>
+
+                    {/* Credits badge */}
+                    {user?.credits !== undefined && (
+                        <div className="mx-3 mb-2 px-3 py-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 flex items-center justify-between">
+                            <span className="text-xs text-gray-600">Credits</span>
+                            <span className="text-sm font-black text-blue-700">⚡ {user.credits}</span>
+                        </div>
+                    )}
+
+                    {/* Logout */}
+                    <div className="border-t border-gray-100 p-2">
+                        <button
+                            onClick={() => { onLogout(); setOpen(false) }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium"
+                        >
+                            <span>🚪</span> Log Out
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ── Mobile Drawer ─────────────────────────────────────────────────────────────
+const MobileMenu = ({ open, onClose, user, onLogout }) => {
+    const [talentOpen, setTalentOpen] = useState(false)
+    const location = useLocation()
+
+    // Close on route change
+    useEffect(() => { onClose() }, [location.pathname])
+
+    // Lock body scroll when open
+    useEffect(() => {
+        document.body.style.overflow = open ? "hidden" : ""
+        return () => { document.body.style.overflow = "" }
+    }, [open])
+
+    const dashboardHref =
+        user?.isAdmin ? "/admin/dashboard" :
+            user?.isFreelancer ? "/auth/profile" :
+                "/regularUser"
+
+    return (
+        <>
+            {/* Backdrop */}
+            <div
+                className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+                onClick={onClose}
+                aria-hidden="true"
+            />
+
+            {/* Drawer */}
+            <div
+                className={`fixed top-0 right-0 h-full w-[320px] max-w-[88vw] bg-white z-50 shadow-2xl transition-transform duration-300 ease-out flex flex-col ${open ? "translate-x-0" : "translate-x-full"}`}
+                aria-label="Mobile navigation"
+                role="dialog"
+                aria-modal="true"
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                    <Logo />
+                    <button
+                        onClick={onClose}
+                        className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                        aria-label="Close menu"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* User banner (if logged in) */}
+                {user && (
+                    <div className="mx-4 mt-4 p-3 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl flex items-center gap-3">
+                        {user?.profilePic ? (
+                            <img src={user.profilePic} alt={user.name} className="w-10 h-10 rounded-xl object-cover ring-2 ring-white/40" />
+                        ) : (
+                            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                                {getInitials(user?.name)}
+                            </div>
+                        )}
+                        <div className="min-w-0">
+                            <p className="text-white font-bold text-sm truncate">{user?.name}</p>
+                            <p className="text-blue-100 text-xs truncate">{user?.email}</p>
+                        </div>
+                        {user?.credits !== undefined && (
+                            <div className="ml-auto flex-shrink-0 text-xs font-black text-white bg-white/20 px-2 py-1 rounded-lg">
+                                ⚡{user.credits}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Nav items */}
+                <nav className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
+                    {/* Dashboard link if logged in */}
+                    {user && (
+                        <Link
+                            to={dashboardHref}
+                            onClick={onClose}
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                        >
+                            <span>⚡</span> Dashboard
+                        </Link>
+                    )}
+
+                    {/* Find Work */}
+                    <Link
+                        to="/find/work"
+                        onClick={onClose}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors"
+                    >
+                        <span className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center text-base">🔍</span>
+                        Find Work
+                    </Link>
+
+                    {/* Find Talent — expandable */}
+                    <div>
+                        <button
+                            onClick={() => setTalentOpen(v => !v)}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors"
+                            aria-expanded={talentOpen}
+                        >
+                            <span className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center text-base">💼</span>
+                            Find Talent
+                            <svg className={`ml-auto w-4 h-4 text-gray-400 transition-transform duration-200 ${talentOpen ? "rotate-180" : ""}`}
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        {/* Sub-items */}
+                        <div className={`overflow-hidden transition-all duration-300 ${talentOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}>
+                            <div className="pl-4 mt-1 space-y-0.5">
+                                {TALENT_ITEMS.map(item => (
+                                    <Link
+                                        key={item.label}
+                                        to={item.href}
+                                        onClick={onClose}
+                                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors"
+                                    >
+                                        <div className={`w-6 h-6 rounded-lg bg-gradient-to-br ${item.color} flex items-center justify-center text-xs`}>
+                                            {item.icon}
+                                        </div>
+                                        <span>{item.label}</span>
+                                        {item.badge && (
+                                            <span className="ml-auto text-[10px] font-bold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">
+                                                {item.badge}
+                                            </span>
+                                        )}
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* How It Works */}
+                    <Link
+                        to="/how-it-works"
+                        onClick={onClose}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors"
+                    >
+                        <span className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center text-base">💡</span>
+                        How It Works
+                    </Link>
+
+                    {/* Pricing */}
+                    <Link
+                        to="/pricing"
+                        onClick={onClose}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors"
+                    >
+                        <span className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center text-base">💰</span>
+                        Pricing
+                    </Link>
+
+                    {/* Divider */}
+                    <div className="h-px bg-gray-100 my-2" />
+
+                    {/* Admin controls */}
+                    {user?.isFreelancer && (
+                        <Link
+                            to="/auth/profile"
+                            onClick={onClose}
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                            <span className="w-7 h-7 bg-violet-50 rounded-lg flex items-center justify-center text-base">👤</span>
+                            My Profile
+                        </Link>
+                    )}
+                </nav>
+
+                {/* Footer CTA */}
+                <div className="p-4 border-t border-gray-100 space-y-2.5">
+                    {user ? (
+                        <button
+                            onClick={() => { onLogout(); onClose() }}
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors border border-red-100"
+                        >
+                            <span>🚪</span> Log Out
+                        </button>
+                    ) : (
+                        <>
+                            <Link to="/register" onClick={onClose} className="block">
+                                <button className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-blue-200 transition-all hover:-translate-y-0.5">
+                                    Sign Up — It's Free ✦
+                                </button>
+                            </Link>
+                            <Link to="/login" onClick={onClose} className="block">
+                                <button className="w-full py-3 bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-100 transition-colors">
+                                    Log In
+                                </button>
+                            </Link>
+                        </>
+                    )}
+                </div>
+            </div>
+        </>
+    )
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MAIN NAVBAR
+// ══════════════════════════════════════════════════════════════════════════════
 const Navbar = () => {
     const { user } = useSelector(state => state.auth)
     const dispatch = useDispatch()
     const navigate = useNavigate()
+    const location = useLocation()
 
-    const [open, setOpen] = useState(false)
-    const [hlIdx, setHlIdx] = useState(0)
-    const [progress, setProgress] = useState(0)
-    const popupRef = useRef(null)
-    const btnRef = useRef(null)
-    const loopRef = useRef(null)
-    const progressRef = useRef(null)
+    const [talentOpen, setTalentOpen] = useState(false)
+    const [mobileOpen, setMobileOpen] = useState(false)
+    const [scrolled, setScrolled] = useState(false)
 
-    const DURATION = 1800
-    const TICK = 40
+    const talentRef = useRef(null)
 
-    // ── Loop logic ────────────────────────────────────────────────────────
-    const startLoop = () => {
-        clearInterval(loopRef.current)
-        clearInterval(progressRef.current)
-        setProgress(0)
-        let idx = 0
-        let prog = 0
-        setHlIdx(0)
-
-        progressRef.current = setInterval(() => {
-            prog += (TICK / DURATION) * 100
-            if (prog >= 100) prog = 100
-            setProgress(prog)
-        }, TICK)
-
-        loopRef.current = setInterval(() => {
-            idx = (idx + 1) % CATEGORIES.length
-            setHlIdx(idx)
-            prog = 0
-            setProgress(0)
-        }, DURATION)
-    }
-
-    const stopLoop = () => {
-        clearInterval(loopRef.current)
-        clearInterval(progressRef.current)
-    }
-
-    useEffect(() => {
-        if (open) startLoop()
-        else stopLoop()
-        return () => stopLoop()
-    }, [open])
-
-    // ── Outside click to close ────────────────────────────────────────────
+    // Close talent dropdown on outside click
     useEffect(() => {
         const handler = (e) => {
-            if (
-                popupRef.current && !popupRef.current.contains(e.target) &&
-                btnRef.current && !btnRef.current.contains(e.target)
-            ) {
-                setOpen(false)
-            }
+            if (talentRef.current && !talentRef.current.contains(e.target)) setTalentOpen(false)
         }
-        document.addEventListener('mousedown', handler)
-        return () => document.removeEventListener('mousedown', handler)
+        document.addEventListener("mousedown", handler)
+        return () => document.removeEventListener("mousedown", handler)
     }, [])
 
-    const handleLogout = () => {
+    // Close talent dropdown on route change
+    useEffect(() => { setTalentOpen(false) }, [location.pathname])
+
+    // Scroll detection for shadow
+    useEffect(() => {
+        const handler = () => setScrolled(window.scrollY > 10)
+        window.addEventListener("scroll", handler, { passive: true })
+        return () => window.removeEventListener("scroll", handler)
+    }, [])
+
+    const handleLogout = useCallback(() => {
         dispatch(logoutUser())
-        navigate('/')
-    }
+        navigate("/")
+    }, [dispatch, navigate])
+
+    const isActive = (href) => location.pathname === href
 
     return (
         <>
-            <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-12 sm:h-14 md:h-16 lg:h-20">
+            {/* Injected keyframe animations */}
+            <style>{`
+        @keyframes dropIn {
+          from { opacity: 0; transform: translateY(-8px) scale(.97); }
+          to   { opacity: 1; transform: translateY(0)   scale(1);   }
+        }
+      `}</style>
 
-                        {/* ── Logo + Mobile Link ── */}
-                        <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-                            <Link to="/" className='flex items-center justify-center gap-0'>
+            <header
+                className={`sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b transition-all duration-300 ${scrolled ? "border-gray-200 shadow-md shadow-gray-100/80" : "border-gray-100"
+                    }`}
+            >
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-14 sm:h-16 md:h-[70px]">
 
-                                {/* <div className='w-10 h-10  '>
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-                                        <defs>
-                                            <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                <stop offset="0%" stop-color="#3B7FF5" />
-                                                <stop offset="100%" stop-color="#2BC4D4" />
-                                            </linearGradient>
-                                        </defs>
-                                        <circle cx="16" cy="16" r="16" fill="url(#g)" />
-                                        <text x="16" y="21" font-family="Georgia, serif" font-size="20" font-weight="800" fill="white" text-anchor="middle">Co.</text>
-                                    </svg>
-                                </div> */}
+                        {/* ── LEFT: Logo ── */}
+                        <Logo />
 
-                                {/* <Logo size={4} />   */}
-                                <CoLogo/>
-
-
-                                {/* <img className='' src={CoLogo} alt="logo" /> */}
-
-                                {/* <div className="w-25 h-12 sm:w-20 sm:h-7 md:w-24 md:h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center cursor-pointer">
-                                <h1 className="text-white text-[10px] sm:text-xs md:text-sm lg:text-base">
-                                Co.worker
-                                </h1>
-                                </div> */}
-
-                            </Link>
-
-                            {/* Mobile only */}
-                            <Link to="/talent">
-                                <h1 className="block md:hidden ml-2 text-[10px] sm:text-xs text-black hover:text-blue-600 transition">
-                                    Find Talent
-                                </h1>
-                            </Link>
-                        </div>
-
-                        {/* ── Desktop Nav ── */}
-                        <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 xl:space-x-8 relative">
-                            <Link to={"/find/work"} className="text-sm md:text-base text-gray-700 hover:text-blue-600">
+                        {/* ── CENTER: Desktop Nav ── */}
+                        <nav className="hidden md:flex items-center gap-1 lg:gap-2" aria-label="Main navigation">
+                            {/* Find Work */}
+                            <Link
+                                to="/find/work"
+                                className={`px-3 lg:px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${isActive("/find/work")
+                                        ? "bg-blue-50 text-blue-700 font-semibold"
+                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                    }`}
+                            >
                                 Find Work
                             </Link>
 
-                            {/* ── Find Talent Button ── */}
-                            <button
-                                ref={btnRef}
-                                onClick={() => setOpen(v => !v)}
-                                className={`relative text-sm md:text-base font-medium transition-colors duration-200 flex items-center gap-1
-                                    ${open ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'}`}
-                            >
-                                Find Talent
-                                {/* chevron */}
-                                <svg
-                                    className={`w-3.5 h-3.5 transition-transform duration-300 ${open ? 'rotate-180 text-blue-600' : ''}`}
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            {/* Find Talent + Dropdown */}
+                            <div ref={talentRef} className="relative">
+                                <button
+                                    onClick={() => setTalentOpen(v => !v)}
+                                    className={`flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${talentOpen
+                                            ? "bg-blue-50 text-blue-700 font-semibold"
+                                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                        }`}
+                                    aria-haspopup="true"
+                                    aria-expanded={talentOpen}
                                 >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                                </svg>
+                                    Find Talent
+                                    <svg
+                                        className={`w-3.5 h-3.5 transition-transform duration-200 ${talentOpen ? "rotate-180 text-blue-600" : "text-gray-400"}`}
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
 
-                                {/* active underline */}
-                                {open && (
-                                    <span className="absolute -bottom-[22px] left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-white border-l border-t border-gray-200 z-[60]" />
-                                )}
-                            </button>
+                                {talentOpen && <TalentDropdown onClose={() => setTalentOpen(false)} />}
+                            </div>
 
-                            <Link className="text-sm md:text-base text-gray-700 hover:text-blue-600">
+                            {/* How It Works */}
+                            <Link
+                                to="/how-it-works"
+                                className={`px-3 lg:px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${isActive("/how-it-works")
+                                        ? "bg-blue-50 text-blue-700 font-semibold"
+                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                    }`}
+                            >
                                 How It Works
                             </Link>
-                            <Link className="text-sm md:text-base text-gray-700 hover:text-blue-600">
+
+                            {/* Pricing */}
+                            <Link
+                                to="/pricing"
+                                className={`px-3 lg:px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${isActive("/pricing")
+                                        ? "bg-blue-50 text-blue-700 font-semibold"
+                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                    }`}
+                            >
                                 Pricing
                             </Link>
                         </nav>
 
-                        {/* ── User Section ── */}
-                        <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+                        {/* ── RIGHT: Auth / User ── */}
+                        <div className="flex items-center gap-2 sm:gap-3">
                             {user ? (
                                 <>
-                                    <Link
-                                        to={
-                                            user?.isAdmin
-                                                ? '/admin/dashboard'
-                                                : user?.isFreelancer
-                                                    ? '/auth/profile'
-                                                    : '/regularUser'
-                                        }
-                                    >
-                                        <button className="text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl text-gray-700 hover:text-blue-600 font-medium transition-all duration-200 hover:scale-105">
-                                            <span className="text-red-500">Welcome!</span> {user.name}
-                                        </button>
-                                    </Link>
-                                    <button
-                                        onClick={handleLogout}
-                                        className="bg-red-700 text-white rounded-lg font-medium ml-1 sm:ml-2 md:ml-3 lg:ml-4 xl:ml-6 2xl:ml-8 px-2 py-1 text-[10px] sm:px-3 sm:py-1 sm:text-xs md:px-4 md:py-2 md:text-sm lg:px-5 lg:py-2 lg:text-base xl:px-6 xl:py-3 xl:text-lg 2xl:px-8 2xl:py-3 2xl:text-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
-                                    >
-                                        Log Out
-                                    </button>
+                                    {/* Welcome text — tablet+ only */}
+                                    <span className="hidden sm:inline-flex items-center text-xs sm:text-sm text-gray-500">
+                                        <span className="text-red-500 font-semibold mr-1">Welcome!</span>
+                                        <span className="font-medium text-gray-800 max-w-24 truncate">{user.name?.split(" ")[0]}</span>
+                                    </span>
+
+                                    {/* Avatar dropdown */}
+                                    <UserMenu user={user} onLogout={handleLogout} />
                                 </>
                             ) : (
                                 <>
-                                    <Link to="/login">
-                                        <button className="text-xs sm:text-sm md:text-base text-gray-700 hover:text-blue-600">
+                                    <Link to="/login" className="hidden sm:block">
+                                        <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200">
                                             Log In
                                         </button>
                                     </Link>
                                     <Link to="/register">
-                                        <button className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm md:px-5 md:text-base lg:px-6 lg:text-lg rounded-lg font-medium hover:shadow-lg hover:scale-105 transition-all duration-200">
+                                        <button className="flex items-center gap-1.5 px-4 py-2 sm:px-5 sm:py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-xs sm:text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-blue-200 hover:-translate-y-0.5 transition-all duration-200">
                                             Sign Up
+                                            <span className="hidden sm:inline text-blue-200">✦</span>
                                         </button>
                                     </Link>
                                 </>
                             )}
+
+                            {/* Hamburger — mobile/tablet */}
+                            <button
+                                onClick={() => setMobileOpen(true)}
+                                className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                                aria-label="Open menu"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* ══════════════════════════════════════════════════════════════
-                FIND TALENT POPUP DROPDOWN
-            ══════════════════════════════════════════════════════════════ */}
-            {open && (
-                <div
-                    ref={popupRef}
-                    className="fixed top-[62px] sm:top-[70px] md:top-[78px] lg:top-[88px] left-1/2 -translate-x-1/2 w-[480px] max-w-[95vw] z-[55]"
-                    style={{ animation: 'ftDropIn 0.28s cubic-bezier(0.34,1.4,0.64,1) both' }}
-                >
-                    <style>{`
-                        @keyframes ftDropIn {
-                            from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.97); }
-                            to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1);    }
-                        }
-                        @keyframes ftTicker {
-                            from { transform: translateX(0); }
-                            to   { transform: translateX(-50%); }
-                        }
-                        @keyframes ftBlink {
-                            0%,100% { opacity:1; } 50% { opacity:0.2; }
-                        }
-                    `}</style>
-
-                    <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-
-                        {/* ── Header ── */}
-                        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-5 py-4 relative overflow-hidden">
-                            <div className="absolute w-24 h-24 rounded-full bg-white/10 -top-8 -right-6" />
-                            <p className="text-white font-bold text-[15px]">Find the right talent, fast</p>
-                            <p className="text-blue-100 text-[11px] mt-0.5">10,000+ verified experts ready to start today</p>
-                        </div>
-
-                        {/* ── Live Ticker ── */}
-                        <div className="bg-blue-50 border-b border-blue-100 py-1.5 overflow-hidden">
-                            <div
-                                className="flex w-max"
-                                style={{ animation: 'ftTicker 16s linear infinite' }}
-                            >
-                                {[...TICKER, ...TICKER].map((t, i) => (
-                                    <span
-                                        key={i}
-                                        className="text-[10px] text-blue-700 font-semibold px-4 whitespace-nowrap flex items-center gap-1.5"
-                                    >
-                                        <span
-                                            className="inline-block w-1.5 h-1.5 rounded-full bg-green-500"
-                                            style={{ animation: 'ftBlink 1.4s ease-in-out infinite' }}
-                                        />
-                                        {t}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="p-4">
-
-                            {/* ── Progress bar ── */}
-                            <div className="h-0.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
-                                <div
-                                    className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-none"
-                                    style={{ width: `${progress}%` }}
-                                />
-                            </div>
-
-                            {/* ── Category Grid ── */}
-                            <div className="grid grid-cols-2 gap-2.5 mb-3">
-                                {CATEGORIES.map((cat, i) => (
-                                    <Link
-                                        key={cat.label}
-                                        to={cat.link}
-                                        onClick={() => setOpen(false)}
-                                        className={`
-                                            group flex items-center gap-3 p-3 rounded-xl border-[1.5px] transition-all duration-200 cursor-pointer
-                                            ${hlIdx === i
-                                                ? `border-transparent bg-gradient-to-r ${cat.bg} shadow-md scale-[1.02]`
-                                                : 'border-gray-100 hover:border-transparent hover:scale-[1.01]'
-                                            }
-                                        `}
-                                        style={hlIdx !== i ? {} : {}}
-                                    >
-                                        {/* icon */}
-                                        <div className={`
-                                            w-8 h-8 min-w-[32px] rounded-lg flex items-center justify-center text-sm transition-all duration-200
-                                            ${hlIdx === i
-                                                ? 'bg-white/25'
-                                                : `${cat.light} group-hover:bg-white/20`
-                                            }
-                                        `}>
-                                            {cat.icon}
-                                        </div>
-
-                                        {/* text */}
-                                        <div className="min-w-0">
-                                            <p className={`text-[12px] font-bold leading-tight transition-colors duration-200
-                                                ${hlIdx === i ? 'text-white' : 'text-gray-800 group-hover:text-white'}`}>
-                                                {cat.label}
-                                            </p>
-                                            <p className={`text-[10px] transition-colors duration-200
-                                                ${hlIdx === i ? 'text-white/80' : 'text-gray-500 group-hover:text-white/80'}`}>
-                                                {cat.sub}
-                                            </p>
-                                        </div>
-
-                                        {/* arrow */}
-                                        <span className={`ml-auto text-[12px] transition-all duration-200
-                                            ${hlIdx === i ? 'opacity-100 text-white' : 'opacity-0 group-hover:opacity-100 text-white'}`}>
-                                            →
-                                        </span>
-
-                                        {/* hover gradient (non-highlighted) */}
-                                        {hlIdx !== i && (
-                                            <span className={`absolute inset-0 rounded-xl bg-gradient-to-r ${cat.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-200 -z-10`} />
-                                        )}
-                                    </Link>
-                                ))}
-                            </div>
-
-                            {/* ── Search bar ── */}
-                            <div className="flex gap-2 mb-3">
-                                <input
-                                    type="text"
-                                    placeholder="e.g. React developer, logo designer..."
-                                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[12px] outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all text-gray-800 placeholder-gray-400"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && e.target.value.trim()) {
-                                            navigate(`/talent?q=${e.target.value.trim()}`)
-                                            setOpen(false)
-                                        }
-                                    }}
-                                />
-                                <button
-                                    className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-2 rounded-lg text-[12px] font-bold hover:-translate-y-0.5 hover:shadow-md transition-all"
-                                    onClick={(e) => {
-                                        const input = e.target.closest('div').querySelector('input')
-                                        if (input?.value.trim()) {
-                                            navigate(`/talent?q=${input.value.trim()}`)
-                                            setOpen(false)
-                                        }
-                                    }}
-                                >
-                                    Search ↗
-                                </button>
-                            </div>
-
-                            {/* ── CTA Row ── */}
-                            <div className="flex gap-2">
-                                <Link
-                                    to="/post-project"
-                                    onClick={() => setOpen(false)}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center py-2.5 rounded-xl text-[12px] font-bold hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-200 transition-all"
-                                >
-                                    Post a Job ↗
-                                </Link>
-                                <Link
-                                    to="/talent"
-                                    onClick={() => setOpen(false)}
-                                    className="flex-1 bg-gray-50 border border-gray-200 text-gray-700 text-center py-2.5 rounded-xl text-[12px] font-semibold hover:bg-gray-100 hover:-translate-y-0.5 transition-all"
-                                >
-                                    Browse All
-                                </Link>
-                            </div>
-
-                            {/* ── Trust Row ── */}
-                            <div className="flex justify-center gap-4 mt-3 pt-3 border-t border-gray-100">
-                                {['Verified profiles', 'Secure payments', '24/7 support'].map(t => (
-                                    <span key={t} className="text-[10px] text-gray-400 flex items-center gap-1">
-                                        <span className="text-green-500">✓</span> {t}
-                                    </span>
-                                ))}
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Mobile Drawer */}
+            <MobileMenu
+                open={mobileOpen}
+                onClose={() => setMobileOpen(false)}
+                user={user}
+                onLogout={handleLogout}
+            />
         </>
     )
 }

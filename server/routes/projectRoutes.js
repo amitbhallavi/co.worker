@@ -13,7 +13,7 @@ router.post("/:bid", protect.forAuthUsers, projectController.acceptProjectReques
 router.put("/:pid", protect.forAuthUsers, projectController.updateProjectStatus)
 router.get("/:pid", protect.forAuthUsers, projectController.checkProjectApplicatons)
 // Ek project ke saare bids lao
-router.get("/bids/:projectId", protect.protect, projectController.getBidsByProject)
+router.get("/bids/:projectId", protect.forAuthUsers, projectController.getBidsByProject)
 
 
 
