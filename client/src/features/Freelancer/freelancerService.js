@@ -1,8 +1,8 @@
-import axios from "axios"
 import API from "../api/axiosInstance"
 
 
 // ── Fetch all freelancers ──────────────────────────────────
+
 const fetchFreelancers = async () => {
     const response = await API.get('/api/freelancer')
     return response.data
@@ -15,6 +15,7 @@ const fetchFreelancer = async (id) => {
 }
 
 // ── Become Freelancer ──────────────────────────────────────
+
 // POST /api/freelancer/add-me
 const becomeFreelancer = async (formData, token) => {
     const response = await API.post(
@@ -26,12 +27,14 @@ const becomeFreelancer = async (formData, token) => {
 }
 
 // ── Add portfolio work ─────────────────────────────────────
+
 const addProject = async (formData, token) => {
     const response = await API.post(`/api/freelancer/my-work`, formData, {
         headers: { authorization: `Bearer ${token}` }
     })
     return response.data
 }
+
 
 // ── Remove portfolio work ──────────────────────────────────
 const removeWork = async (id, token) => {
@@ -40,6 +43,8 @@ const removeWork = async (id, token) => {
     })
     return response.data
 }
+
+
 
 // ── Apply for bid ──────────────────────────────────────────
 const applyForBid = async (formData, token) => {
@@ -50,6 +55,8 @@ const applyForBid = async (formData, token) => {
     )
     return response.data
 }
+
+
 
 const freelancerService = {
     fetchFreelancers,

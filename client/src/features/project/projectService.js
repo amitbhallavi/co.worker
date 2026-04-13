@@ -1,4 +1,3 @@
-// client/src/services/projectService.js
 
 import API from "../api/axiosInstance"
 

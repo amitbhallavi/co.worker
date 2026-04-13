@@ -28,3 +28,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+node_modules/
+.env
+dist/
+.DS_Store
+logs/
+*.log
+coverage/
+.idea/
+.vscode/    
