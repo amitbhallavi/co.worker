@@ -6,26 +6,22 @@ const freelancerSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: [true, "User ID is required"],
-            unique: true,
+                  // ✅ one user = one freelancer profile
         },
-
         description: {
             type: String,
             required: [true, "Description is required"],
             minlength: [20, "Description must be at least 20 characters"],
             trim: true,
         },
-
-        // ✅ FIXED: string → array
         skills: {
-            type: [String],
+            type: String,          // comma-separated string to match existing API
             required: [true, "Skills are required"],
-            default: []
+            trim: true,
         },
-
         category: {
             type: String,
-            required: true,
+            required: [true, "Category is required"],
             enum: [
                 "Web Development",
                 "UI/UX Design",
@@ -40,43 +36,42 @@ const freelancerSchema = new mongoose.Schema(
                 "AI - ML DEVELOPER",
             ],
         },
-
         experience: {
             type: Number,
-            required: true,
-            min: 0,
-            max: 50,
+            required: [true, "Experience is required"],
+            min: [0, "Experience cannot be negative"],
+            max: [50, "Experience seems too high"],
         },
-
-        // ✅ rename for frontend match
-        previousWorks: [
+        portfolio: [
             {
-                projectLink: String,
-                projectDescription: String,
-                projectImage: String,
+                projectLink:        { type: String, trim: true },
+                projectDescription: { type: String, trim: true },
+                projectImage:       { type: String, trim: true },
             }
         ],
-
         rating: {
             type: Number,
             default: 0,
             min: 0,
             max: 5,
         },
-
         totalRatings: {
             type: Number,
             default: 0,
         },
-
         isAvailable: {
             type: Boolean,
             default: true,
         },
     },
-    { timestamps: true }
+    {
+        timestamps: true,         // createdAt, updatedAt auto
+    }
 )
 
+// ✅ Prevent duplicate freelancer profile
 freelancerSchema.index({ user: 1 }, { unique: true })
 
-export default mongoose.model("Freelancer", freelancerSchema)
+const Freelancer = mongoose.model("Freelancer", freelancerSchema)
+
+export default Freelancer
