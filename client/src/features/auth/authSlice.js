@@ -87,16 +87,19 @@ export default authSlice.reducer;
 
 
 export const registerUser = createAsyncThunk("AUTH/REGISTER", async (formData, thunkAPI) => {
+    
     try {
-
-        return await authService.register(formData)
-
+      return await authService.register(formData , thunkAPI)
     } catch (error) {
-
-        const message = (error.response.data.message)
-        return thunkAPI.rejectWithValue(message)
-
+      // ✅ Error properly extract karo
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Registration failed"
+      return thunkAPI.rejectWithValue(message)
     }
+
 })
 
 // Login User -> 

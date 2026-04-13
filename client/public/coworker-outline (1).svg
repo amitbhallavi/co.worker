@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48">
-  <rect x="1" y="1" width="198" height="46" rx="10" fill="white" stroke="#378ADD" stroke-width="1.5"/>
-  <text x="20" y="24" font-family="Georgia,serif" font-size="20" font-weight="700" fill="#1a1a2e" dominant-baseline="central">Co</text>
-  <text x="48" y="23" font-family="Georgia,serif" font-size="20" font-weight="700" fill="#378ADD" dominant-baseline="central">.</text>
-  <text x="57" y="24" font-family="Georgia,serif" font-size="20" font-weight="400" fill="#444" dominant-baseline="central">worker</text>
-</svg>

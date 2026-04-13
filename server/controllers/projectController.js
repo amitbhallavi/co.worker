@@ -35,6 +35,24 @@ const getListProjects = async (req, res) => {
 }
 
 // ── GET BIDS FOR A PROJECT ────────────────────────────────────────────────────
+
+const getBidsByProject = async (req, res) => {
+  try {
+    const bids = await Bid.find({ project: req.params.projectId })
+      .populate({
+        path: "freelancer",
+        populate: { path: "user", select: "-password" }
+      })
+      .lean()
+    
+    res.status(200).json(bids)
+  } catch (err) {
+    res.status(500)
+    throw new Error("Error fetching bids")
+  }
+}
+
+// ── GET BIDS FOR A PROJECT ────────────────────────────────────────────────────
 // ✅ KEY FIX: Was using wrong populate chain — bid.freelancer.user was always undefined
 //
 // ❌ WRONG (before):
@@ -131,6 +149,7 @@ const projectController = {
     acceptProjectRequest,
     updateProjectStatus,
     checkProjectApplicatons,
+    getBidsByProject
 }
 
 export default projectController

@@ -7,6 +7,9 @@ import { getBids, getProjects, } from "../features/project/projectSlice"
 import ListProject from "./ListProject"
 import axios from "axios"
 
+
+const BASE_URL = import.meta.env.VITE_API_URL || ""
+
 // ── Status colors ─────────────────────────────────────────────────────────────
 const STATUS_COLORS = {
     "Pending": "text-amber-600 bg-amber-50 border border-amber-200",
@@ -41,7 +44,7 @@ const ProjectModal = ({ project, onClose, token }) => {
         const fetchBids = async () => {
             setBidsLoading(true)
             try {
-                const res = await axios.get(`/api/project/${project._id}`, {
+                const res = await axios.get(`${BASE_URL}/api/project/${project._id}`, {
                     headers: { authorization: `Bearer ${token}` }
                 })
                 setBids(Array.isArray(res.data) ? res.data : [])
@@ -58,7 +61,7 @@ const ProjectModal = ({ project, onClose, token }) => {
     const handleBidStatus = async (bidId, status) => {
         setUpdatingId(bidId)
         try {
-            await axios.post(`/api/project/${bidId}`, { status }, {
+            await axios.post(`${BASE_URL}/api/project/${bidId}`, { status }, {
                 headers: { authorization: `Bearer ${token}` }
             })
             setBids(prev => prev.map(b => b._id === bidId ? { ...b, status } : b))
