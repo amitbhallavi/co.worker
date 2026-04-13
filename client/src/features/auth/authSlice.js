@@ -4,6 +4,13 @@ import authService from "./authService";
 
 let userExist = JSON.parse(localStorage.getItem('user'))
 
+// ── Error extract helper ──────────────────────────────────────────────────────
+const getError = (error) =>
+  error?.response?.data?.message ||
+  error?.response?.data?.error ||
+  error?.message ||
+  "Something went wrong"
+
 const initialState = {
 
     user: userExist || null,

@@ -2,6 +2,11 @@
 
 import API from "../api/axiosInstance"
 
+
+// ── User localStorage helpers ─────────────────────────────────────────────────
+const saveUser   = (user) => localStorage.setItem("user", JSON.stringify(user))
+const removeUser = ()     => localStorage.removeItem("user")
+
 const register = async (formData) => {
     const response = await API.post("/api/auth/register", formData)
     localStorage.setItem('user', JSON.stringify(response.data))
