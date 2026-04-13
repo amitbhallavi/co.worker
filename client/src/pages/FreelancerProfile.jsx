@@ -1,79 +1,58 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, Briefcase, Clock, MessageCircle, Heart, Share2, CheckCircle, IdCard, Mail, Phone } from 'lucide-react';
+import { MapPin, MessageCircle, Heart, Share2, Mail, Phone } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { getFreelancer } from '../features/Freelancer/freelancerSlice';
 import { Link, useParams } from 'react-router-dom';
 import LoaderGradient from '../components/LoaderGradient';
-import { TbArrowsJoin2 } from 'react-icons/tb';
 
-// ✅ FIX HELPER
+// ✅ SAFE HELPER (MAIN FIX)
 const getSkillsArray = (skills) => {
-    if (Array.isArray(skills)) return skills
-    if (typeof skills === 'string') return skills.split(',').map(s => s.trim())
-    return []
-}
+    if (Array.isArray(skills)) return skills;
+    if (typeof skills === "string") return skills.split(',').map(s => s.trim());
+    return [];
+};
 
-// ── Skills Ticker ──
-const SkillsTicker = ({ skills }) => {
-    const list = getSkillsArray(skills).filter(Boolean)
-    if (!list.length) return null
-
-    const doubled = [...list, ...list]
-
-    return (
-        <div className="overflow-hidden bg-gray-50 border-y border-gray-200 py-2.5">
-            <div className="flex gap-8 w-max" style={{ animation: 'scrollLeft 12s linear infinite' }}>
-                {doubled.map((s, i) => (
-                    <span key={i} className="text-sm font-semibold text-gray-700">
-                        {s}
-                    </span>
-                ))}
-            </div>
-        </div>
-    )
-}
-
-// ════════════════════════════════════════════════════
 const FreelancerProfile = () => {
-    const [isSaved, setIsSaved] = useState(false)
+    const [isSaved, setIsSaved] = useState(false);
 
     const { freelancer, freelancerLoading, freelancerError, freelancerErrorMessage } =
-        useSelector(s => s.freelancer)
+        useSelector(state => state.freelancer);
 
-    const { id } = useParams()
-    const dispatch = useDispatch()
+    const { id } = useParams();
+    const dispatch = useDispatch();
 
     useEffect(() => {
-        if (id) dispatch(getFreelancer(id))
-    }, [dispatch, id])
+        if (id) dispatch(getFreelancer(id));
+    }, [dispatch, id]);
 
     useEffect(() => {
         if (freelancerError && freelancerErrorMessage) {
-            toast.error(freelancerErrorMessage)
+            toast.error(freelancerErrorMessage);
         }
-    }, [freelancerError, freelancerErrorMessage])
+    }, [freelancerError, freelancerErrorMessage]);
 
-    if (freelancerLoading) return <LoaderGradient />
+    if (freelancerLoading) return <LoaderGradient />;
 
-    const profile = freelancer?.profile || {}
-    const user = profile?.user || {}
+    // ✅ SAFE DATA
+    const profile = freelancer?.profile || {};
+    const user = profile?.user || {};
 
+    // ✅ FIXED (IMPORTANT)
     const works = Array.isArray(freelancer?.previousWorks)
         ? freelancer.previousWorks
-        : []
+        : [];
+
+    const skills = getSkillsArray(profile?.skills);
 
     return (
         <div className="min-h-screen bg-gray-50">
-
-            <SkillsTicker skills={profile?.skills} />
 
             <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
 
                 {/* PROFILE */}
                 <div className="bg-white rounded-xl shadow p-6 flex gap-6 flex-wrap">
 
-                    {/* Avatar */}
                     <div>
                         {user?.profilePic ? (
                             <img src={user.profilePic} className="w-24 h-24 rounded-full" />
@@ -84,7 +63,6 @@ const FreelancerProfile = () => {
                         )}
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1">
                         <h1 className="text-2xl font-bold">{user?.name || 'Freelancer'}</h1>
                         <p className="text-blue-500">{profile?.category}</p>
@@ -99,10 +77,9 @@ const FreelancerProfile = () => {
                             {profile?.description || 'No description'}
                         </p>
 
-                        {/* Buttons */}
+                        {/* BUTTONS */}
                         <div className="flex gap-2 mt-4">
 
-                            {/* ✅ LINK USED */}
                             <Link
                                 to={`/chat/${user?._id}`}
                                 className="bg-blue-500 text-white px-4 py-2 rounded flex items-center gap-2"
@@ -123,29 +100,26 @@ const FreelancerProfile = () => {
                             >
                                 <Share2 size={16} /> Share
                             </Link>
-
                         </div>
                     </div>
                 </div>
-
 
                 {/* SKILLS */}
                 <div className="bg-white p-6 rounded-xl shadow">
                     <h2 className="text-xl font-bold mb-3">Skills</h2>
 
                     <div className="flex flex-wrap gap-2">
-                        {getSkillsArray(profile?.skills).map((sk, i) => (
+                        {skills.map((sk, i) => (
                             <span key={i} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
                                 {sk}
                             </span>
                         ))}
 
-                        {getSkillsArray(profile?.skills).length === 0 && (
+                        {skills.length === 0 && (
                             <span className="text-gray-400">No skills</span>
                         )}
                     </div>
                 </div>
-
 
                 {/* PORTFOLIO */}
                 <div className="bg-white p-6 rounded-xl shadow">
@@ -167,15 +141,15 @@ const FreelancerProfile = () => {
                                             {p.projectDescription}
                                         </p>
 
-                                        {/* ✅ INTERNAL ROUTE → LINK */}
                                         {p.projectLink && (
-                                            <Link
-                                                to={p.projectLink}
+                                            <a
+                                                href={p.projectLink}
                                                 target="_blank"
+                                                rel="noreferrer"
                                                 className="text-blue-500 text-sm"
                                             >
                                                 View Project
-                                            </Link>
+                                            </a>
                                         )}
                                     </div>
                                 </div>
@@ -186,7 +160,7 @@ const FreelancerProfile = () => {
 
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default FreelancerProfile
+export default FreelancerProfile;
