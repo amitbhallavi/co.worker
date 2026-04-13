@@ -2,7 +2,6 @@ import express from "express"
 import freelancerController from "../controllers/freelancerController.js"
 import rantingRoutes from "./ratingRoutes.js"
 import protect from "../middlewere/authMiddleware.js"
-import upload from "../middlewere/imageUploadMiddleware.js"
 
 const router = express.Router({ mergeParams: true })
 
