@@ -14,7 +14,6 @@ const freelancerSlice = createSlice({
   name: 'freelancer',
   initialState,
   reducers: {
-    // ✅ reset success so useEffect re-trigger works properly
     resetFreelancerSuccess: state => {
       state.freelancerSuccess = false
     }
@@ -41,7 +40,7 @@ const freelancerSlice = createSlice({
         state.freelancerErrorMessage = action.payload
       })
 
-    // ── GET FREELANCER ───────────────────────────────────
+    // ── GET FREELANCER (single) ──────────────────────────
     builder
       .addCase(getFreelancer.pending, state => {
         state.freelancerLoading = true
@@ -50,11 +49,34 @@ const freelancerSlice = createSlice({
       })
       .addCase(getFreelancer.fulfilled, (state, action) => {
         state.freelancerLoading = false
-        state.freelancerSuccess = true
+        state.freelancerSuccess = false   // ✅ true mat karo — unnecessary re-renders
         state.freelancerError = false
-        state.freelancer = action.payload
+        state.freelancer = action.payload // { profile, previousWorks }
       })
       .addCase(getFreelancer.rejected, (state, action) => {
+        state.freelancerLoading = false
+        state.freelancerSuccess = false
+        state.freelancerError = false     // ✅ false — non-freelancer pe toast mat dikho
+        state.freelancerErrorMessage = ""
+      })
+
+    // ── BECOME FREELANCER ────────────────────────────────
+    builder
+      .addCase(becomeFreelancerThunk.pending, state => {
+        state.freelancerLoading = true
+        state.freelancerSuccess = false
+        state.freelancerError = false
+      })
+      .addCase(becomeFreelancerThunk.fulfilled, (state, action) => {
+        state.freelancerLoading = false
+        state.freelancerSuccess = true
+        state.freelancerError = false
+        state.freelancer = {
+          profile: action.payload.freelancer?.profile || action.payload.freelancer,
+          previousWorks: action.payload.freelancer?.previousWorks || [],
+        }
+      })
+      .addCase(becomeFreelancerThunk.rejected, (state, action) => {
         state.freelancerLoading = false
         state.freelancerSuccess = false
         state.freelancerError = true
@@ -107,7 +129,6 @@ const freelancerSlice = createSlice({
       })
 
     // ── APPLY FOR BID ────────────────────────────────────
-    // ✅ FIX: these cases were MISSING — bid submit ke baad state update nahi hota tha
     builder
       .addCase(applyForProject.pending, state => {
         state.freelancerLoading = true
@@ -116,7 +137,7 @@ const freelancerSlice = createSlice({
       })
       .addCase(applyForProject.fulfilled, (state, action) => {
         state.freelancerLoading = false
-        state.freelancerSuccess = true   // ✅ yeh true hoga toh FindWork ka useEffect chalega
+        state.freelancerSuccess = true
         state.freelancerError = false
       })
       .addCase(applyForProject.rejected, (state, action) => {
@@ -139,8 +160,7 @@ export const getFreelancers = createAsyncThunk(
     try {
       return await freelancerService.fetchFreelancers()
     } catch (error) {
-      const message = error.response?.data?.message || error.message
-      return thunkAPI.rejectWithValue(message)
+      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
     }
   }
 )
@@ -151,8 +171,19 @@ export const getFreelancer = createAsyncThunk(
     try {
       return await freelancerService.fetchFreelancer(id)
     } catch (error) {
-      const message = error.response?.data?.message || error.message
-      return thunkAPI.rejectWithValue(message)
+      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
+    }
+  }
+)
+
+export const becomeFreelancerThunk = createAsyncThunk(
+  'BECOME/FREELANCER',
+  async (formData, thunkAPI) => {
+    const token = thunkAPI.getState().auth.user.token
+    try {
+      return await freelancerService.becomeFreelancer(formData, token)
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
     }
   }
 )
@@ -164,8 +195,7 @@ export const addPreviousProject = createAsyncThunk(
     try {
       return await freelancerService.addProject(formData, token)
     } catch (error) {
-      const message = error.response?.data?.message || error.message
-      return thunkAPI.rejectWithValue(message)
+      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
     }
   }
 )
@@ -177,8 +207,7 @@ export const removePreviousWork = createAsyncThunk(
     try {
       return await freelancerService.removeWork(id, token)
     } catch (error) {
-      const message = error.response?.data?.message || error.message
-      return thunkAPI.rejectWithValue(message)
+      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
     }
   }
 )
@@ -190,8 +219,7 @@ export const applyForProject = createAsyncThunk(
     try {
       return await freelancerService.applyForBid(formData, token)
     } catch (error) {
-      const message = error.response?.data?.message || error.message
-      return thunkAPI.rejectWithValue(message)
+      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
     }
   }
 )
