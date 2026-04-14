@@ -1,5 +1,3 @@
-// ===== FILE: server/controllers/projectController.js =====
-
 import Bid from "../models/bidModel.js"
 import Project from "../models/projectModel.js"
 
@@ -18,41 +16,54 @@ const listProject = async (req, res) => {
     })
 
     await project.save()
-    await project.populate("user", "-password")
+    await project.populate("user")
 
+    if (!project) { res.status(401); throw new Error("Project Not Listed") }
     res.status(201).json(project)
 }
 
 // ── GET ALL PROJECTS ──────────────────────────────────────────────────────────
 const getListProjects = async (req, res) => {
-    const projects = await Project.find().populate("user", "-password")
+    const project = await Project.find().populate("user", "-password")
 
-    if (!projects || projects.length === 0) {
+    if (!project || project.length === 0) {
         res.status(404)
-        throw new Error("No projects found")
+        throw new Error("Project Not Found")
     }
 
-    res.status(200).json(projects)
+    res.status(200).json(project)
 }
 
-// ── GET BIDS FOR A PROJECT (by projectId) ─────────────────────────────────────
+// ── GET BIDS FOR A PROJECT ────────────────────────────────────────────────────
+
 const getBidsByProject = async (req, res) => {
-    try {
-        const bids = await Bid.find({ project: req.params.projectId })
-            .populate({
-                path: "freelancer",
-                populate: { path: "user", select: "-password" },
-            })
-            .lean()
-
-        res.status(200).json(bids)
-    } catch (err) {
-        res.status(500)
-        throw new Error("Error fetching bids")
-    }
+  try {
+    const bids = await Bid.find({ project: req.params.projectId })
+      .populate({
+        path: "freelancer",
+        populate: { path: "user", select: "-password" }
+      })
+      .lean()
+    
+    res.status(200).json(bids)
+  } catch (err) {
+    res.status(500)
+    throw new Error("Error fetching bids")
+  }
 }
 
-// ── CHECK PROJECT APPLICATIONS (by pid) ───────────────────────────────────────
+// ── GET BIDS FOR A PROJECT ────────────────────────────────────────────────────
+// ✅ KEY FIX: Was using wrong populate chain — bid.freelancer.user was always undefined
+//
+// ❌ WRONG (before):
+//   .populate("freelancer")             ← only populates freelancer doc, NOT freelancer.user
+//   .populate("project.freelancer.user") ← invalid chained path, does nothing
+//
+// ✅ CORRECT (now):
+//   .populate({ path: "freelancer", populate: { path: "user" } })
+//   ↑ This gives: bid.freelancer._id, bid.freelancer.user.name, bid.freelancer.user.email etc.
+//
+// Frontend accesses: bid.freelancer?.user?.name  ← now works!
 const checkProjectApplicatons = async (req, res) => {
     const projectId = req.params.pid
 
@@ -62,11 +73,13 @@ const checkProjectApplicatons = async (req, res) => {
     const bidding = await Bid.find({ project: projectId })
         .populate({
             path: "freelancer",
-            populate: { path: "user", select: "-password" },
+            populate: { path: "user" }   // ← nested populate: freelancer.user now available
         })
         .populate("project")
 
-    res.status(200).json(bidding || [])
+    if (!bidding) { res.status(404); throw new Error("Bidding Not Found!") }
+
+    res.status(200).json(bidding)
 }
 
 // ── ACCEPT / UPDATE BID STATUS ────────────────────────────────────────────────
@@ -78,21 +91,27 @@ const acceptProjectRequest = async (req, res) => {
     const bidId = req.params.bid
 
     const bid = await Bid.findById(bidId)
-        .populate({ path: "freelancer", populate: { path: "user", select: "-password" } })
+        .populate({
+            path: "freelancer",
+            populate: { path: "user" }   // ← deep populate here too
+        })
         .populate("project")
 
     if (!bid) { res.status(404); throw new Error("Bid Not Found") }
 
+    // Ownership check
     if (bid.project.user.toString() !== userId.toString()) {
         res.status(403)
-        throw new Error("You are not the owner of this project")
+        throw new Error("You are not the rightful owner of this project")
     }
 
-    const updatedBid = await Bid.findByIdAndUpdate(bidId, { status }, { new: true })
-        .populate({ path: "freelancer", populate: { path: "user", select: "-password" } })
+    const updatedBid = await Bid.findByIdAndUpdate(
+        bidId, { status }, { new: true }
+    ).populate({ path: "freelancer", populate: { path: "user" } })
 
     if (!updatedBid) { res.status(401); throw new Error("Bid Not Updated!") }
 
+    // Check both cases (frontend might send "accepted" or "Accepted")
     const isAccepted = status === "accepted" || status === "Accepted"
 
     if (isAccepted) {
@@ -100,7 +119,7 @@ const acceptProjectRequest = async (req, res) => {
             bid.project._id,
             { freelancer: bid.freelancer._id },
             { new: true }
-        ).populate("freelancer").populate("user", "-password")
+        ).populate("freelancer").populate("user")
 
         return res.status(200).json({ project: updatedProject, bid: updatedBid })
     }
@@ -113,11 +132,11 @@ const updateProjectStatus = async (req, res) => {
     const { status } = req.body
     if (!status) { res.status(409); throw new Error("Please Send Status") }
 
+    const projectId = req.params.pid
+
     const project = await Project.findByIdAndUpdate(
-        req.params.pid,
-        { status },
-        { new: true }
-    ).populate("user", "-password").populate("freelancer")
+        projectId, { status }, { new: true }
+    ).populate("user").populate("freelancer")
 
     if (!project) { res.status(409); throw new Error("Project Not Found") }
 
@@ -130,7 +149,7 @@ const projectController = {
     acceptProjectRequest,
     updateProjectStatus,
     checkProjectApplicatons,
-    getBidsByProject,
+    getBidsByProject
 }
 
 export default projectController

@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from "react-toastify"
 import LoaderGradient from "../components/LoaderGradient"
-import { getBids, getProjects } from "../features/project/projectSlice"
+import { getBids, getProjects, } from "../features/project/projectSlice"
 import ListProject from "./ListProject"
 import axios from "axios"
-import BecomeFreelancerModal from "../components/BecomeFreelancerModal"
+
 
 const BASE_URL = import.meta.env.VITE_API_URL || ""
 
-// ── Status colors ──────────────────────────────────────────
+// ── Status colors ─────────────────────────────────────────────────────────────
 const STATUS_COLORS = {
     "Pending": "text-amber-600 bg-amber-50 border border-amber-200",
     "pending": "text-amber-600 bg-amber-50 border border-amber-200",
@@ -23,7 +23,7 @@ const STATUS_COLORS = {
     "Completed": "text-green-700 bg-green-50 border border-green-200",
 }
 
-// ── Project Detail + Bids Modal ────────────────────────────
+// ── Project Detail + Bids Modal ───────────────────────────────────────────────
 const ProjectModal = ({ project, onClose, token }) => {
     if (!project) return null
 
@@ -39,6 +39,7 @@ const ProjectModal = ({ project, onClose, token }) => {
         ? project.technology.split(',').map(t => t.trim()).filter(Boolean)
         : []
 
+    // ── Fetch bids for this project ──
     useEffect(() => {
         const fetchBids = async () => {
             setBidsLoading(true)
@@ -47,29 +48,39 @@ const ProjectModal = ({ project, onClose, token }) => {
                     headers: { authorization: `Bearer ${token}` }
                 })
                 setBids(Array.isArray(res.data) ? res.data : [])
-            } catch { setBids([]) }
-            finally { setBidsLoading(false) }
+            } catch {
+                setBids([])
+            } finally {
+                setBidsLoading(false)
+            }
         }
         fetchBids()
     }, [project._id, token])
 
+    // ── Update bid status ──
     const handleBidStatus = async (bidId, status) => {
         setUpdatingId(bidId)
         try {
-            await axios.put(`${BASE_URL}/api/project/${bidId}`, { status }, {
+            await axios.post(`${BASE_URL}/api/project/${bidId}`, { status }, {
                 headers: { authorization: `Bearer ${token}` }
             })
             setBids(prev => prev.map(b => b._id === bidId ? { ...b, status } : b))
             toast.success(`Bid marked as ${status}!`)
-        } catch { toast.error("Failed to update bid status") }
-        finally { setUpdatingId(null) }
+        } catch {
+            toast.error("Failed to update bid status")
+        } finally {
+            setUpdatingId(null)
+        }
     }
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-            onClick={e => e.target === e.currentTarget && onClose()}>
+        <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+            onClick={e => e.target === e.currentTarget && onClose()}
+        >
             <div className="modal-in bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl overflow-hidden">
 
+                {/* drag handle — mobile */}
                 <div className="flex justify-center pt-3 pb-1 sm:hidden">
                     <div className="w-10 h-1 rounded-full bg-zinc-300" />
                 </div>
@@ -77,8 +88,10 @@ const ProjectModal = ({ project, onClose, token }) => {
                 {/* Header */}
                 <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-5 py-4 relative overflow-hidden">
                     <div className="absolute w-24 h-24 rounded-full bg-white/10 -top-8 -right-6 pointer-events-none" />
-                    <button onClick={onClose}
-                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/20 hover:bg-white/35 text-white flex items-center justify-center text-sm font-bold transition cursor-pointer border-none">✕</button>
+                    <button
+                        onClick={onClose}
+                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/20 hover:bg-white/35 text-white flex items-center justify-center text-sm font-bold transition cursor-pointer border-none"
+                    >✕</button>
                     <div className="flex items-center gap-3 mb-2.5">
                         <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-base flex-shrink-0">📋</div>
                         <div className="min-w-0">
@@ -90,24 +103,37 @@ const ProjectModal = ({ project, onClose, token }) => {
                         <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${STATUS_COLORS[project.status] || "text-gray-600 bg-gray-100"}`}>
                             {project.status}
                         </span>
-                        <span className="text-xs text-blue-100">{bids.length} bid{bids.length !== 1 ? 's' : ''} received</span>
+                        <span className="text-xs text-blue-100">
+                            {bids.length} bid{bids.length !== 1 ? 's' : ''} received
+                        </span>
                     </div>
                 </div>
 
-                {/* Tabs */}
+                {/* Tab switcher */}
                 <div className="flex border-b border-zinc-100">
-                    {[{ id: "details", label: "📋 Details" }, { id: "bids", label: `💼 Bids (${bids.length})` }].map(t => (
-                        <button key={t.id} onClick={() => setActiveView(t.id)}
+                    {[
+                        { id: "details", label: "📋 Details" },
+                        { id: "bids", label: `💼 Bids (${bids.length})` },
+                    ].map(t => (
+                        <button
+                            key={t.id}
+                            onClick={() => setActiveView(t.id)}
                             className={`flex-1 py-3 text-sm font-bold transition-all border-b-2 cursor-pointer border-none bg-transparent
-                                ${activeView === t.id ? "border-blue-500 text-blue-600 bg-blue-50/50" : "border-transparent text-zinc-500 hover:text-zinc-800"}`}>
+                                ${activeView === t.id
+                                    ? "border-blue-500 text-blue-600 bg-blue-50/50"
+                                    : "border-transparent text-zinc-500 hover:text-zinc-800"
+                                }`}
+                        >
                             {t.label}
                         </button>
                     ))}
                 </div>
 
-                {/* Details */}
+                {/* ── DETAILS VIEW ── */}
                 {activeView === "details" && (
                     <div className="px-5 py-4 space-y-3 max-h-[55vh] overflow-y-auto">
+
+                        {/* Client row */}
                         <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                                 {initials}
@@ -118,6 +144,8 @@ const ProjectModal = ({ project, onClose, token }) => {
                             </div>
                             <span className="text-xs text-zinc-400 font-medium shrink-0">Client</span>
                         </div>
+
+                        {/* Stats grid */}
                         <div className="grid grid-cols-2 gap-2.5">
                             {[
                                 { label: 'Budget', value: project.budget ? `₹${Number(project.budget).toLocaleString('en-IN')}` : '—', color: 'text-emerald-700' },
@@ -131,26 +159,36 @@ const ProjectModal = ({ project, onClose, token }) => {
                                 </div>
                             ))}
                         </div>
+
                         {project.description && (
                             <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-100">
                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Description</p>
                                 <p className="text-sm text-zinc-600 leading-relaxed">{project.description}</p>
                             </div>
                         )}
+
                         {techList.length > 0 && (
                             <div>
                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">Technologies</p>
                                 <div className="flex flex-wrap gap-1.5">
                                     {techList.map((tech, i) => (
-                                        <span key={i} className="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-0.5 rounded-full">{tech}</span>
+                                        <span key={i} className="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-0.5 rounded-full">
+                                            {tech}
+                                        </span>
                                     ))}
                                 </div>
                             </div>
                         )}
+
+                        {project.updatedAt && (
+                            <p className="text-[11px] text-zinc-400 text-right">
+                                Last updated: {new Date(project.updatedAt).toLocaleDateString('en-IN')}
+                            </p>
+                        )}
                     </div>
                 )}
 
-                {/* Bids */}
+                {/* ── BIDS VIEW ── */}
                 {activeView === "bids" && (
                     <div className="max-h-[55vh] overflow-y-auto">
                         {bidsLoading ? (
@@ -162,7 +200,7 @@ const ProjectModal = ({ project, onClose, token }) => {
                             <div className="flex flex-col items-center justify-center py-14 text-center px-6">
                                 <p className="text-4xl mb-3">💼</p>
                                 <p className="font-bold text-zinc-700 text-base mb-1">No bids yet</p>
-                                <p className="text-zinc-400 text-sm">Freelancers haven't applied yet.</p>
+                                <p className="text-zinc-400 text-sm">Freelancers haven't applied to this project yet.</p>
                             </div>
                         ) : (
                             <div className="divide-y divide-zinc-100">
@@ -172,19 +210,36 @@ const ProjectModal = ({ project, onClose, token }) => {
                                     const femail = fl?.user?.email || fl?.email || '—'
                                     const fPic = fl?.user?.profilePic || null
                                     const fId = fl?.user?._id || null
+                                    const fCat = fl?.category || null
+                                    const fExp = fl?.experience || null
                                     const fInit = fname.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
                                     const isUpd = updatingId === bid._id
 
                                     return (
-                                        <div key={bid._id || i} className="px-5 py-4 hover:bg-zinc-50 transition"
-                                            style={{ animationDelay: `${i * 60}ms` }}>
+                                        <div
+                                            key={bid._id || i}
+                                            className="px-5 py-4 hover:bg-zinc-50 transition fade-up"
+                                            style={{ animationDelay: `${i * 60}ms` }}
+                                        >
                                             <div className="flex items-start gap-3">
+
+                                                {/* Avatar */}
                                                 <div className="flex-shrink-0">
-                                                    {fPic
-                                                        ? <img src={fPic} alt={fname} className="w-11 h-11 rounded-xl object-cover ring-2 ring-blue-100" onError={e => e.target.style.display = 'none'} />
-                                                        : <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm">{fInit}</div>
-                                                    }
+                                                    {fPic ? (
+                                                        <img
+                                                            src={fPic} alt={fname}
+                                                            className="w-11 h-11 rounded-xl object-cover ring-2 ring-blue-100"
+                                                            onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+                                                        />
+                                                    ) : null}
+                                                    <div
+                                                        className={`${fPic ? 'hidden' : 'flex'} w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 items-center justify-center text-white font-bold text-sm`}
+                                                    >
+                                                        {fInit}
+                                                    </div>
                                                 </div>
+
+                                                {/* Info */}
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <p className="font-bold text-zinc-900 text-sm">{fname}</p>
@@ -193,36 +248,80 @@ const ProjectModal = ({ project, onClose, token }) => {
                                                         </span>
                                                     </div>
                                                     <p className="text-zinc-500 text-xs truncate">{femail}</p>
-                                                    {fl?.category && <p className="text-blue-600 text-xs font-medium mt-0.5">{fl.category}</p>}
-                                                    {fl?.experience && <p className="text-zinc-400 text-xs">{fl.experience} yrs experience</p>}
+                                                    {fCat && <p className="text-blue-600 text-xs font-medium mt-0.5">{fCat}</p>}
+                                                    {fExp && <p className="text-zinc-400 text-xs">{fExp} yrs experience</p>}
                                                 </div>
+
+                                                {/* Bid amount */}
                                                 <div className="text-right flex-shrink-0">
-                                                    <p className="text-lg font-black text-emerald-600">₹{bid.amount ? Number(bid.amount).toLocaleString('en-IN') : '—'}</p>
+                                                    <p className="text-lg font-black text-emerald-600">
+                                                        ₹{bid.amount ? Number(bid.amount).toLocaleString('en-IN') : '—'}
+                                                    </p>
                                                     <p className="text-[10px] text-zinc-400">bid amount</p>
-                                                    {bid.createdAt && <p className="text-[10px] text-zinc-400 mt-0.5">{new Date(bid.createdAt).toLocaleDateString('en-IN')}</p>}
+                                                    {bid.createdAt && (
+                                                        <p className="text-[10px] text-zinc-400 mt-0.5">
+                                                            {new Date(bid.createdAt).toLocaleDateString('en-IN')}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
+
+                                            {/* Action buttons row */}
                                             <div className="flex items-center gap-2 mt-3 flex-wrap">
+
+                                                {/* View Freelancer Profile */}
                                                 {fId && (
-                                                    <Link to={`/profile/${fId}`} onClick={onClose}
-                                                        className="px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white transition-all no-underline">
+                                                    <Link
+                                                        to={`/profile/${fId}`}
+                                                        onClick={onClose}
+                                                        className="px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all no-underline"
+                                                    >
                                                         👤 View Profile
                                                     </Link>
                                                 )}
-                                                {[
-                                                    { label: '✓ Accept', status: 'Accepted', active: 'bg-emerald-100 text-emerald-700 border-emerald-200', hover: 'hover:bg-emerald-500 hover:text-white hover:border-emerald-500' },
-                                                    { label: '✕ Reject', status: 'Rejected', active: 'bg-rose-100 text-rose-700 border-rose-200', hover: 'hover:bg-rose-500 hover:text-white hover:border-rose-500' },
-                                                    { label: '◷ Pending', status: 'Pending', active: 'bg-amber-100 text-amber-700 border-amber-200', hover: 'hover:bg-amber-500 hover:text-white hover:border-amber-500' },
-                                                ].map(btn => (
-                                                    <button key={btn.status}
-                                                        onClick={() => handleBidStatus(bid._id, btn.status)}
-                                                        disabled={isUpd || bid.status === btn.status}
-                                                        className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all
-                                                            ${bid.status === btn.status ? btn.active + ' cursor-default' : 'bg-white text-zinc-600 border-zinc-200 ' + btn.hover + ' cursor-pointer'}
-                                                            ${isUpd ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                                        {isUpd ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" /> : btn.label}
-                                                    </button>
-                                                ))}
+
+                                                {/* Accept */}
+                                                <button
+                                                    onClick={() => handleBidStatus(bid._id, 'Accepted')}
+                                                    disabled={isUpd || bid.status === 'Accepted'}
+                                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all
+                                                        ${bid.status === 'Accepted'
+                                                            ? 'bg-emerald-100 text-emerald-700 border-emerald-200 cursor-default'
+                                                            : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 cursor-pointer'
+                                                        } ${isUpd ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                >
+                                                    {isUpd ? (
+                                                        <span className="flex items-center gap-1">
+                                                            <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                        </span>
+                                                    ) : '✓ Accept'}
+                                                </button>
+
+                                                {/* Reject */}
+                                                <button
+                                                    onClick={() => handleBidStatus(bid._id, 'Rejected')}
+                                                    disabled={isUpd || bid.status === 'Rejected'}
+                                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all
+                                                        ${bid.status === 'Rejected'
+                                                            ? 'bg-rose-100 text-rose-700 border-rose-200 cursor-default'
+                                                            : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-500 hover:text-white hover:border-rose-500 cursor-pointer'
+                                                        } ${isUpd ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                >
+                                                    ✕ Reject
+                                                </button>
+
+                                                {/* Pending */}
+                                                <button
+                                                    onClick={() => handleBidStatus(bid._id, 'Pending')}
+                                                    disabled={isUpd || bid.status === 'Pending'}
+                                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all
+                                                        ${bid.status === 'Pending'
+                                                            ? 'bg-amber-100 text-amber-700 border-amber-200 cursor-default'
+                                                            : 'bg-white text-amber-600 border-amber-200 hover:bg-amber-500 hover:text-white hover:border-amber-500 cursor-pointer'
+                                                        } ${isUpd ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                >
+                                                    ◷ Pending
+                                                </button>
                                             </div>
                                         </div>
                                     )
@@ -232,13 +331,18 @@ const ProjectModal = ({ project, onClose, token }) => {
                     </div>
                 )}
 
+                {/* Footer */}
                 <div className="px-5 py-4 border-t border-zinc-100 flex gap-3">
-                    <button onClick={onClose}
-                        className="flex-1 py-2.5 bg-zinc-100 text-zinc-700 font-bold text-sm rounded-xl hover:bg-zinc-200 transition cursor-pointer border-none">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2.5 bg-zinc-100 text-zinc-700 font-bold text-sm rounded-xl hover:bg-zinc-200 transition cursor-pointer border-none"
+                    >
                         Close
                     </button>
-                    <button onClick={() => setActiveView(activeView === 'bids' ? 'details' : 'bids')}
-                        className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm rounded-xl hover:shadow-lg transition cursor-pointer border-none">
+                    <button
+                        onClick={() => setActiveView(activeView === 'bids' ? 'details' : 'bids')}
+                        className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm rounded-xl hover:shadow-lg transition cursor-pointer border-none"
+                    >
                         {activeView === 'bids' ? '📋 View Details' : `💼 View Bids (${bids.length})`}
                     </button>
                 </div>
@@ -247,10 +351,12 @@ const ProjectModal = ({ project, onClose, token }) => {
     )
 }
 
-// ── Mobile project card ────────────────────────────────────
+// ── Mobile project card ───────────────────────────────────────────────────────
 const MobileProjectCard = ({ bid, i, onView }) => (
-    <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-4 flex flex-col gap-3 fade-up"
-        style={{ animationDelay: `${i * 60}ms` }}>
+    <div
+        className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-4 flex flex-col gap-3 fade-up"
+        style={{ animationDelay: `${i * 60}ms` }}
+    >
         <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
                 <p className="font-bold text-zinc-900 text-sm leading-snug">{bid.title}</p>
@@ -271,33 +377,35 @@ const MobileProjectCard = ({ bid, i, onView }) => (
                     <p className="font-medium text-zinc-600">{bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('en-IN') : 'N/A'}</p>
                 </div>
             </div>
-            <button onClick={() => onView(bid)}
-                className="px-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-600 hover:text-white transition-all cursor-pointer border-none">
+            <button
+                onClick={() => onView(bid)}
+                className="px-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all cursor-pointer border-none"
+            >
                 View ↗
             </button>
         </div>
     </div>
 )
 
-// ══════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
 const RegularUser = () => {
+
+
     const dispatch = useDispatch()
-    const navigate = useNavigate()
     const { user } = useSelector(state => state.auth)
-    const { listedProjects, projectLoading } = useSelector(state => state.project)
+    const { listedProjects, bids, projectLoading } = useSelector(state => state.project)
 
     const [showBecomeFModal, setShowBecomeFModal] = useState(false)
     const [editProfile, setEditProfile] = useState(false)
     const [activeTab, setActiveTab] = useState("bids")
     const [selectedProject, setSelectedProject] = useState(null)
 
-    // ✅ Track if user just became a freelancer — real-time UI update
-    const [justBecameFreelancer, setJustBecameFreelancer] = useState(false)
-
     useEffect(() => {
         if (user?._id) dispatch(getProjects())
     }, [dispatch, user?._id])
 
+
+    //  correct filter — was destructuring from array before
     const myProjects = Array.isArray(listedProjects)
         ? listedProjects.filter(p => p.user?._id === user?._id)
         : []
@@ -308,10 +416,8 @@ const RegularUser = () => {
         </div>
     )
 
-    if (projectLoading && myProjects.length === 0) return <LoaderGradient />
 
-    // ✅ Check if user is freelancer (from Redux or just activated)
-    const isFreelancer = user?.isFreelancer || justBecameFreelancer
+    if (projectLoading && myProjects.length === 0) return <LoaderGradient />
 
     return (
         <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -319,66 +425,48 @@ const RegularUser = () => {
                 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap');
                 ::-webkit-scrollbar{width:4px}
                 ::-webkit-scrollbar-thumb{background:#3B7FF5;border-radius:9px}
-                @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes modalIn { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+                @keyframes fadeUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+                @keyframes modalIn  { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
                 .fade-up  { animation: fadeUp  .45s ease both }
                 .modal-in { animation: modalIn .3s cubic-bezier(.34,1.56,.64,1) both }
             `}</style>
 
-            {/* ✅ BecomeFreelancerModal — real API call */}
-            {showBecomeFModal && (
-                <BecomeFreelancerModal
-                    onClose={() => setShowBecomeFModal(false)}
-                    onSuccess={() => {
-                        setShowBecomeFModal(false)
-                        setJustBecameFreelancer(true)   // ✅ instant UI update
-                        // Navigate to profile after 1.5s so user sees success screen
-                        setTimeout(() => navigate('/profile'), 1500)
-                    }}
-                />
-            )}
-
-            {/* Preview bar */}
+            {/* ── PREVIEW BAR ── */}
             <div className="bg-zinc-900 text-white text-xs flex items-center justify-center gap-3 py-2.5 px-4">
                 <span className="text-zinc-400">Preview mode:</span>
                 <button className="px-3 py-1 rounded-full font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-none cursor-default">
                     Regular User
                 </button>
-                {/* ✅ Real-time badge on activation */}
-                {isFreelancer && (
-                    <span className="px-3 py-1 rounded-full font-bold bg-gradient-to-r from-emerald-500 to-green-500 text-white text-[11px]">
-                        ✦ Freelancer Active!
-                    </span>
-                )}
             </div>
 
-            {/* Profile Hero */}
+            {/* ── PROFILE HERO ── */}
             <div className="relative">
                 <div className="h-36 sm:h-44 md:h-56 bg-gradient-to-br from-indigo-500 to-purple-600 relative overflow-hidden">
-                    <div className="absolute inset-0" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=1200&q=60')", backgroundSize: "cover", backgroundPosition: "center", opacity: 0.18 }} />
+                    <div className="absolute inset-0"
+                        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=1200&q=60')", backgroundSize: "cover", backgroundPosition: "center", opacity: 0.18 }} />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-60" />
                 </div>
+
                 <div className="max-w-5xl mx-auto px-4 sm:px-6">
                     <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4 -mt-10 sm:-mt-12 md:-mt-14 relative z-10 pb-5 border-b border-zinc-100">
+
+                        {/* Avatar */}
                         <div className="relative shrink-0 self-start sm:self-auto">
-                            <img src={user?.profilePic || "https://i.pravatar.cc/150"}
-                                className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl ring-4 ring-white shadow-xl object-cover" alt="avatar" />
-                            {/* ✅ Freelancer badge on avatar */}
-                            {isFreelancer && (
-                                <span className="absolute -bottom-2 -right-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-xs font-black px-2 py-0.5 rounded-full shadow">✦ PRO</span>
-                            )}
+                            <img
+                                src={user?.profilePic || "https://i.pravatar.cc/150"}
+                                className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl ring-4 ring-white shadow-xl object-cover"
+                                alt="avatar"
+                            />
                         </div>
+
+                        {/* Info */}
                         <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
                                 <h1 className="text-xl sm:text-2xl font-black text-white leading-tight" style={{ fontFamily: "'Playfair Display',serif" }}>
                                     {user?.name}
                                 </h1>
-                                {/* ✅ Badge changes on activation */}
-                                {isFreelancer
-                                    ? <span className="text-xs font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-2.5 py-0.5 rounded-full">Freelancer ✦</span>
-                                    : <span className="text-xs font-bold bg-zinc-100 text-zinc-600 px-2.5 py-0.5 rounded-full border border-zinc-200">Member</span>
-                                }
+                                <span className="text-xs font-bold bg-zinc-100 text-zinc-600 px-2.5 py-0.5 rounded-full border border-zinc-200">Member</span>
                             </div>
                             <p className="text-white text-xs sm:text-sm mb-1">{user?.email} · India 🇮🇳</p>
                             <p className="text-zinc-400 text-xs mb-1.5">Id: {user?._id}</p>
@@ -391,30 +479,23 @@ const RegularUser = () => {
                                 ))}
                             </div>
                         </div>
+
+                        {/* Action buttons */}
                         <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto sm:pb-1 flex-wrap">
                             <button onClick={() => setEditProfile(true)}
                                 className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:opacity-90 transition cursor-pointer shadow border-none">
                                 ✏️ Edit Profile
                             </button>
-                            {/* ✅ Button changes after activation */}
-                            {isFreelancer ? (
-                                <Link to="/profile">
-                                    <button className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-xl hover:opacity-90 transition shadow border-none cursor-pointer">
-                                        ✦ Freelancer Dashboard
-                                    </button>
-                                </Link>
-                            ) : (
-                                <button onClick={() => setShowBecomeFModal(true)}
-                                    className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:opacity-90 transition shadow border-none cursor-pointer">
-                                    ✦ Become Freelancer
-                                </button>
-                            )}
+                            <button onClick={() => setShowBecomeFModal(true)}
+                                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:opacity-90 transition shadow border-none cursor-pointer">
+                                ✦ Become Freelancer
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Stats */}
+            {/* ── STATS ROW ── */}
             <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
                     {[
@@ -434,7 +515,7 @@ const RegularUser = () => {
                 </div>
             </div>
 
-            {/* Tabs */}
+            {/* ── TABS ── */}
             <div className="max-w-5xl mx-auto px-4 sm:px-6">
                 <div className="flex gap-0.5 border-b border-zinc-200 mb-5">
                     {[{ id: "bids", label: "My Projects" }, { id: "saved", label: "Saved" }].map(tab => (
@@ -446,9 +527,11 @@ const RegularUser = () => {
                     ))}
                 </div>
 
-                {/* My Projects Tab */}
+                {/* ══ MY PROJECTS TAB ══ */}
                 {activeTab === "bids" && (
                     <div className="space-y-4 pb-12">
+
+                        {/* ✅ Project Detail + Bids Modal */}
                         {selectedProject && (
                             <ProjectModal
                                 project={selectedProject}
@@ -457,9 +540,12 @@ const RegularUser = () => {
                             />
                         )}
 
+                        {/* Header */}
                         <div className="flex items-start sm:items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-base sm:text-lg font-black text-zinc-900" style={{ fontFamily: "'Playfair Display',serif" }}>My Posted Projects</h2>
+                                <h2 className="text-base sm:text-lg font-black text-zinc-900" style={{ fontFamily: "'Playfair Display',serif" }}>
+                                    My Posted Projects
+                                </h2>
                                 <p className="text-zinc-500 text-xs mt-0.5">{myProjects.length} projects listed</p>
                             </div>
                             <Link to="/browse-projects">
@@ -469,6 +555,7 @@ const RegularUser = () => {
                             </Link>
                         </div>
 
+                        {/* Empty state */}
                         {myProjects.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 sm:py-20 bg-white rounded-2xl border border-dashed border-zinc-200">
                                 <p className="text-4xl sm:text-5xl mb-3">📋</p>
@@ -481,11 +568,14 @@ const RegularUser = () => {
                             </div>
                         ) : (
                             <>
+                                {/* Mobile cards */}
                                 <div className="flex flex-col gap-3 md:hidden">
                                     {myProjects.map((bid, i) => (
                                         <MobileProjectCard key={bid._id} bid={bid} i={i} onView={setSelectedProject} />
                                     ))}
                                 </div>
+
+                                {/* Desktop table */}
                                 <div className="hidden md:block bg-white rounded-2xl border border-zinc-100 shadow-md overflow-hidden">
                                     <div className="grid grid-cols-12 px-5 py-3 bg-zinc-50 border-b border-zinc-100 text-xs font-bold text-zinc-400 uppercase tracking-wide">
                                         <div className="col-span-3">Title</div>
@@ -496,23 +586,39 @@ const RegularUser = () => {
                                         <div className="col-span-1 text-center">Date</div>
                                         <div className="col-span-1 text-center">View</div>
                                     </div>
+
                                     {myProjects.map((bid, i) => (
                                         <div key={bid._id}
                                             className="grid grid-cols-12 px-5 py-4 items-center hover:bg-zinc-50 transition border-b border-zinc-100 last:border-0 fade-up"
                                             style={{ animationDelay: `${i * 60}ms` }}>
-                                            <div className="col-span-3 min-w-0 pr-2"><p className="font-bold text-zinc-900 text-sm truncate">{bid.title}</p></div>
-                                            <div className="col-span-2 min-w-0 pr-2"><p className="text-xs text-zinc-600 font-medium truncate">{bid.category}</p></div>
-                                            <div className="col-span-2 min-w-0 pr-2"><p className="text-xs text-zinc-600 font-medium truncate">{bid.user?.name || '—'}</p></div>
-                                            <div className="col-span-2"><p className="text-xs font-bold text-emerald-600 whitespace-nowrap">₹{bid.budget ? Number(bid.budget).toLocaleString('en-IN') : '—'}</p></div>
+                                            <div className="col-span-3 min-w-0 pr-2">
+                                                <p className="font-bold text-zinc-900 text-sm truncate">{bid.title}</p>
+                                            </div>
+                                            <div className="col-span-2 min-w-0 pr-2">
+                                                <p className="text-xs text-zinc-600 font-medium truncate">{bid.category}</p>
+                                            </div>
+                                            <div className="col-span-2 min-w-0 pr-2">
+                                                <p className="text-xs text-zinc-600 font-medium truncate">{bid.user?.name || '—'}</p>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <p className="text-xs font-bold text-emerald-600 whitespace-nowrap">
+                                                    ₹{bid.budget ? Number(bid.budget).toLocaleString('en-IN') : '—'}
+                                                </p>
+                                            </div>
                                             <div className="col-span-1">
-                                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[bid.status] || "text-gray-600 bg-gray-100"}`}>{bid.status}</span>
+                                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[bid.status] || "text-gray-600 bg-gray-100"}`}>
+                                                    {bid.status}
+                                                </span>
                                             </div>
                                             <div className="col-span-1 text-center text-xs text-zinc-400 whitespace-nowrap">
                                                 {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('en-IN') : 'N/A'}
                                             </div>
+                                            {/* ✅ View button — opens modal with Details + Bids tabs */}
                                             <div className="col-span-1 flex justify-center">
-                                                <button onClick={() => setSelectedProject(bid)}
-                                                    className="px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all cursor-pointer">
+                                                <button
+                                                    onClick={() => setSelectedProject(bid)}
+                                                    className="px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all cursor-pointer"
+                                                >
                                                     View
                                                 </button>
                                             </div>
@@ -524,24 +630,26 @@ const RegularUser = () => {
 
                         <ListProject />
 
-                        {/* CTA — hidden after activation */}
-                        {!isFreelancer && (
-                            <div className="mt-4 bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-5 shadow-xl">
-                                <div className="text-4xl sm:text-5xl">🚀</div>
-                                <div className="flex-1 text-center sm:text-left">
-                                    <p className="text-white font-black text-base sm:text-lg" style={{ fontFamily: "'Playfair Display',serif" }}>Want to earn instead of hire?</p>
-                                    <p className="text-zinc-400 text-xs sm:text-sm mt-1">Become a freelancer and showcase your work to hundreds of clients.</p>
-                                </div>
-                                <button onClick={() => setShowBecomeFModal(true)}
-                                    className="shrink-0 w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-black text-sm rounded-xl hover:shadow-lg transition whitespace-nowrap border-none cursor-pointer">
-                                    ✦ Become a Freelancer
-                                </button>
+                        {/* CTA Banner */}
+                        <div className="mt-4 bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-5 shadow-xl">
+                            <div className="text-4xl sm:text-5xl">🚀</div>
+                            <div className="flex-1 text-center sm:text-left">
+                                <p className="text-white font-black text-base sm:text-lg" style={{ fontFamily: "'Playfair Display',serif" }}>
+                                    Want to earn instead of hire?
+                                </p>
+                                <p className="text-zinc-400 text-xs sm:text-sm mt-1">
+                                    Become a freelancer and showcase your work to hundreds of clients.
+                                </p>
                             </div>
-                        )}
+                            <button onClick={() => setShowBecomeFModal(true)}
+                                className="shrink-0 w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-black text-sm rounded-xl hover:shadow-lg transition whitespace-nowrap border-none cursor-pointer">
+                                ✦ Become a Freelancer
+                            </button>
+                        </div>
                     </div>
                 )}
 
-                {/* Saved Tab */}
+                {/* ══ SAVED TAB ══ */}
                 {activeTab === "saved" && (
                     <div className="pb-12">
                         <div className="flex flex-col items-center justify-center py-16 sm:py-20 bg-white rounded-2xl border border-dashed border-zinc-200">
@@ -557,20 +665,68 @@ const RegularUser = () => {
                 )}
             </div>
 
-            {/* Edit Profile Modal */}
+            {/* ══ MODAL: BECOME FREELANCER ══ */}
+            {showBecomeFModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="modal-in bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md overflow-hidden">
+                        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+                            <div className="w-10 h-1 rounded-full bg-zinc-300" />
+                        </div>
+                        <div className="h-1.5 bg-gradient-to-r from-blue-500 to-cyan-500" />
+                        <div className="px-6 pt-5 pb-2 text-center">
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl mx-auto mb-3 border border-blue-100">✦</div>
+                            <h2 className="font-black text-zinc-900 text-lg sm:text-xl mb-1" style={{ fontFamily: "'Playfair Display',serif" }}>Become a Freelancer</h2>
+                            <p className="text-zinc-500 text-sm mb-4">Unlock the ability to showcase your work, receive project bids, and earn from your skills.</p>
+                        </div>
+                        <div className="px-6 pb-4 space-y-2">
+                            {[
+                                { icon: "🗂", label: "Portfolio showcase — display up to 20 projects" },
+                                { icon: "📨", label: "Receive bids directly from clients" },
+                                { icon: "⭐", label: "Collect reviews and build your reputation" },
+                                { icon: "💼", label: "Get featured in the Freelancer directory" },
+                            ].map(p => (
+                                <div key={p.label} className="flex items-center gap-3 bg-zinc-50 rounded-xl px-4 py-2.5 border border-zinc-100">
+                                    <span className="text-base">{p.icon}</span>
+                                    <span className="text-xs sm:text-sm text-zinc-700 font-medium">{p.label}</span>
+                                    <span className="ml-auto text-emerald-500">✓</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="px-6 py-4 border-t border-zinc-100 flex gap-3">
+                            <button onClick={() => setShowBecomeFModal(false)}
+                                className="flex-1 py-2.5 bg-zinc-100 text-zinc-700 font-bold text-sm rounded-xl hover:bg-zinc-200 transition border-none cursor-pointer">
+                                Not Now
+                            </button>
+                            <button onClick={() => setShowBecomeFModal(false)}
+                                className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm rounded-xl hover:opacity-90 transition shadow-md border-none cursor-pointer">
+                                ✦ Activate Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ══ MODAL: EDIT PROFILE ══ */}
             {editProfile && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
                     <div className="modal-in bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg overflow-hidden">
-                        <div className="flex justify-center pt-3 pb-1 sm:hidden"><div className="w-10 h-1 rounded-full bg-zinc-300" /></div>
+                        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+                            <div className="w-10 h-1 rounded-full bg-zinc-300" />
+                        </div>
                         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-zinc-100 bg-zinc-50">
                             <h2 className="font-black text-zinc-900 text-base" style={{ fontFamily: "'Playfair Display',serif" }}>Edit Profile</h2>
                             <button onClick={() => setEditProfile(false)}
-                                className="w-8 h-8 rounded-xl bg-zinc-200 hover:bg-zinc-300 transition flex items-center justify-center text-zinc-600 font-bold text-sm border-none cursor-pointer">✕</button>
+                                className="w-8 h-8 rounded-xl bg-zinc-200 hover:bg-zinc-300 transition flex items-center justify-center text-zinc-600 font-bold text-sm border-none cursor-pointer">
+                                ✕
+                            </button>
                         </div>
                         <div className="px-5 sm:px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
                             <div className="flex items-center gap-4">
-                                <img src={user?.profilePic || "https://i.pravatar.cc/150"} alt="Profile" className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ring-2 ring-blue-300 object-cover" />
-                                <button className="px-4 py-2 bg-zinc-100 text-zinc-700 font-bold text-xs rounded-xl hover:bg-zinc-200 transition border-none cursor-pointer">Change Photo</button>
+                                <img src={user?.profilePic || "https://i.pravatar.cc/150"} alt="Profile"
+                                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ring-2 ring-blue-300 object-cover" />
+                                <button className="px-4 py-2 bg-zinc-100 text-zinc-700 font-bold text-xs rounded-xl hover:bg-zinc-200 transition border-none cursor-pointer">
+                                    Change Photo
+                                </button>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
@@ -594,9 +750,13 @@ const RegularUser = () => {
                         </div>
                         <div className="px-5 sm:px-6 py-4 border-t border-zinc-100 flex gap-3">
                             <button onClick={() => setEditProfile(false)}
-                                className="flex-1 py-2.5 bg-zinc-100 text-zinc-700 font-bold text-sm rounded-xl hover:bg-zinc-200 transition border-none cursor-pointer">Cancel</button>
+                                className="flex-1 py-2.5 bg-zinc-100 text-zinc-700 font-bold text-sm rounded-xl hover:bg-zinc-200 transition border-none cursor-pointer">
+                                Cancel
+                            </button>
                             <button onClick={() => setEditProfile(false)}
-                                className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm rounded-xl hover:opacity-90 cursor-pointer transition border-none">Save Changes ✦</button>
+                                className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm rounded-xl hover:opacity-90 cursor-pointer transition border-none">
+                                Save Changes ✦
+                            </button>
                         </div>
                     </div>
                 </div>
