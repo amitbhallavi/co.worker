@@ -1,52 +1,50 @@
+
 import API from "../api/axiosInstance"
 
-
-// ── Fetch all freelancers ──────────────────────────────────
-
+// ── Fetch all freelancers ──────────────────────────────────────────────────────
 const fetchFreelancers = async () => {
-    const response = await API.get('/api/freelancer')
-    return response.data
+    const response = await API.get("/api/freelancer")
+    // ✅ Always return an array — never undefined
+    return Array.isArray(response.data) ? response.data : []
 }
 
-// ── Fetch single freelancer by userId ─────────────────────
+// ── Fetch single freelancer by userId ─────────────────────────────────────────
 const fetchFreelancer = async (id) => {
     const response = await API.get(`/api/freelancer/profile/${id}`)
     return response.data
 }
 
-// ── Become Freelancer ──────────────────────────────────────
-
+// ── Become Freelancer ──────────────────────────────────────────────────────────
 // POST /api/freelancer/add-me
 const becomeFreelancer = async (formData, token) => {
     const response = await API.post(
-        `/api/freelancer/add-me`,
+        "/api/freelancer/add-me",
         formData,
         { headers: { authorization: `Bearer ${token}` } }
     )
     return response.data
 }
 
-// ── Add portfolio work ─────────────────────────────────────
-
+// ── Add portfolio work ─────────────────────────────────────────────────────────
 const addProject = async (formData, token) => {
-    const response = await API.post(`/api/freelancer/my-work`, formData, {
-        headers: { authorization: `Bearer ${token}` }
-    })
+    const response = await API.post(
+        "/api/freelancer/my-work",
+        formData,
+        { headers: { authorization: `Bearer ${token}` } }
+    )
     return response.data
 }
 
-
-// ── Remove portfolio work ──────────────────────────────────
+// ── Remove portfolio work ──────────────────────────────────────────────────────
 const removeWork = async (id, token) => {
-    const response = await API.delete(`/api/freelancer/my-work/${id}`, {
-        headers: { authorization: `Bearer ${token}` }
-    })
+    const response = await API.delete(
+        `/api/freelancer/my-work/${id}`,
+        { headers: { authorization: `Bearer ${token}` } }
+    )
     return response.data
 }
 
-
-
-// ── Apply for bid ──────────────────────────────────────────
+// ── Apply for bid ──────────────────────────────────────────────────────────────
 const applyForBid = async (formData, token) => {
     const response = await API.post(
         `/api/freelancer/project/${formData.projectId}`,
@@ -55,8 +53,6 @@ const applyForBid = async (formData, token) => {
     )
     return response.data
 }
-
-
 
 const freelancerService = {
     fetchFreelancers,

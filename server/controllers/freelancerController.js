@@ -1,19 +1,21 @@
+// ===== FILE: server/controllers/freelancerController.js =====
+
 import Bid from "../models/bidModel.js"
 import Freelancer from "../models/freelancerModel.js"
 import Project from "../models/projectModel.js"
 import User from "../models/userModel.js"
 import PreviousWork from "../models/previousWorks.js"
 
-// ── BECOME FREELANCER ──────────────────────────────────────
+// ── BECOME FREELANCER ──────────────────────────────────────────────────────────
 // POST /api/freelancer/add-me
 const becomeFreelancer = async (req, res) => {
     const userId = req.user._id
     const { description, skills, category, experience } = req.body
 
-    // ✅ Validate all required fields
-    if (!description || !skills || !category || !experience) {
+    // ✅ experience is OPTIONAL — defaults to 0
+    if (!description || !skills || !category) {
         res.status(400)
-        throw new Error("Please fill all required fields: description, skills, category, experience")
+        throw new Error("Please fill all required fields: description, skills, category")
     }
 
     if (description.trim().length < 20) {
@@ -21,28 +23,21 @@ const becomeFreelancer = async (req, res) => {
         throw new Error("Description must be at least 20 characters")
     }
 
-    if (Number(experience) < 0 || Number(experience) > 50) {
-        res.status(400)
-        throw new Error("Experience must be between 0 and 50 years")
-    }
-
-    // ✅ Check duplicate — one user = one freelancer profile
+    // ✅ Prevent duplicate profile
     const existing = await Freelancer.findOne({ user: userId })
     if (existing) {
         res.status(409)
         throw new Error("You already have a freelancer profile")
     }
 
-    // ✅ Create freelancer profile
     const freelancer = await Freelancer.create({
         user: userId,
         description: description.trim(),
         skills: typeof skills === "string" ? skills.trim() : skills.join(", "),
         category,
-        experience: Number(experience),
+        experience: Number(experience) || 0,  // ✅ default 0 if not sent
     })
 
-    // ✅ Populate user details
     await freelancer.populate("user", "-password")
 
     // ✅ Update user isFreelancer flag
@@ -68,7 +63,7 @@ const becomeFreelancer = async (req, res) => {
     })
 }
 
-// ── APPLY FOR PROJECT (BID) ────────────────────────────────
+// ── APPLY FOR PROJECT (BID) ────────────────────────────────────────────────────
 // POST /api/freelancer/project/:pid
 const applyForProject = async (req, res) => {
     const projectId = req.params.pid
@@ -81,16 +76,10 @@ const applyForProject = async (req, res) => {
     }
 
     const project = await Project.findById(projectId)
-    if (!project) {
-        res.status(404)
-        throw new Error("Project not found")
-    }
+    if (!project) { res.status(404); throw new Error("Project not found") }
 
     const user = await User.findById(userId)
-    if (!user) {
-        res.status(404)
-        throw new Error("User not found")
-    }
+    if (!user) { res.status(404); throw new Error("User not found") }
 
     const freelancer = await Freelancer.findOne({ user: userId })
     if (!freelancer) {
@@ -117,69 +106,60 @@ const applyForProject = async (req, res) => {
     })
 
     await bid.save()
-    await bid.populate("freelancer")
+    await bid.populate({ path: "freelancer", populate: { path: "user", select: "-password" } })
     await bid.populate("project")
 
     // ✅ Deduct one credit
-    await User.findByIdAndUpdate(userId, { credits: user.credits - 1 }, { new: true })
+    await User.findByIdAndUpdate(userId, { credits: user.credits - 1 })
 
     res.status(201).json(bid)
 }
 
-// ── SUBMIT PROJECT ─────────────────────────────────────────
+// ── SUBMIT PROJECT ─────────────────────────────────────────────────────────────
 const submitProject = async (req, res) => {
     const projectId = req.params.pid
     const workProgress = await Project.findByIdAndUpdate(
         projectId,
         { status: "in-progress" },
         { new: true }
-    ).populate("user").populate("freelancer")
+    ).populate("user", "-password").populate("freelancer")
 
-    if (!workProgress) {
-        res.status(404)
-        throw new Error("Project not found")
-    }
+    if (!workProgress) { res.status(404); throw new Error("Project not found") }
+
     res.status(200).json(workProgress)
 }
 
-// ── GET MY PREVIOUS PROJECTS ───────────────────────────────
+// ── GET MY PREVIOUS PROJECTS ───────────────────────────────────────────────────
 const getMypreviousProject = async (req, res) => {
     const userId = req.user._id
     const freelancer = await Freelancer.findOne({ user: userId })
 
-    if (!freelancer) {
-        res.status(404)
-        throw new Error("Freelancer profile not found")
-    }
+    if (!freelancer) { res.status(404); throw new Error("Freelancer profile not found") }
 
-    const previousProject = await Project.find({ freelancer: freelancer._id }).populate("freelancer")
+    const previousProject = await Project.find({ freelancer: freelancer._id })
+        .populate("freelancer")
+
     res.status(200).json(previousProject || [])
 }
 
-// ── GET MY WORK (portfolio) ────────────────────────────────
+// ── GET MY WORK (portfolio) ────────────────────────────────────────────────────
 const getMyWork = async (req, res) => {
     const userId = req.user._id
     const freelancer = await Freelancer.findOne({ user: userId })
 
-    if (!freelancer) {
-        res.status(404)
-        throw new Error("Freelancer profile not found")
-    }
+    if (!freelancer) { res.status(404); throw new Error("Freelancer profile not found") }
 
     const myWorks = await PreviousWork.find({ freelancer: freelancer._id })
     res.status(200).json(myWorks || [])
 }
 
-// ── ADD MY WORK (portfolio) ────────────────────────────────
+// ── ADD MY WORK (portfolio) ────────────────────────────────────────────────────
 const addMyWork = async (req, res) => {
     const userId = req.user._id
     const { projectLink, projectDescription, projectImage } = req.body
 
     const freelancer = await Freelancer.findOne({ user: userId })
-    if (!freelancer) {
-        res.status(404)
-        throw new Error("Freelancer profile not found")
-    }
+    if (!freelancer) { res.status(404); throw new Error("Freelancer profile not found") }
 
     const work = await PreviousWork.create({
         freelancer: freelancer._id,
@@ -192,67 +172,54 @@ const addMyWork = async (req, res) => {
     res.status(201).json(work)
 }
 
-// ── UPDATE MY WORK ─────────────────────────────────────────
+// ── UPDATE MY WORK ────────────────────────────────────────────────────────────
 const updateMyWork = async (req, res) => {
     const userId = req.user._id
     const workId = req.params.wid
     const freelancer = await Freelancer.findOne({ user: userId })
 
-    if (!freelancer) {
-        res.status(404)
-        throw new Error("Freelancer profile not found")
-    }
+    if (!freelancer) { res.status(404); throw new Error("Freelancer profile not found") }
 
     const updateWork = await PreviousWork.findByIdAndUpdate(workId, req.body, { new: true })
-    if (!updateWork) {
-        res.status(404)
-        throw new Error("Work not found")
-    }
+    if (!updateWork) { res.status(404); throw new Error("Work not found") }
 
     res.status(200).json(updateWork)
 }
 
-// ── REMOVE MY WORK ─────────────────────────────────────────
+// ── REMOVE MY WORK ────────────────────────────────────────────────────────────
 const removeMyWork = async (req, res) => {
     const userId = req.user._id
     const workId = req.params.wid
     const freelancer = await Freelancer.findOne({ user: userId })
 
-    if (!freelancer) {
-        res.status(404)
-        throw new Error("Freelancer profile not found")
-    }
+    if (!freelancer) { res.status(404); throw new Error("Freelancer profile not found") }
 
     await PreviousWork.findByIdAndDelete(workId)
     res.status(200).json({ success: true, workId, message: "Work removed successfully" })
 }
 
-// ── UPDATE PROFILE ─────────────────────────────────────────
+// ── UPDATE PROFILE ────────────────────────────────────────────────────────────
 const updateProfile = async (req, res) => {
     const userId = req.user._id
     const updatedUser = await User.findByIdAndUpdate(userId, req.body, { new: true }).select("-password")
 
-    if (!updatedUser) {
-        res.status(500)
-        throw new Error("Profile update failed")
-    }
+    if (!updatedUser) { res.status(500); throw new Error("Profile update failed") }
+
     res.status(200).json(updatedUser)
 }
 
-// ── GET ALL FREELANCERS ────────────────────────────────────
+// ── GET ALL FREELANCERS ───────────────────────────────────────────────────────
 const getFreelancers = async (req, res) => {
     const freelancers = await Freelancer.find().populate("user", "-password")
     res.status(200).json(freelancers || [])
 }
 
-// ── GET SINGLE FREELANCER ──────────────────────────────────
+// ── GET SINGLE FREELANCER ─────────────────────────────────────────────────────
 const getFreelancer = async (req, res) => {
-    const freelancer = await Freelancer.findOne({ user: req.params.uid }).populate("user", "-password")
+    const freelancer = await Freelancer.findOne({ user: req.params.uid })
+        .populate("user", "-password")
 
-    if (!freelancer) {
-        res.status(404)
-        throw new Error("Freelancer not found")
-    }
+    if (!freelancer) { res.status(404); throw new Error("Freelancer not found") }
 
     const previousWorks = await PreviousWork.find({ freelancer: freelancer._id })
 

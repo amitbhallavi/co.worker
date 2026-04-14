@@ -1,8 +1,10 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import freelancerService from './freelancerService'
+// ===== FILE: client/src/features/Freelancer/freelancerSlice.js =====
+
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
+import freelancerService from "./freelancerService"
 
 const initialState = {
-  freelancers: [],
+  freelancers: [],   // ✅ always array — never undefined
   freelancer: {},
   freelancerLoading: false,
   freelancerSuccess: false,
@@ -10,21 +12,23 @@ const initialState = {
   freelancerErrorMessage: "",
 }
 
+// ─── Helper ───────────────────────────────────────────────────────────────────
+const errMsg = (error) =>
+  error?.response?.data?.message || error?.response?.data?.error || error?.message || "Something went wrong"
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SLICE
+// ══════════════════════════════════════════════════════════════════════════════
 const freelancerSlice = createSlice({
-  name: 'freelancer',
+  name: "freelancer",
   initialState,
   reducers: {
-    resetFreelancerSuccess: state => {
-      state.freelancerSuccess = false
-    },
-    resetFreelancerError: state => {
-      state.freelancerError = false
-      state.freelancerErrorMessage = ""
-    },
+    resetFreelancerSuccess: state => { state.freelancerSuccess = false },
+    resetFreelancerError: state => { state.freelancerError = false; state.freelancerErrorMessage = "" },
   },
   extraReducers: builder => {
 
-    // ── GET FREELANCERS ──────────────────────────────────
+    // ── GET FREELANCERS ──────────────────────────────────────────────────────
     builder
       .addCase(getFreelancers.pending, state => {
         state.freelancerLoading = true
@@ -34,17 +38,17 @@ const freelancerSlice = createSlice({
       .addCase(getFreelancers.fulfilled, (state, action) => {
         state.freelancerLoading = false
         state.freelancerSuccess = true
-        state.freelancerError = false
-        state.freelancers = action.payload
+        // ✅ Always store an array — never let it be null/undefined
+        state.freelancers = Array.isArray(action.payload) ? action.payload : []
       })
       .addCase(getFreelancers.rejected, (state, action) => {
         state.freelancerLoading = false
-        state.freelancerSuccess = false
         state.freelancerError = true
         state.freelancerErrorMessage = action.payload
+        state.freelancers = []   // ✅ reset to empty array on error
       })
 
-    // ── GET FREELANCER ───────────────────────────────────
+    // ── GET SINGLE FREELANCER ────────────────────────────────────────────────
     builder
       .addCase(getFreelancer.pending, state => {
         state.freelancerLoading = true
@@ -54,17 +58,15 @@ const freelancerSlice = createSlice({
       .addCase(getFreelancer.fulfilled, (state, action) => {
         state.freelancerLoading = false
         state.freelancerSuccess = true
-        state.freelancerError = false
-        state.freelancer = action.payload
+        state.freelancer = action.payload || {}
       })
       .addCase(getFreelancer.rejected, (state, action) => {
         state.freelancerLoading = false
-        state.freelancerSuccess = false
         state.freelancerError = true
         state.freelancerErrorMessage = action.payload
       })
 
-    // ── BECOME FREELANCER ────────────────────────────────
+    // ── BECOME FREELANCER ────────────────────────────────────────────────────
     builder
       .addCase(becomeFreelancerThunk.pending, state => {
         state.freelancerLoading = true
@@ -74,8 +76,6 @@ const freelancerSlice = createSlice({
       .addCase(becomeFreelancerThunk.fulfilled, (state, action) => {
         state.freelancerLoading = false
         state.freelancerSuccess = true
-        state.freelancerError = false
-        // ✅ Store the returned freelancer profile
         state.freelancer = {
           profile: action.payload.freelancer?.profile || action.payload.freelancer,
           previousWorks: action.payload.freelancer?.previousWorks || [],
@@ -83,12 +83,11 @@ const freelancerSlice = createSlice({
       })
       .addCase(becomeFreelancerThunk.rejected, (state, action) => {
         state.freelancerLoading = false
-        state.freelancerSuccess = false
         state.freelancerError = true
         state.freelancerErrorMessage = action.payload
       })
 
-    // ── ADD PREVIOUS PROJECT ─────────────────────────────
+    // ── ADD PREVIOUS PROJECT ─────────────────────────────────────────────────
     builder
       .addCase(addPreviousProject.pending, state => {
         state.freelancerLoading = true
@@ -98,20 +97,18 @@ const freelancerSlice = createSlice({
       .addCase(addPreviousProject.fulfilled, (state, action) => {
         state.freelancerLoading = false
         state.freelancerSuccess = true
-        state.freelancerError = false
         state.freelancer.previousWorks = [
           ...(state.freelancer.previousWorks || []),
-          action.payload
+          action.payload,
         ]
       })
       .addCase(addPreviousProject.rejected, (state, action) => {
         state.freelancerLoading = false
-        state.freelancerSuccess = false
         state.freelancerError = true
         state.freelancerErrorMessage = action.payload
       })
 
-    // ── REMOVE PREVIOUS WORK ─────────────────────────────
+    // ── REMOVE PREVIOUS WORK ─────────────────────────────────────────────────
     builder
       .addCase(removePreviousWork.pending, state => {
         state.freelancerLoading = true
@@ -121,19 +118,17 @@ const freelancerSlice = createSlice({
       .addCase(removePreviousWork.fulfilled, (state, action) => {
         state.freelancerLoading = false
         state.freelancerSuccess = true
-        state.freelancerError = false
         state.freelancer.previousWorks = (state.freelancer.previousWorks || []).filter(
-          work => work._id !== action.payload.workId
+          w => w._id !== action.payload.workId
         )
       })
       .addCase(removePreviousWork.rejected, (state, action) => {
         state.freelancerLoading = false
-        state.freelancerSuccess = false
         state.freelancerError = true
         state.freelancerErrorMessage = action.payload
       })
 
-    // ── APPLY FOR BID ────────────────────────────────────
+    // ── APPLY FOR BID ────────────────────────────────────────────────────────
     builder
       .addCase(applyForProject.pending, state => {
         state.freelancerLoading = true
@@ -143,91 +138,88 @@ const freelancerSlice = createSlice({
       .addCase(applyForProject.fulfilled, state => {
         state.freelancerLoading = false
         state.freelancerSuccess = true
-        state.freelancerError = false
       })
       .addCase(applyForProject.rejected, (state, action) => {
         state.freelancerLoading = false
-        state.freelancerSuccess = false
         state.freelancerError = true
         state.freelancerErrorMessage = action.payload
       })
-  }
+  },
 })
 
 export const { resetFreelancerSuccess, resetFreelancerError } = freelancerSlice.actions
 export default freelancerSlice.reducer
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // THUNKS
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 export const getFreelancers = createAsyncThunk(
-  'FETCH/FREELANCERS',
+  "FETCH/FREELANCERS",
   async (_, thunkAPI) => {
     try {
       return await freelancerService.fetchFreelancers()
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
+      return thunkAPI.rejectWithValue(errMsg(error))
     }
   }
 )
 
 export const getFreelancer = createAsyncThunk(
-  'FETCH/FREELANCER',
+  "FETCH/FREELANCER",
   async (id, thunkAPI) => {
     try {
       return await freelancerService.fetchFreelancer(id)
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
+      return thunkAPI.rejectWithValue(errMsg(error))
     }
   }
 )
 
-// ✅ NEW: Become Freelancer thunk
 export const becomeFreelancerThunk = createAsyncThunk(
-  'BECOME/FREELANCER',
+  "BECOME/FREELANCER",
   async (formData, thunkAPI) => {
-    const token = thunkAPI.getState().auth.user.token
+    const token = thunkAPI.getState().auth.user?.token
     try {
       return await freelancerService.becomeFreelancer(formData, token)
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
+      return thunkAPI.rejectWithValue(errMsg(error))
     }
   }
 )
 
 export const addPreviousProject = createAsyncThunk(
-  'ADD/PROJECT',
+  "ADD/PROJECT",
   async (formData, thunkAPI) => {
-    const token = thunkAPI.getState().auth.user.token
+    const token = thunkAPI.getState().auth.user?.token
     try {
       return await freelancerService.addProject(formData, token)
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
+      return thunkAPI.rejectWithValue(errMsg(error))
     }
   }
 )
 
 export const removePreviousWork = createAsyncThunk(
-  'REMOVE/PREVIOUS/WORK',
+  "REMOVE/PREVIOUS/WORK",
   async (id, thunkAPI) => {
-    const token = thunkAPI.getState().auth.user.token
+    const token = thunkAPI.getState().auth.user?.token
     try {
       return await freelancerService.removeWork(id, token)
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
+      return thunkAPI.rejectWithValue(errMsg(error))
     }
   }
 )
 
 export const applyForProject = createAsyncThunk(
-  'APPLY/PROJECT/BID',
+  "APPLY/PROJECT/BID",
   async (formData, thunkAPI) => {
-    const token = thunkAPI.getState().auth.user.token
+    const token = thunkAPI.getState().auth.user?.token
     try {
       return await freelancerService.applyForBid(formData, token)
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
+      return thunkAPI.rejectWithValue(errMsg(error))
     }
   }
 )
