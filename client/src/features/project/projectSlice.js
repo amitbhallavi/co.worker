@@ -5,6 +5,7 @@ import projectService from "./projectService"
 
 const initialState = {
     listedProjects: [],
+    assignedProjects: [],      // ✅ NEW: Projects assigned to freelancer
     project: {},
     bids: [],                  // bids FOR a specific project (used in modals)
 
@@ -73,6 +74,16 @@ export const acceptBid = createAsyncThunk("ACCEPT/BID", async (bidId, thunkAPI) 
     }
 })
 
+// ── GET ASSIGNED PROJECTS FOR FREELANCER ──────────────────────────────────────
+export const getAssignedProjects = createAsyncThunk("FETCH/ASSIGNED_PROJECTS", async (_, thunkAPI) => {
+    const token = thunkAPI.getState().auth.user.token
+    try {
+        return await projectService.getAssignedProjects(token)
+    } catch (error) {
+        return thunkAPI.rejectWithValue(error.response?.data?.message || error.message)
+    }
+})
+
 // ─────────────────────────────────────────────────────────────────────────────
 const projectSlice = createSlice({
     name: "project",
@@ -86,7 +97,32 @@ const projectSlice = createSlice({
         },
         clearBids: state => {
             state.bids = []
-        }
+        },
+        // ✅ Add assigned project (for Socket.IO real-time update)
+        addAssignedProject: (state, action) => {
+            const project = action.payload
+            if (!state.assignedProjects.find(p => p._id === project._id)) {
+                state.assignedProjects = [project, ...state.assignedProjects]
+            }
+        },
+        // ✅ Real-time: accepted bid locks final amount for payment UI
+        updateProjectAmount: (state, action) => {
+            const { projectId, finalAmount, bidId } = action.payload || {}
+            if (!projectId) return
+
+            const patch = (p) => {
+                if (!p || p._id !== projectId) return p
+                return {
+                    ...p,
+                    finalAmount: finalAmount ?? p.finalAmount,
+                    selectedBid: bidId ? { ...(typeof p.selectedBid === "object" ? p.selectedBid : {}), _id: bidId, amount: finalAmount } : p.selectedBid,
+                    status: p.status === "pending" ? "accepted" : p.status,
+                }
+            }
+
+            state.listedProjects = (state.listedProjects || []).map(patch)
+            state.assignedProjects = (state.assignedProjects || []).map(patch)
+        },
     },
     extraReducers: builder => {
 
@@ -157,8 +193,23 @@ const projectSlice = createSlice({
                 state.updateError = true
                 state.updateErrorMessage = action.payload
             })
+
+        // ✅ getAssignedProjects
+        builder
+            .addCase(getAssignedProjects.pending, state => { state.projectLoading = true; state.projectError = false })
+            .addCase(getAssignedProjects.fulfilled, (state, action) => {
+                state.projectLoading = false
+                state.projectSuccess = true
+                state.assignedProjects = Array.isArray(action.payload) ? action.payload : []
+            })
+            .addCase(getAssignedProjects.rejected, (state, action) => {
+                state.projectLoading = false
+                state.projectError = true
+                state.projectErrorMessage = action.payload
+                state.assignedProjects = []
+            })
     }
 })
 
-export const { resetUpdate, clearBids } = projectSlice.actions
+export const { resetUpdate, clearBids, addAssignedProject, updateProjectAmount } = projectSlice.actions
 export default projectSlice.reducer

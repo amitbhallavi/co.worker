@@ -172,7 +172,7 @@ const ProjectCard = ({ project, index }) => {
 // ── MAIN PAGE ──────────────────────────────────────────────
 const BrowseProjects = () => {
     const dispatch = useDispatch()
-    const { listedProjects, bids, projectLoading, projectError, projectErrorMessage } = useSelector(state => state.project)
+    const { listedProjects, projectLoading, projectError, projectErrorMessage } = useSelector(state => state.project)
     const { user } = useSelector(state => state.auth)
 
     const [search, setSearch] = useState("")

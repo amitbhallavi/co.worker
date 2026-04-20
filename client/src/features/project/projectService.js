@@ -7,6 +7,15 @@ const fetchProject = async () => {
     return response.data
 }
 
+// ── Get assigned projects for freelancer ──────────────────────────────────────
+const getAssignedProjects = async (token) => {
+    // ✅ Spec endpoint (server supports both /api/projects/assigned and legacy /api/project/assigned/mine)
+    const response = await API.get("/api/projects/assigned", {
+        headers: { authorization: `Bearer ${token}` }
+    })
+    return response.data
+}
+
 // ── Create a new project ──────────────────────────────────────────────────────
 const createProject = async (formData, token) => {
     const response = await API.post("/api/project/add", formData, {
@@ -31,6 +40,14 @@ const updateBidStatus = async (bidId, status, token) => {
     return response.data
 }
 
+// ── Accept bid (shorthand for updateBidStatus with "accepted") ────────────────
+const acceptBid = async (bidId, token) => {
+    const response = await API.post(`/api/project/${bidId}`, { status: "accepted" }, {
+        headers: { authorization: `Bearer ${token}` }
+    })
+    return response.data
+}
+
 // ── Update PROJECT status ─────────────────────────────────────────────────────
 const updateProjectStatus = async (projectId, status, token) => {
     const response = await API.put(`/api/project/${projectId}`, { status }, {
@@ -41,9 +58,11 @@ const updateProjectStatus = async (projectId, status, token) => {
 
 const projectService = {
     fetchProject,
+    getAssignedProjects,
     createProject,
     getProjectBids,
     updateBidStatus,
+    acceptBid,
     updateProjectStatus,
 }
 

@@ -7,6 +7,8 @@ import LoaderGradient from "../components/LoaderGradient"
 import { getProjects, getBids, updateBidStatus, resetUpdate } from "../features/project/projectSlice"
 import ListProject from "../components/ListProject"
 import BecomeFreelancerModal from "../components/Becomefreelancermodal"
+import { getOrCreateConversation } from "../features/ChatsAndMessages/chatSlice"
+import RatingSummary from "../components/RatingSummary"
 
 // ── Status maps ────────────────────────────────────────────
 const STATUS_COLORS = {
@@ -311,12 +313,14 @@ const UserProfilePage = () => {
         }
     }
     useEffect(() => {
-        // ✅ Sirf real errors pe toast dikho, "not found" pe nahi
+        //  Sirf real errors pe toast dikho, "not found" pe nahi
         if (freelancerError && freelancerErrorMessage?.trim() &&
             freelancerErrorMessage !== "Freelancer not found") {
             toast.error(freelancerErrorMessage)
         }
     }, [freelancerError, freelancerErrorMessage])
+
+
 
     const openAdd = () => { setEditTarget(null); setShowAddModal(true) }
     const openEdit = proj => {
@@ -399,7 +403,7 @@ const UserProfilePage = () => {
                                         : <span className="text-xs font-bold bg-zinc-100 text-zinc-600 px-2.5 py-0.5 rounded-full border border-zinc-200">Member</span>
                                     }
                                 </div>
-                                <p className="text-white text-sm mb-2">{user?.email} , India 🇮🇳</p>
+                                <p className="text-white text-sm mb-2">{user?.email} </p>
                                 <p className="text-zinc-400 text-xs">Id: {user?._id}</p>
                                 <div className="text-xs text-zinc-900 py-0.5 font-medium">{freelancer?.profile?.category}</div>
                                 {inFreelancer
@@ -414,8 +418,10 @@ const UserProfilePage = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto sm:pb-1">
+
+
                                 <button onClick={() => setEditProfile(true)}
-                                    className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:opacity-90 transition cursor-pointer shadow border-none">
+                                    className="px-10 py-2 text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:opacity-90 transition cursor-pointer shadow border-none">
                                     ✏️ Edit Profile
                                 </button>
                                 {/* ✅ Button changes on activation */}
@@ -425,13 +431,17 @@ const UserProfilePage = () => {
                                         ✦ Become Freelancer
                                     </button>
                                 )}
+
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Stats */}
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
+                <div className=" max-w-5xl mx-auto px-4 sm:px-6 py-5">
+
+
+
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 fade-up">
                         {(inFreelancer
                             ? [
@@ -562,6 +572,7 @@ const UserProfilePage = () => {
                                         <div className="col-span-2">Status</div>
                                         <div className="col-span-1 text-center hidden sm:block">Date</div>
                                         <div className="col-span-1 text-center">View</div>
+
                                     </div>
                                     {myProjects.map((bid, i) => (
                                         <div key={bid._id}
@@ -607,28 +618,18 @@ const UserProfilePage = () => {
 
                     {/* Reviews Tab */}
                     {inFreelancer && activeTab === "reviews" && (
-                        <div className="space-y-4 pb-12">
-                            {[
-                                { name: "Rahul M.", avatar: "https://i.pravatar.cc/40?img=12", rating: 5, text: "Delivered the project on time and went above expectations.", date: "Feb 2026" },
-                                { name: "Priya S.", avatar: "https://i.pravatar.cc/40?img=21", rating: 5, text: "Incredible attention to detail. Communication was smooth.", date: "Jan 2026" },
-                                { name: "James T.", avatar: "https://i.pravatar.cc/40?img=9", rating: 4, text: "Great work overall. Would hire again.", date: "Dec 2025" },
-                            ].map((r, i) => (
-                                <div key={i} className="bg-white rounded-2xl border border-zinc-100 shadow-md p-5 fade-up" style={{ animationDelay: `${i * 80}ms` }}>
-                                    <div className="flex items-start gap-3 mb-3">
-                                        <img src={r.avatar} alt={r.name} className="w-10 h-10 rounded-xl ring-2 ring-blue-200 shrink-0" />
-                                        <div>
-                                            <p className="font-bold text-zinc-900 text-sm">{r.name}</p>
-                                            <div className="flex gap-0.5 mt-0.5">
-                                                {Array.from({ length: 5 }).map((_, k) => (
-                                                    <span key={k} className={`text-sm ${k < r.rating ? "text-amber-400" : "text-zinc-200"}`}>★</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <span className="ml-auto text-xs text-zinc-400">{r.date}</span>
-                                    </div>
-                                    <p className="text-zinc-600 text-sm leading-relaxed">{r.text}</p>
-                                </div>
-                            ))}
+                        <div className="bg-white rounded-2xl shadow-md p-7">
+                            <h2 className="text-2xl font-extrabold text-gray-900 mb-6" style={{ fontFamily: "'Playfair Display',serif" }}>
+                                ⭐ Client Reviews
+                            </h2>
+                            <RatingSummary
+                                userId={user?._id}
+                                currentUserId={user?._id}
+                                userType="freelancer"
+                                onRatingChange={() => {
+                                    // Optionally refetch user data
+                                }}
+                            />
                         </div>
                     )}
                 </div>

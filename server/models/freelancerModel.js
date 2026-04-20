@@ -69,8 +69,8 @@ const freelancerSchema = new mongoose.Schema(
     }
 )
 
-// ✅ Prevent duplicate freelancer profile
-freelancerSchema.index({ user: 1 }, { unique: true })
+// ✅ Note: unique index on user field is already created via unique: true in schema definition
+// No need for duplicate .index() call
 
 const Freelancer = mongoose.model("Freelancer", freelancerSchema)
 

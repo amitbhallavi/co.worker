@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 
 class ErrorBoundary extends React.Component {
@@ -11,7 +12,6 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // You can log error info here if needed
     // console.error(error, errorInfo);
   }
 
@@ -22,7 +22,7 @@ class ErrorBoundary extends React.Component {
           <h1 className="text-3xl font-bold text-red-600 mb-4">Something went wrong.</h1>
           <p className="text-lg text-gray-700 mb-2">An error occurred while loading this page.</p>
           <pre className="bg-red-100 text-red-800 p-4 rounded-lg max-w-xl overflow-x-auto text-sm">
-            {this.state.error?.toString()}
+            {String(this.state.error)}
           </pre>
         </div>
       );

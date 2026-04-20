@@ -28,6 +28,17 @@ const projectSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    // ✅ Final payable price = accepted bid amount (source of truth)
+    selectedBid: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Bid",
+        default: null,
+    },
+    finalAmount: {
+        type: Number,
+        default: null,
+        min: 0,
+    },
     technology: {
         type: String,
         required: true

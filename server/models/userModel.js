@@ -52,9 +52,49 @@ const userSchema = new mongoose.Schema({
      location: {
 
         type: String,
-        
+
     },
 
+    // ✅ SUBSCRIPTION PLAN FIELDS
+    plan: {
+        type: String,
+        enum: ["free", "pro", "elite"],
+        default: "free",
+    },
+    planExpiresAt: {
+        type: Date,
+        default: null,
+    },
+    planType: {
+        type: String,
+        enum: ["monthly", "yearly"],
+        default: null,
+    },
+    planStartedAt: {
+        type: Date,
+        default: null,
+    },
+    planCancelledAt: {
+        type: Date,
+        default: null,
+    },
+    autoRenewPlan: {
+        type: Boolean,
+        default: true,
+    },
+
+    // ✅ RATING SYSTEM FIELDS
+    averageRating: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5,
+    },
+    totalRatings: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
 
 }, { timestamps: true })
 

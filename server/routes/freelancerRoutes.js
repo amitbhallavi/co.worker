@@ -2,6 +2,7 @@ import express from "express"
 import freelancerController from "../controllers/freelancerController.js"
 import rantingRoutes from "./ratingRoutes.js"
 import protect from "../middlewere/authMiddleware.js"
+import { checkPlanFeature } from "../middlewere/planMiddleware.js"
 
 const router = express.Router({ mergeParams: true })
 
@@ -14,7 +15,7 @@ router.post("/add-me", protect.forAuthUsers, freelancerController.becomeFreelanc
 
 router.get("/project", protect.forAuthUsers, freelancerController.getMypreviousProject)
 
-router.post("/project/:pid", protect.forAuthUsers, freelancerController.applyForProject)
+router.post("/project/:pid", protect.forAuthUsers, checkPlanFeature("createBid"), freelancerController.applyForProject)
 
 router.put("/project/:pid", freelancerController.submitProject)
 

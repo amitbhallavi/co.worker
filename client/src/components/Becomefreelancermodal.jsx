@@ -29,30 +29,18 @@ const BecomeFreelancerModal = ({ onClose, onSuccess }) => {
     const { freelancerLoading, freelancerSuccess, freelancerError, freelancerErrorMessage } =
         useSelector(state => state.freelancer)
 
-    const [step, setStep] = useState(1)   // 1 = info, 2 = skills, 3 = success
-
-    const [form, setForm] = useState({
-        description: "",
-        skills: [],        // array of selected skill strings
-        category: "",
-        experience: "",
-    })
-
+    const [step, setStep] = useState(1)
+    const [form, setForm] = useState({ description: "", skills: [], category: "", experience: "" })
     const [errors, setErrors] = useState({})
 
-    // ── Handle success from Redux ──
     useEffect(() => {
-        if (freelancerSuccess && step === 1) {
-            // Not from this modal — ignore
-        }
-    }, [])
+    }, [freelancerSuccess, step])
 
     useEffect(() => {
         if (freelancerError && freelancerErrorMessage) {
             toast.error(freelancerErrorMessage)
-            dispatch(resetFreelancerError())
         }
-    }, [freelancerError, freelancerErrorMessage])
+    }, [freelancerError, freelancerErrorMessage, dispatch])
 
     // ── Toggle skill ──
     const toggleSkill = skill => {

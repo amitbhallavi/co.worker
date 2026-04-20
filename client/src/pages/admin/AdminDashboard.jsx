@@ -19,6 +19,7 @@ import {
   localUpdateProject,
   resetAdminState,
 } from "../../features/admin/adminSlice"
+import AdminPayments from "../AdminPayments"
 
 // ─── THEME ────────────────────────────────────────────────────────────────────
 const THEMES = {
@@ -947,72 +948,14 @@ const AdminDashboard = () => {
 
             {/* ════ PAYMENTS ════ */}
             {section === "payments" && (
-              <div className="space-y-5">
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                  <div>
-                    <h1 className="text-2xl font-bold" style={{ color: t.text }}>Payment Management</h1>
-                    <p className="text-sm" style={{ color: t.textSub }}>Revenue: <span style={{ color: "#10b981", fontWeight: 700 }}>₹{totalRevenue.toLocaleString()}</span></p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Btn onClick={() => exportJSON(payments, "payments")} color="indigo">↓ Export</Btn>
-                    <Btn onClick={() => toast.info("Report download started")} color="amber">📄 Report</Btn>
-                  </div>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={SEL}><option value="All">All Status</option><option>Completed</option><option>Pending</option><option>Failed</option></select>
-                  <select value={methodFilter} onChange={e => setMethodFilter(e.target.value)} style={SEL}><option value="All">All Methods</option><option>UPI</option><option>Card</option><option>Net Banking</option></select>
-                  <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{ ...SEL }} />
-                  {(statusFilter !== "All" || methodFilter !== "All" || dateFilter) && <Btn onClick={() => { setStatusFilter("All"); setMethodFilter("All"); setDateFilter("") }} color="red" size="sm">✕ Clear</Btn>}
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[{ l: "Total", v: payments.length, c: "#6366f1" }, { l: "Completed", v: payments.filter(p => p.status === "Completed").length, c: "#10b981" }, { l: "Pending", v: payments.filter(p => p.status === "Pending").length, c: "#f59e0b" }, { l: "Failed", v: payments.filter(p => p.status === "Failed").length, c: "#ef4444" }].map(s => (
-                    <div key={s.l} className="rounded-2xl p-4 text-center" style={{ background: t.card, border: `1px solid ${t.border}` }}>
-                      <div className="text-2xl font-bold" style={{ color: s.c }}>{s.v}</div>
-                      <div className="text-xs mt-1" style={{ color: t.textSub }}>{s.l}</div>
-                    </div>
-                  ))}
-                </div>
-                {filteredPayments.length === 0 ? <Empty icon="💳" label="No payments match filters" /> : (
-                  <div className="rounded-2xl overflow-hidden" style={{ background: t.card, border: `1px solid ${t.border}` }}>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr>
-                            <TH>TX ID</TH>
-                            <TH onClick={() => toggleSort("user")}>User <SI col="user" /></TH>
-                            <TH onClick={() => toggleSort("amount")}>Amount <SI col="amount" /></TH>
-                            <TH>Method</TH>
-                            <TH onClick={() => toggleSort("date")}>Date <SI col="date" /></TH>
-                            <TH>Status</TH>
-                            <TH>Actions</TH>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredPayments.map(tx => (
-                            <TR key={tx._id}>
-                              <TD className="font-mono text-xs" style={{ color: t.textMuted }}>{tx.txId}</TD>
-                              <TD className="font-medium" style={{ color: t.text }}><Hl text={tx.user} q={q} /></TD>
-                              <TD className="font-semibold" style={{ color: "#10b981" }}>₹{tx.amount?.toLocaleString()}</TD>
-                              <TD style={{ color: t.textSub }}>{tx.method}</TD>
-                              <TD style={{ color: t.textSub }}>{tx.date}</TD>
-                              <TD><Badge label={tx.status} /></TD>
-                              <TD>
-                                <div className="flex gap-1 flex-wrap">
-                                  <Btn onClick={() => setTxModal(tx)} color="indigo" size="xs">View</Btn>
-                                  <Btn onClick={() => doUpdatePayment(tx._id, "status", "Completed")} color="green" size="xs">Verify</Btn>
-                                  <Btn onClick={() => doUpdatePayment(tx._id, "status", "Failed")} color="red" size="xs">Fail</Btn>
-                                  <Btn onClick={() => { toast.warn(`Refund initiated for ${tx.user}`); pushActivity(`Refund for ${tx.user} ₹${tx.amount?.toLocaleString()}`, "warn") }} color="amber" size="xs">Refund</Btn>
-                                </div>
-                              </TD>
-                            </TR>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
+              <div style={{ background: t.bg }}>
+                <AdminPayments />
               </div>
             )}
+
+
+            
+
 
             {/* ════ ANALYTICS ════ */}
             {section === "analytics" && (

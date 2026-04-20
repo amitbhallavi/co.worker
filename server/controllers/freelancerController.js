@@ -241,7 +241,13 @@ const updateProfile = async (req, res) => {
 
 // ── GET ALL FREELANCERS ────────────────────────────────────
 const getFreelancers = async (req, res) => {
-    const freelancers = await Freelancer.find().populate("user", "-password")
+    // ✅ FIX: limit query support — Home.jsx ?limit=8 pass karta hai
+    const limit = req.query.limit ? parseInt(req.query.limit) : 0  // 0 = no limit (mongoose default)
+
+    const freelancers = await Freelancer.find()
+        .populate("user", "-password")
+        .limit(limit)
+
     res.status(200).json(freelancers || [])
 }
 

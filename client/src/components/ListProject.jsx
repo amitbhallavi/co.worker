@@ -65,7 +65,6 @@ function useTypewriter() {
             if (charIdx > 0) {
                 timer = setTimeout(() => { setDisplayed(word.slice(0, charIdx - 1)); setCharIdx(c => c - 1) }, 36)
             } else {
-                setWordIdx(i => (i + 1) % WORDS.length)
                 setPhase("typing")
             }
         }
@@ -128,7 +127,7 @@ const ListProject = () => {
         formData.duration && selectedTechs.length > 0
 
     // ── dynamic input border (uses inline only for color value) ──
-    const inputCls = (name) =>
+    const inputCls = () =>
         `w-full text-sm font-[inherit] rounded-xl outline-none bg-white text-gray-900 transition-all duration-200 box-border`
 
     const inputStyle = (name) => ({
@@ -287,7 +286,7 @@ const ListProject = () => {
                                             onFocus={() => setFocusedField("title")}
                                             onBlur={() => setFocusedField(null)}
                                             placeholder="e.g. Build a React Dashboard with Charts"
-                                            className={`${inputCls("title")} px-4 py-3.5`}
+                                            className={`${inputCls()} px-4 py-3.5`}
                                             style={inputStyle("title")}
                                         />
                                         <p className="text-[11px] text-gray-400 mt-1.5">Be specific — better titles attract better proposals</p>
@@ -305,7 +304,7 @@ const ListProject = () => {
                                             onBlur={() => setFocusedField(null)}
                                             placeholder="Describe your project — goals, features, requirements, and expected outcomes..."
                                             rows={5}
-                                            className={`${inputCls("description")} px-4 py-3.5 resize-y leading-relaxed`}
+                                            className={`${inputCls()} px-4 py-3.5 resize-y leading-relaxed`}
                                             style={inputStyle("description")}
                                         />
                                         <div className="flex justify-between mt-1.5">
@@ -332,7 +331,7 @@ const ListProject = () => {
                                                     onFocus={() => setFocusedField("budget")}
                                                     onBlur={() => setFocusedField(null)}
                                                     placeholder="20000"
-                                                    className={`${inputCls("budget")} pl-8 pr-4 py-3.5`}
+                                                    className={`${inputCls()} pl-8 pr-4 py-3.5`}
                                                     style={inputStyle("budget")}
                                                 />
                                             </div>
@@ -360,7 +359,7 @@ const ListProject = () => {
                                                     onFocus={() => setFocusedField("duration")}
                                                     onBlur={() => setFocusedField(null)}
                                                     placeholder="10"
-                                                    className={`${inputCls("duration")} pl-4 pr-12 py-3.5`}
+                                                    className={`${inputCls()} pl-4 pr-12 py-3.5`}
                                                     style={inputStyle("duration")}
                                                 />
                                             </div>
