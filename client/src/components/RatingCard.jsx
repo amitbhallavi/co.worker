@@ -36,6 +36,7 @@ const RatingCard = ({ rating, isOwnRating = false, onEdit, onDelete }) => {
         } catch {
             return ''
         }
+        
     }
 
     const handleDelete = async () => {
