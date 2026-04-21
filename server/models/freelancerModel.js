@@ -6,7 +6,7 @@ const freelancerSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: [true, "User ID is required"],
-            unique: true,          // ✅ one user = one freelancer profile
+            unique: true,
         },
         description: {
             type: String,
@@ -15,7 +15,7 @@ const freelancerSchema = new mongoose.Schema(
             trim: true,
         },
         skills: {
-            type: String,          // comma-separated string to match existing API
+            type: String,
             required: [true, "Skills are required"],
             trim: true,
         },
@@ -47,7 +47,7 @@ const freelancerSchema = new mongoose.Schema(
                 projectLink: { type: String, trim: true },
                 projectDescription: { type: String, trim: true },
                 projectImage: { type: String, trim: true },
-            }
+            },
         ],
         rating: {
             type: Number,
@@ -64,14 +64,8 @@ const freelancerSchema = new mongoose.Schema(
             default: true,
         },
     },
-    {
-        timestamps: true,         // createdAt, updatedAt auto
-    }
+    { timestamps: true }
 )
 
-// ✅ Note: unique index on user field is already created via unique: true in schema definition
-// No need for duplicate .index() call
-
 const Freelancer = mongoose.model("Freelancer", freelancerSchema)
-
 export default Freelancer

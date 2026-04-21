@@ -1,8 +1,3 @@
-
-// ════════════════════════════════════════════════════════
-// chatRoutes.js  (separate file in routes/)
-// ════════════════════════════════════════════════════════
-
 import express from "express"
 import ChatController from "../controllers/chatController.js"
 import protect from "../middlewere/authMiddleware.js"
@@ -17,4 +12,3 @@ router.get("/unread", protect.forAuthUsers, ChatController.getUnreadCount)
 router.delete("/conversation/:conversationId", protect.forAuthUsers, ChatController.deleteConversation)
 
 export default router
-

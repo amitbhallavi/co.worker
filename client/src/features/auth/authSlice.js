@@ -1,38 +1,78 @@
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import authService from "./authService"
 
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import authService from "./authService";
-
-let userExist = JSON.parse(localStorage.getItem('user'))
-
-// ── Error extract helper ──────────────────────────────────────────────────────
-const getError = (error) =>
-    error?.response?.data?.message ||
-    error?.response?.data?.error ||
-    error?.message ||
-    "Something went wrong"
+const storedUser = JSON.parse(localStorage.getItem("user") || "null")
 
 const initialState = {
-
-    user: userExist || null,
+    user: storedUser,
     isLoading: false,
     isSuccess: false,
     isError: false,
-    message: ""
+    message: "",
+}
 
+export const registerUser = createAsyncThunk("AUTH/REGISTER", async (formData, thunkAPI) => {
+    try {
+        return await authService.register(formData)
+    } catch (error) {
+        const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "Registration failed"
+        return thunkAPI.rejectWithValue(message)
+    }
+})
 
-};
+export const loginUser = createAsyncThunk("AUTH/LOGIN", async (formData, thunkAPI) => {
+    try {
+        return await authService.login(formData)
+    } catch (error) {
+        const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "Login failed"
+        return thunkAPI.rejectWithValue(message)
+    }
+})
 
+export const logoutUser = createAsyncThunk("AUTH/LOGOUT", async () => {
+    localStorage.removeItem("user")
+})
+
+export const refreshUser = createAsyncThunk("AUTH/REFRESH", async (_, thunkAPI) => {
+    try {
+        const { user } = thunkAPI.getState().auth
+        if (!user?.token) return thunkAPI.rejectWithValue("No token")
+
+        const axios = (await import("../api/axiosInstance")).default
+        const res = await axios.get("/api/auth/me", {
+            headers: { Authorization: `Bearer ${user.token}` },
+        })
+        const updated = { ...user, ...res.data }
+        localStorage.setItem("user", JSON.stringify(updated))
+        return updated
+    } catch (err) {
+        return thunkAPI.rejectWithValue(err.message)
+    }
+})
 
 const authSlice = createSlice({
-
-    name: 'auth',
+    name: "auth",
     initialState,
-    reducers: {},
+    reducers: {
+        updateCredits: (state, action) => {
+            const { userId, credits } = action.payload
+            if (state.user && state.user._id === userId) {
+                state.user.credits = credits
+                localStorage.setItem("user", JSON.stringify(state.user))
+            }
+        },
+    },
     extraReducers: (builder) => {
-
         builder
-            // Register User => 
-            .addCase(registerUser.pending, (state,) => {
+            .addCase(registerUser.pending, (state) => {
                 state.isLoading = true
                 state.isSuccess = false
                 state.isError = false
@@ -50,8 +90,7 @@ const authSlice = createSlice({
                 state.message = action.payload
             })
 
-            // Login User ->
-            .addCase(loginUser.pending, (state,) => {
+            .addCase(loginUser.pending, (state) => {
                 state.isLoading = true
                 state.isSuccess = false
                 state.isError = false
@@ -69,87 +108,19 @@ const authSlice = createSlice({
                 state.message = action.payload
             })
 
-            // Logout User -> 
-
-            .addCase(logoutUser.fulfilled, (state,) => {
+            .addCase(logoutUser.fulfilled, (state) => {
                 state.isLoading = false
                 state.isSuccess = false
                 state.isError = false
                 state.message = ""
                 state.user = null
-
             })
 
             .addCase(refreshUser.fulfilled, (state, action) => {
                 state.user = action.payload
             })
-
-
-
-    }
-});
-
-export const { } = authSlice.actions
-
-export default authSlice.reducer;
-
-
-// Register User -> 
-
-
-export const registerUser = createAsyncThunk("AUTH/REGISTER", async (formData, thunkAPI) => {
-
-    try {
-        return await authService.register(formData, thunkAPI)
-    } catch (error) {
-        // ✅ Error properly extract karo
-        const message =
-            error?.response?.data?.message ||
-            error?.response?.data?.error ||
-            error?.message ||
-            "Registration failed"
-        return thunkAPI.rejectWithValue(message)
-    }
-
+    },
 })
 
-// Login User -> 
-
-
-export const loginUser = createAsyncThunk("AUTH/LOGIN", async (formData, thunkAPI) => {
-    try {
-
-        return await authService.login(formData)
-
-    } catch (error) {
-
-        const message = (error.response.data.message)
-        return thunkAPI.rejectWithValue(message)
-
-    }
-})
-
-// Logout User -> 
-
-
-export const logoutUser = createAsyncThunk("AUTH/LOGOUT", async () => {
-    localStorage.removeItem('user')
-})
-
-
-
-export const refreshUser = createAsyncThunk("AUTH/REFRESH", async (_, thunkAPI) => {
-    try {
-        const { user } = thunkAPI.getState().auth
-        if (!user?.token) return thunkAPI.rejectWithValue("No token")
-        const axios = (await import("../api/axiosInstance")).default
-        const res = await axios.get("/api/auth/me", {
-            headers: { Authorization: `Bearer ${user.token}` }
-        })
-        const updated = { ...user, ...res.data }
-        localStorage.setItem("user", JSON.stringify(updated))
-        return updated
-    } catch (err) {
-        return thunkAPI.rejectWithValue(err.message)
-    }
-})
+export const { updateCredits } = authSlice.actions
+export default authSlice.reducer

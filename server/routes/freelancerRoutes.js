@@ -6,10 +6,8 @@ import { checkPlanFeature } from "../middlewere/planMiddleware.js"
 
 const router = express.Router({ mergeParams: true })
 
-
 router.get("/", freelancerController.getFreelancers)
 router.get("/profile/:uid", freelancerController.getFreelancer)
-
 
 router.post("/add-me", protect.forAuthUsers, freelancerController.becomeFreelancer)
 
@@ -21,7 +19,7 @@ router.put("/project/:pid", freelancerController.submitProject)
 
 router.get("/my-work", protect.forAuthUsers, freelancerController.getMyWork)
 
-router.post("/my-work", protect.forAuthUsers,  freelancerController.addMyWork)
+router.post("/my-work", protect.forAuthUsers, freelancerController.addMyWork)
 
 router.put("/my-work/:wid", protect.forAuthUsers, freelancerController.updateMyWork)
 
@@ -31,6 +29,4 @@ router.put("/profile", protect.forAuthUsers, freelancerController.updateProfile)
 
 router.use("/:fid/ratings", rantingRoutes)
 
-
-
-export default router; 
+export default router

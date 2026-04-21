@@ -120,8 +120,12 @@ const applyForProject = async (req, res) => {
     await bid.populate("freelancer")
     await bid.populate("project")
 
-    // ✅ Deduct one credit
-    await User.findByIdAndUpdate(userId, { credits: user.credits - 1 }, { new: true })
+    // Deduct one credit
+    const updatedUser = await User.findByIdAndUpdate(userId, { credits: user.credits - 1 }, { new: true })
+
+    if (global.io) {
+        global.io.emit("creditsUpdated", { userId, credits: updatedUser.credits })
+    }
 
     res.status(201).json(bid)
 }

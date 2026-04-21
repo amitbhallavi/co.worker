@@ -58,15 +58,9 @@ const ratingSchema = new mongoose.Schema(
     { timestamps: true }
 )
 
-// ✅ Prevent duplicate ratings: one rating per rater per target user (open system)
 ratingSchema.index({ rater: 1, targetUser: 1 }, { unique: true })
-
-// ✅ Fast lookup for user ratings sorted by newest
 ratingSchema.index({ targetUser: 1, createdAt: -1 })
-
-// ✅ Fast lookup for verified ratings
 ratingSchema.index({ targetUser: 1, isVerified: 1, rating: -1 })
 
 const Rating = mongoose.model("Rating", ratingSchema)
-
 export default Rating

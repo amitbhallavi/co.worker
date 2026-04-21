@@ -1,5 +1,3 @@
-// ===== FILE: server/models/walletModel.js =====
-
 import mongoose from "mongoose"
 
 const transactionSchema = new mongoose.Schema(
@@ -7,7 +5,7 @@ const transactionSchema = new mongoose.Schema(
         type: { type: String, enum: ["credit", "debit"], required: true },
         amount: { type: Number, required: true },
         description: { type: String, default: "" },
-        reference: { type: String, default: "" }, // paymentId / withdrawalId
+        reference: { type: String, default: "" },
         status: { type: String, enum: ["pending", "completed", "failed"], default: "completed" },
     },
     { timestamps: true }
@@ -16,8 +14,8 @@ const transactionSchema = new mongoose.Schema(
 const walletSchema = new mongoose.Schema(
     {
         user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
-        balance: { type: Number, default: 0 },        // withdrawable
-        pendingBalance: { type: Number, default: 0 },        // released from escrow, waiting 24 hr
+        balance: { type: Number, default: 0 },
+        pendingBalance: { type: Number, default: 0 },
         transactions: [transactionSchema],
     },
     { timestamps: true }
