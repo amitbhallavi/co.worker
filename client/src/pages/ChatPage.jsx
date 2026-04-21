@@ -359,7 +359,7 @@ const ChatPage = () => {
     const handleSelect = (conv) => {
         if (activeConversation?._id === conv._id) return
         dispatch(setActiveConversation(conv))
-        setShowSidebar(false)
+        // sidebar stays open
     };
 
     // ── Send message ─────────────────────────────────────────
