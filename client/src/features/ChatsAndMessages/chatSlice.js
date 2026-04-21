@@ -1,7 +1,7 @@
 // chatSlice.js
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
-import axios from "axios"
+import axios from "../api/axiosInstance"
 
 const initialState = {
     conversations: [],
