@@ -16,12 +16,14 @@
         "Becomefreelancermodal",
         "Bhallavi",
         "chalega",
+        "convo",
         "dikhao",
         "dikho",
         "femail",
         "HAMESHA",
         "hoga",
         "hota",
+        "ifsc",
         "kaam",
         "karna",
         "kiya",
@@ -32,6 +34,7 @@
         "nahi",
         "njsproj",
         "ntvs",
+        "Paymentmodal",
         "Priya",
         "raha",
         "Rahul",
@@ -41,6 +44,8 @@
         "saath",
         "Sirf",
         "Thakur",
-        "timestaps"
-    ]
+        "timestaps",
+        "Walletdashboard"
+    ],
+    "claudeCode.useTerminal": true
 }
