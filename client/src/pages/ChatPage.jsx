@@ -402,7 +402,7 @@ const ChatPage = () => {
     const getOther = (conv) =>
         conv?.participants?.find(p => (p._id || p).toString() !== user._id.toString()) || conv?.participants?.[0]
 
-    const filtered = conversations.filter(conv => {
+    const filtered = (conversations || []).filter(conv => {
         const other = getOther(conv)
         return !search || other?.name?.toLowerCase().includes(search.toLowerCase())
     })
