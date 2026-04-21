@@ -38,7 +38,7 @@ const subscriptionPaymentSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ["pending", "success", "failed"],
+            enum: ["pending", "success", "failed", "cancelled"],
             default: "pending",
         },
         expiresAt: {

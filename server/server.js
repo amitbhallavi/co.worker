@@ -26,6 +26,26 @@ import { renewSubscriptionsJob, checkExpiredPlans } from "./jobs/renewSubscripti
 const PORT = process.env.PORT || 5050
 const app = express()
 const server = http.createServer(app)
+const routeDefinitions = [
+    ["/api/auth", authRoutes],
+    ["/api/admin", adminRoutes],
+    ["/api/freelancer", freelancerRoutes],
+    ["/api/project", projectRoutes],
+    ["/api/projects", projectRoutes],
+    ["/api/client", clientRoutes],
+    ["/api/payment", paymentRoutes],
+    ["/api/wallet", walletRoutes],
+    ["/api/chat", chatRoutes],
+    ["/api/ratings", ratingRoutes],
+    ["/api/subscription", subscriptionRoutes],
+]
+
+const scheduleJob = (expression, label, job) => {
+    cron.schedule(expression, () => {
+        console.log(`[CRON] ${label}`)
+        job()
+    })
+}
 
 const io = initSocket(server)
 global.io = io
@@ -39,20 +59,9 @@ app.use(
     })
 )
 
-cron.schedule("0 * * * *", () => {
-    console.log("[CRON] Running escrow release check...")
-    PaymentController.runEscrowReleaseCron()
-})
-
-cron.schedule("0 */6 * * *", () => {
-    console.log("[CRON] Running subscription renewal check...")
-    renewSubscriptionsJob()
-})
-
-cron.schedule("30 * * * *", () => {
-    console.log("[CRON] Checking for expired plans...")
-    checkExpiredPlans()
-})
+scheduleJob("0 * * * *", "Running escrow release check...", () => PaymentController.runEscrowReleaseCron())
+scheduleJob("0 */6 * * *", "Running subscription renewal check...", renewSubscriptionsJob)
+scheduleJob("30 * * * *", "Checking for expired plans...", checkExpiredPlans)
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -84,17 +93,9 @@ app.get("/health", (req, res) => {
     res.status(200).json({ status: "OK" })
 })
 
-app.use("/api/auth", authRoutes)
-app.use("/api/admin", adminRoutes)
-app.use("/api/freelancer", freelancerRoutes)
-app.use("/api/project", projectRoutes)
-app.use("/api/projects", projectRoutes)
-app.use("/api/client", clientRoutes)
-app.use("/api/payment", paymentRoutes)
-app.use("/api/wallet", walletRoutes)
-app.use("/api/chat", chatRoutes)
-app.use("/api/ratings", ratingRoutes)
-app.use("/api/subscription", subscriptionRoutes)
+routeDefinitions.forEach(([path, router]) => {
+    app.use(path, router)
+})
 
 app.use(errorHandler)
 

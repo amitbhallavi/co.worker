@@ -1,17 +1,43 @@
 import Conversation from "../models/chatModel.js"
+import { ensure } from "../utils/http.js"
+
+const getConversationOrThrow = async (conversationId) => {
+    const conversation = await Conversation.findById(conversationId)
+    ensure(conversation, 404, "Conversation not found")
+    return conversation
+}
+
+const ensureParticipant = (conversation, userId) => {
+    const isParticipant = conversation.participants.some((participant) => participant.toString() === userId.toString())
+    ensure(isParticipant, 403, "Access denied")
+}
+
+const markMessagesAsSeen = (conversation, userId) => {
+    let updated = false
+
+    conversation.messages.forEach((message) => {
+        const senderId = message.sender?._id?.toString() || message.sender?.toString()
+
+        if (!message.seen && senderId !== userId.toString()) {
+            message.seen = true
+            message.seenAt = new Date()
+            updated = true
+        }
+    })
+
+    if (updated) {
+        conversation.unreadCount?.set?.(userId.toString(), 0)
+    }
+
+    return updated
+}
 
 const getOrCreateConversation = async (req, res) => {
     const senderId = req.user._id.toString()
     const { receiverId, projectId } = req.body
 
-    if (!receiverId) {
-        res.status(400)
-        throw new Error("receiverId is required")
-    }
-    if (senderId === receiverId) {
-        res.status(400)
-        throw new Error("Cannot chat with yourself")
-    }
+    ensure(receiverId, 400, "receiverId is required")
+    ensure(senderId !== receiverId, 400, "Cannot chat with yourself")
 
     let conversation = await Conversation.findOne({
         participants: { $all: [senderId, receiverId], $size: 2 },
@@ -26,157 +52,122 @@ const getOrCreateConversation = async (req, res) => {
             messages: [],
             unreadCount: { [senderId]: 0, [receiverId]: 0 },
         })
+
         await conversation.populate("participants", "name email profilePic isFreelancer")
-        if (projectId) await conversation.populate("project", "title category")
+
+        if (projectId) {
+            await conversation.populate("project", "title category")
+        }
     }
 
     res.status(200).json({ conversation })
 }
 
 const getMyConversations = async (req, res) => {
-    const userId = req.user._id
-
-    const conversations = await Conversation.find({ participants: userId })
+    const conversations = await Conversation.find({ participants: req.user._id })
         .populate("participants", "name email profilePic isFreelancer")
         .populate("project", "title category")
         .sort({ updatedAt: -1 })
 
-    const withUnread = conversations.map((conv) => ({
-        _id: conv._id,
-        participants: conv.participants,
-        project: conv.project,
-        lastMessage: conv.lastMessage,
-        unreadCount: conv.unreadCount?.get?.(userId.toString()) || 0,
-        updatedAt: conv.updatedAt,
+    const conversationSummaries = conversations.map((conversation) => ({
+        _id: conversation._id,
+        participants: conversation.participants,
+        project: conversation.project,
+        lastMessage: conversation.lastMessage,
+        unreadCount: conversation.unreadCount?.get?.(req.user._id.toString()) || 0,
+        updatedAt: conversation.updatedAt,
     }))
 
-    res.status(200).json({ conversations: withUnread })
+    res.status(200).json({ conversations: conversationSummaries })
 }
 
 const getMessages = async (req, res) => {
-    const userId = req.user._id
-    const { conversationId } = req.params
     const { page = 1, limit = 50 } = req.query
 
-    const conversation = await Conversation.findById(conversationId).populate("messages.sender", "name profilePic")
+    const conversation = await Conversation.findById(req.params.conversationId)
+        .populate("messages.sender", "name profilePic")
 
-    if (!conversation) {
-        res.status(404)
-        throw new Error("Conversation not found")
-    }
+    ensure(conversation, 404, "Conversation not found")
+    ensureParticipant(conversation, req.user._id)
 
-    const isParticipant = conversation.participants.some((p) => p.toString() === userId.toString())
-    if (!isParticipant) {
-        res.status(403)
-        throw new Error("Access denied")
-    }
+    const totalMessages = conversation.messages.length
+    const startIndex = Math.max(0, totalMessages - page * limit)
+    const messages = conversation.messages.slice(startIndex, startIndex + Number(limit))
 
-    const total = conversation.messages.length
-    const start = Math.max(0, total - page * limit)
-    const messages = conversation.messages.slice(start, start + limit)
-
-    let updated = false
-    conversation.messages.forEach((msg) => {
-        const msgSenderId = msg.sender?._id?.toString() || msg.sender?.toString()
-        const isMyMessage = msgSenderId === userId.toString()
-
-        if (!msg.seen && !isMyMessage) {
-            msg.seen = true
-            msg.seenAt = new Date()
-            updated = true
-        }
-    })
-
-    if (updated) {
-        conversation.unreadCount?.set?.(userId.toString(), 0)
+    if (markMessagesAsSeen(conversation, req.user._id)) {
         await conversation.save()
     }
 
-    res.status(200).json({ messages, total, hasMore: start > 0 })
+    res.status(200).json({
+        messages,
+        total: totalMessages,
+        hasMore: startIndex > 0,
+    })
 }
 
 const sendMessage = async (req, res) => {
-    const senderId = req.user._id
-    const { conversationId } = req.params
     const { text, fileUrl, fileType } = req.body
+    ensure(text?.trim() || fileUrl, 400, "Message cannot be empty")
 
-    if (!text?.trim() && !fileUrl) {
-        res.status(400)
-        throw new Error("Message cannot be empty")
-    }
+    const conversation = await getConversationOrThrow(req.params.conversationId)
+    ensureParticipant(conversation, req.user._id)
 
-    const conversation = await Conversation.findById(conversationId)
-    if (!conversation) {
-        res.status(404)
-        throw new Error("Conversation not found")
-    }
-
-    const isParticipant = conversation.participants.some((p) => p.toString() === senderId.toString())
-    if (!isParticipant) {
-        res.status(403)
-        throw new Error("Access denied")
-    }
-
-    const newMsg = {
-        sender: senderId,
+    conversation.messages.push({
+        sender: req.user._id,
         text: text?.trim() || "",
         fileUrl: fileUrl || "",
         fileType: fileType || "",
         seen: false,
+    })
+
+    conversation.lastMessage = {
+        text: text || "File",
+        sender: req.user._id,
+        createdAt: new Date(),
     }
 
-    conversation.messages.push(newMsg)
-    conversation.lastMessage = { text: text || "File", sender: senderId, createdAt: new Date() }
-
-    conversation.participants.forEach((pid) => {
-        if (pid.toString() !== senderId.toString()) {
-            const current = conversation.unreadCount?.get?.(pid.toString()) || 0
-            conversation.unreadCount?.set?.(pid.toString(), current + 1)
+    conversation.participants.forEach((participantId) => {
+        if (participantId.toString() !== req.user._id.toString()) {
+            const currentUnreadCount = conversation.unreadCount?.get?.(participantId.toString()) || 0
+            conversation.unreadCount?.set?.(participantId.toString(), currentUnreadCount + 1)
         }
     })
 
     await conversation.save()
 
-    const saved = conversation.messages[conversation.messages.length - 1]
     await conversation.populate("messages.sender", "name profilePic")
 
-    res.status(201).json({ message: saved })
+    res.status(201).json({
+        message: conversation.messages[conversation.messages.length - 1],
+    })
 }
 
 const getUnreadCount = async (req, res) => {
     const userId = req.user._id.toString()
-
     const conversations = await Conversation.find({ participants: userId })
-    const total = conversations.reduce((sum, conv) => {
-        return sum + (conv.unreadCount?.get?.(userId) || 0)
-    }, 0)
 
-    res.status(200).json({ unreadCount: total })
+    const unreadCount = conversations.reduce((total, conversation) => (
+        total + (conversation.unreadCount?.get?.(userId) || 0)
+    ), 0)
+
+    res.status(200).json({ unreadCount })
 }
 
 const deleteConversation = async (req, res) => {
-    const userId = req.user._id
-    const conversation = await Conversation.findById(req.params.conversationId)
-
-    if (!conversation) {
-        res.status(404)
-        throw new Error("Not found")
-    }
-
-    const isParticipant = conversation.participants.some((p) => p.toString() === userId.toString())
-    if (!isParticipant) {
-        res.status(403)
-        throw new Error("Access denied")
-    }
+    const conversation = await getConversationOrThrow(req.params.conversationId)
+    ensureParticipant(conversation, req.user._id)
 
     conversation.messages = []
     conversation.lastMessage = {}
     await conversation.save()
 
-    res.status(200).json({ success: true, message: "Chat cleared" })
+    res.status(200).json({
+        success: true,
+        message: "Chat cleared",
+    })
 }
 
-const ChatController = {
+const chatController = {
     getOrCreateConversation,
     getMyConversations,
     getMessages,
@@ -185,4 +176,4 @@ const ChatController = {
     deleteConversation,
 }
 
-export default ChatController
+export default chatController

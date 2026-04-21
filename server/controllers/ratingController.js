@@ -1,174 +1,147 @@
+import Project from "../models/projectModel.js"
 import Rating from "../models/ratingModel.js"
 import User from "../models/userModel.js"
-import Project from "../models/projectModel.js"
+import { ensure, sendError } from "../utils/http.js"
 
-// ✅ GET /api/ratings/:userId
-// Fetch all ratings for a user with average calculation and breakdown
+const raterSelect = "name profilePic email"
+
+const getResolvedUserType = (user) => (
+    user.userType || (user.isFreelancer ? "freelancer" : "client")
+)
+
+const getSortOption = (sort) => {
+    if (sort === "highest") {
+        return { rating: -1, createdAt: -1 }
+    }
+
+    if (sort === "lowest") {
+        return { rating: 1, createdAt: -1 }
+    }
+
+    return { createdAt: -1 }
+}
+
+const getRatingBreakdown = () => ({ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 })
+
+const buildStats = (ratings) => {
+    const breakdown = getRatingBreakdown()
+
+    if (!ratings.length) {
+        return {
+            averageRating: 0,
+            totalReviews: 0,
+            verifiedReviews: 0,
+            breakdown,
+        }
+    }
+
+    const totalRating = ratings.reduce((sum, rating) => sum + rating.rating, 0)
+    ratings.forEach((rating) => {
+        breakdown[rating.rating] += 1
+    })
+
+    return {
+        averageRating: Number((totalRating / ratings.length).toFixed(1)),
+        totalReviews: ratings.length,
+        verifiedReviews: ratings.filter((rating) => rating.isVerified).length,
+        breakdown,
+    }
+}
+
+const syncUserRatingStats = async (targetUserId) => {
+    const ratings = await Rating.find({ targetUser: targetUserId, isReported: false })
+    const stats = buildStats(ratings)
+
+    await User.findByIdAndUpdate(
+        targetUserId,
+        {
+            averageRating: stats.averageRating,
+            totalRatings: stats.totalReviews,
+        },
+        { new: true }
+    )
+
+    return stats
+}
+
 const getRatings = async (req, res) => {
     try {
-        const { userId } = req.params
         const { sort = "latest", filter = "all" } = req.query
+        ensure(req.params.userId, 400, "User ID is required")
 
-        if (!userId) {
-            res.status(400)
-            throw new Error("User ID is required")
+        const user = await User.findById(req.params.userId)
+        ensure(user, 404, "User not found")
+
+        const query = {
+            targetUser: req.params.userId,
+            isReported: false,
         }
-
-        // Verify user exists
-        const user = await User.findById(userId)
-        if (!user) {
-            res.status(404)
-            throw new Error("User not found")
-        }
-
-        // Build query
-        let query = { targetUser: userId, isReported: false }
 
         if (filter !== "all") {
-            const filterRating = parseInt(filter)
-            if (filterRating >= 1 && filterRating <= 5) {
-                query.rating = filterRating
+            const parsedFilter = Number.parseInt(filter, 10)
+            if (parsedFilter >= 1 && parsedFilter <= 5) {
+                query.rating = parsedFilter
             }
         }
 
-        // Determine sort
-        let sortOption = { createdAt: -1 } // latest
-        if (sort === "highest") {
-            sortOption = { rating: -1, createdAt: -1 }
-        } else if (sort === "lowest") {
-            sortOption = { rating: 1, createdAt: -1 }
-        }
-
-        // Fetch ratings
         const ratings = await Rating.find(query)
-            .populate("rater", "firstName lastName avatar email")
+            .populate("rater", raterSelect)
             .populate("project", "title")
-            .sort(sortOption)
+            .sort(getSortOption(sort))
             .lean()
 
-        // Calculate statistics
-        let averageRating = 0
-        const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
-
-        if (ratings.length > 0) {
-            const totalRating = ratings.reduce((sum, r) => sum + r.rating, 0)
-            averageRating = (totalRating / ratings.length).toFixed(1)
-
-            // Count breakdown
-            ratings.forEach(r => {
-                breakdown[r.rating]++
-            })
-        }
-
-        const verifiedCount = ratings.filter(r => r.isVerified).length
+        const stats = buildStats(ratings)
 
         res.status(200).json({
             success: true,
             ratings,
-            averageRating: parseFloat(averageRating),
-            totalReviews: ratings.length,
-            verifiedReviews: verifiedCount,
-            breakdown,
+            ...stats,
         })
     } catch (error) {
-        res.status(res.statusCode || 500).json({
-            success: false,
-            error: error.message,
-        })
+        sendError(res, error)
     }
 }
 
-
-// ✅ POST /api/ratings
-// Create a new rating (open system - any user can rate any user)
 const addRating = async (req, res) => {
     try {
-        const userId = req.user._id
-        const userType = req.user.userType // "client" or "freelancer"
         const { targetUserId, rating, review, projectId } = req.body
+        ensure(targetUserId && rating && review, 400, "Missing required fields: targetUserId, rating, review")
+        ensure(req.user._id.toString() !== targetUserId.toString(), 400, "You cannot rate yourself")
+        ensure(rating >= 1 && rating <= 5, 400, "Rating must be between 1 and 5")
+        ensure(review.trim().length >= 20, 400, "Review must be at least 20 characters long")
 
-        // Validation: Check all required fields
-        if (!targetUserId || !rating || !review) {
-            res.status(400)
-            throw new Error("Missing required fields: targetUserId, rating, review")
-        }
-
-        // Validation: Self-rating check
-        if (userId.toString() === targetUserId.toString()) {
-            res.status(400)
-            throw new Error("You cannot rate yourself")
-        }
-
-        // Validation: Rating range
-        if (rating < 1 || rating > 5) {
-            res.status(400)
-            throw new Error("Rating must be between 1 and 5")
-        }
-
-        // Validation: Review text length
-        if (review.trim().length < 20) {
-            res.status(400)
-            throw new Error("Review must be at least 20 characters long")
-        }
-
-        // Get target user info
         const targetUser = await User.findById(targetUserId)
-        if (!targetUser) {
-            res.status(404)
-            throw new Error("Target user not found")
-        }
+        ensure(targetUser, 404, "Target user not found")
 
-        // Check for duplicate rating (one per rater per target user)
         const existingRating = await Rating.findOne({
-            rater: userId,
+            rater: req.user._id,
             targetUser: targetUserId,
         })
 
-        if (existingRating) {
-            res.status(400)
-            throw new Error("You have already rated this user")
-        }
+        ensure(!existingRating, 400, "You have already rated this user")
 
-        // Determine if this is a verified rating (project-based)
         let isVerified = false
         if (projectId) {
             const project = await Project.findById(projectId)
-            if (project && project.status === "completed") {
+            if (project?.status === "completed") {
                 isVerified = true
             }
         }
 
-        // Create new rating
         const newRating = await Rating.create({
-            rater: userId,
+            rater: req.user._id,
             targetUser: targetUserId,
-            raterType: userType,
-            targetUserType: targetUser.userType,
+            raterType: getResolvedUserType(req.user),
+            targetUserType: getResolvedUserType(targetUser),
             project: projectId || null,
-            rating: parseInt(rating),
+            rating: Number.parseInt(rating, 10),
             review: review.trim(),
             isVerified,
         })
 
-        // Populate rater and project details
-        const populatedRating = await newRating.populate("rater", "firstName lastName avatar email")
+        const populatedRating = await newRating.populate("rater", raterSelect)
+        const stats = await syncUserRatingStats(targetUserId)
 
-        // Calculate updated stats for target user
-        const allRatings = await Rating.find({ targetUser: targetUserId, isReported: false })
-        const totalRating = allRatings.reduce((sum, r) => sum + r.rating, 0)
-        const avgRating = (totalRating / allRatings.length).toFixed(1)
-
-        // Update user model with ratings stats
-        await User.findByIdAndUpdate(
-            targetUserId,
-            {
-                averageRating: parseFloat(avgRating),
-                totalRatings: allRatings.length,
-            },
-            { new: true }
-        )
-
-        // Emit Socket event for real-time update
         if (global.io) {
             global.io.emit("ratingCreated", {
                 _id: newRating._id,
@@ -178,8 +151,8 @@ const addRating = async (req, res) => {
                 review: newRating.review,
                 isVerified: newRating.isVerified,
                 createdAt: newRating.createdAt,
-                averageRating: parseFloat(avgRating),
-                totalReviews: allRatings.length,
+                averageRating: stats.averageRating,
+                totalReviews: stats.totalReviews,
             })
         }
 
@@ -187,89 +160,47 @@ const addRating = async (req, res) => {
             success: true,
             message: "Rating created successfully",
             rating: populatedRating,
-            averageRating: parseFloat(avgRating),
-            totalReviews: allRatings.length,
+            averageRating: stats.averageRating,
+            totalReviews: stats.totalReviews,
         })
     } catch (error) {
-        res.status(res.statusCode || 500).json({
-            success: false,
-            error: error.message,
-        })
+        sendError(res, error)
     }
 }
 
-
-// ✅ PUT /api/ratings/:ratingId
-// Update an existing rating (only by original rater or admin)
 const updateRating = async (req, res) => {
     try {
-        const userId = req.user._id
-        const { ratingId } = req.params
         const { rating, review } = req.body
+        ensure(req.params.ratingId, 400, "Rating ID is required")
+        ensure(rating || review, 400, "At least one field (rating or review) must be provided")
 
-        if (!ratingId) {
-            res.status(400)
-            throw new Error("Rating ID is required")
+        const existingRating = await Rating.findById(req.params.ratingId)
+        ensure(existingRating, 404, "Rating not found")
+        ensure(
+            existingRating.rater.toString() === req.user._id.toString() || req.user.isAdmin,
+            403,
+            "You can only edit your own ratings"
+        )
+
+        if (rating) {
+            ensure(rating >= 1 && rating <= 5, 400, "Rating must be between 1 and 5")
         }
 
-        if (!rating && !review) {
-            res.status(400)
-            throw new Error("At least one field (rating or review) must be provided")
+        if (review) {
+            ensure(review.trim().length >= 20, 400, "Review must be at least 20 characters long")
         }
 
-        // Find the rating
-        const existingRating = await Rating.findById(ratingId)
-        if (!existingRating) {
-            res.status(404)
-            throw new Error("Rating not found")
-        }
-
-        // Validate: Only the original rater can edit (or admin)
-        if (existingRating.rater.toString() !== userId.toString() && !req.user.isAdmin) {
-            res.status(403)
-            throw new Error("You can only edit your own ratings")
-        }
-
-        // Validation: Rating range
-        if (rating && (rating < 1 || rating > 5)) {
-            res.status(400)
-            throw new Error("Rating must be between 1 and 5")
-        }
-
-        // Validation: Review text length
-        if (review && review.trim().length < 20) {
-            res.status(400)
-            throw new Error("Review must be at least 20 characters long")
-        }
-
-        // Update rating
         const updatedRating = await Rating.findByIdAndUpdate(
-            ratingId,
+            req.params.ratingId,
             {
-                rating: rating !== undefined ? parseInt(rating) : existingRating.rating,
+                rating: rating !== undefined ? Number.parseInt(rating, 10) : existingRating.rating,
                 review: review ? review.trim() : existingRating.review,
             },
             { new: true }
-        ).populate("rater", "firstName lastName avatar email")
+        ).populate("rater", raterSelect)
 
-        // Recalculate target user average rating
-        const allRatings = await Rating.find({
-            targetUser: updatedRating.targetUser,
-            isReported: false,
-        })
-        const totalRating = allRatings.reduce((sum, r) => sum + r.rating, 0)
-        const avgRating = (totalRating / allRatings.length).toFixed(1)
+        const stats = await syncUserRatingStats(updatedRating.targetUser)
 
-        await User.findByIdAndUpdate(
-            updatedRating.targetUser,
-            {
-                averageRating: parseFloat(avgRating),
-                totalRatings: allRatings.length,
-            },
-            { new: true }
-        )
-
-        // Emit Socket event for real-time update
         if (global.io) {
             global.io.emit("ratingUpdated", {
                 _id: updatedRating._id,
@@ -279,8 +210,8 @@ const updateRating = async (req, res) => {
                 review: updatedRating.review,
                 isVerified: updatedRating.isVerified,
                 updatedAt: updatedRating.updatedAt,
-                averageRating: parseFloat(avgRating),
-                totalReviews: allRatings.length,
+                averageRating: stats.averageRating,
+                totalReviews: stats.totalReviews,
             })
         }
 
@@ -288,122 +219,61 @@ const updateRating = async (req, res) => {
             success: true,
             message: "Rating updated successfully",
             rating: updatedRating,
-            averageRating: parseFloat(avgRating),
-            totalReviews: allRatings.length,
+            averageRating: stats.averageRating,
+            totalReviews: stats.totalReviews,
         })
     } catch (error) {
-        res.status(res.statusCode || 500).json({
-            success: false,
-            error: error.message,
-        })
+        sendError(res, error)
     }
 }
 
-// ✅ DELETE /api/ratings/:ratingId
-// Delete a rating (only by original rater or admin)
 const deleteRating = async (req, res) => {
     try {
-        const userId = req.user._id
-        const { ratingId } = req.params
+        ensure(req.params.ratingId, 400, "Rating ID is required")
 
-        if (!ratingId) {
-            res.status(400)
-            throw new Error("Rating ID is required")
-        }
-
-        // Find the rating
-        const rating = await Rating.findById(ratingId)
-        if (!rating) {
-            res.status(404)
-            throw new Error("Rating not found")
-        }
-
-        // Validate: Only the original rater can delete (or admin)
-        if (rating.rater.toString() !== userId.toString() && !req.user.isAdmin) {
-            res.status(403)
-            throw new Error("You can only delete your own ratings")
-        }
-
-        const targetUserId = rating.targetUser
-
-        // Delete the rating
-        await Rating.findByIdAndDelete(ratingId)
-
-        // Recalculate target user average rating
-        const remainingRatings = await Rating.find({
-            targetUser: targetUserId,
-            isReported: false,
-        })
-        let avgRating = 0
-        if (remainingRatings.length > 0) {
-            const totalRating = remainingRatings.reduce((sum, r) => sum + r.rating, 0)
-            avgRating = (totalRating / remainingRatings.length).toFixed(1)
-        }
-
-        await User.findByIdAndUpdate(
-            targetUserId,
-            {
-                averageRating: parseFloat(avgRating),
-                totalRatings: remainingRatings.length,
-            },
-            { new: true }
+        const rating = await Rating.findById(req.params.ratingId)
+        ensure(rating, 404, "Rating not found")
+        ensure(
+            rating.rater.toString() === req.user._id.toString() || req.user.isAdmin,
+            403,
+            "You can only delete your own ratings"
         )
 
-        // Emit Socket event for real-time update
+        await Rating.findByIdAndDelete(req.params.ratingId)
+        const stats = await syncUserRatingStats(rating.targetUser)
+
         if (global.io) {
             global.io.emit("ratingDeleted", {
-                ratingId,
-                targetUserId,
-                averageRating: parseFloat(avgRating),
-                totalReviews: remainingRatings.length,
+                ratingId: req.params.ratingId,
+                targetUserId: rating.targetUser,
+                averageRating: stats.averageRating,
+                totalReviews: stats.totalReviews,
             })
         }
 
         res.status(200).json({
             success: true,
             message: "Rating deleted successfully",
-            averageRating: parseFloat(avgRating),
-            totalReviews: remainingRatings.length,
+            averageRating: stats.averageRating,
+            totalReviews: stats.totalReviews,
         })
     } catch (error) {
-        res.status(res.statusCode || 500).json({
-            success: false,
-            error: error.message,
-        })
+        sendError(res, error)
     }
 }
 
-// ✅ POST /api/ratings/:ratingId/report
-// Report a review as inappropriate
 const reportRating = async (req, res) => {
     try {
-        const { ratingId } = req.params
         const { reason } = req.body
+        ensure(req.params.ratingId, 400, "Rating ID is required")
+        ensure(reason, 400, "Report reason is required")
 
-        if (!ratingId) {
-            res.status(400)
-            throw new Error("Rating ID is required")
-        }
+        const rating = await Rating.findById(req.params.ratingId)
+        ensure(rating, 404, "Rating not found")
+        ensure(!rating.isReported, 400, "This rating has already been reported")
 
-        if (!reason) {
-            res.status(400)
-            throw new Error("Report reason is required")
-        }
-
-        const rating = await Rating.findById(ratingId)
-        if (!rating) {
-            res.status(404)
-            throw new Error("Rating not found")
-        }
-
-        if (rating.isReported) {
-            res.status(400)
-            throw new Error("This rating has already been reported")
-        }
-
-        // Mark as reported
         const reportedRating = await Rating.findByIdAndUpdate(
-            ratingId,
+            req.params.ratingId,
             { isReported: true, reportReason: reason },
             { new: true }
         )
@@ -414,56 +284,29 @@ const reportRating = async (req, res) => {
             rating: reportedRating,
         })
     } catch (error) {
-        res.status(res.statusCode || 500).json({
-            success: false,
-            error: error.message,
-        })
+        sendError(res, error)
     }
 }
 
-// ✅ GET /api/ratings/user/:userId/summary
-// Get quick rating summary (no detailed reviews)
 const getRatingSummary = async (req, res) => {
     try {
-        const { userId } = req.params
+        ensure(req.params.userId, 400, "User ID is required")
 
-        if (!userId) {
-            res.status(400)
-            throw new Error("User ID is required")
-        }
-
-        const ratings = await Rating.find({ targetUser: userId, isReported: false }).lean()
-
-        let averageRating = 0
-        const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
-
-        if (ratings.length > 0) {
-            const totalRating = ratings.reduce((sum, r) => sum + r.rating, 0)
-            averageRating = (totalRating / ratings.length).toFixed(1)
-
-            ratings.forEach(r => {
-                breakdown[r.rating]++
-            })
-        }
-
-        const verifiedCount = ratings.filter(r => r.isVerified).length
+        const ratings = await Rating.find({
+            targetUser: req.params.userId,
+            isReported: false,
+        }).lean()
 
         res.status(200).json({
             success: true,
-            averageRating: parseFloat(averageRating),
-            totalReviews: ratings.length,
-            verifiedReviews: verifiedCount,
-            breakdown,
+            ...buildStats(ratings),
         })
     } catch (error) {
-        res.status(res.statusCode || 500).json({
-            success: false,
-            error: error.message,
-        })
+        sendError(res, error)
     }
 }
 
-export default {
+const ratingController = {
     getRatings,
     addRating,
     updateRating,
@@ -471,3 +314,5 @@ export default {
     reportRating,
     getRatingSummary,
 }
+
+export default ratingController

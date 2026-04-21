@@ -1,25 +1,25 @@
 import User from "../models/userModel.js"
+import { ensure, sendError } from "../utils/http.js"
+import { emitToUser } from "../utils/subscription.js"
 
-// ✅ ACTIVATE FREE CLIENT PLAN
+const defaultClientFeatures = {
+    projectsLimit: "unlimited",
+    bidsReceived: "unlimited",
+    chatWithFreelancers: true,
+    analytics: true,
+    aiMatching: true,
+    paymentEscrow: true,
+    supportLevel: "standard",
+}
+
 const activateClientPlan = async (req, res) => {
     try {
-        const userId = req.user._id
+        const user = await User.findById(req.user._id)
+        ensure(user, 404, "User not found")
 
-        // Get user
-        const user = await User.findById(userId)
-        if (!user) {
-            res.status(404)
-            throw new Error("User not found")
-        }
-
-        // Mark as client (already done during registration, but just in case)
-        // If user is already a freelancer, they can still be a client - don't disable freelancer status
-
-        // Update user to indicate they're an active client
         const updatedUser = await User.findByIdAndUpdate(
-            userId,
+            req.user._id,
             {
-                // No subscription plan for clients - all features are free
                 plan: "free",
                 planExpiresAt: null,
                 planType: null,
@@ -29,20 +29,17 @@ const activateClientPlan = async (req, res) => {
             { new: true }
         )
 
-        // Emit Socket.IO event
-        if (global.io) {
-            global.io.to(userId.toString()).emit("clientPlanActivated", {
-                message: "🎉 Free client plan activated! All hiring features unlocked.",
-                plan: "free-client",
-                features: [
-                    "Unlimited projects posting",
-                    "Receive unlimited bids",
-                    "Chat with freelancers",
-                    "Project analytics",
-                    "AI-powered matching"
-                ]
-            })
-        }
+        emitToUser(req.user._id, "clientPlanActivated", {
+            message: "🎉 Free client plan activated! All hiring features unlocked.",
+            plan: "free-client",
+            features: [
+                "Unlimited projects posting",
+                "Receive unlimited bids",
+                "Chat with freelancers",
+                "Project analytics",
+                "AI-powered matching",
+            ],
+        })
 
         res.status(200).json({
             success: true,
@@ -50,46 +47,22 @@ const activateClientPlan = async (req, res) => {
             user: updatedUser,
         })
     } catch (error) {
-        res.status(res.statusCode || 500).json({
-            success: false,
-            error: error.message,
-        })
+        sendError(res, error)
     }
 }
 
-// ✅ GET CLIENT FEATURES
 const getClientFeatures = async (req, res) => {
     try {
-        const userId = req.user._id
-        const user = await User.findById(userId)
-
-        if (!user) {
-            res.status(404)
-            throw new Error("User not found")
-        }
-
-        // Determine client tier features based on plan
-        // For now, all clients get the same unlimited features
-        const features = {
-            projectsLimit: "unlimited",
-            bidsReceived: "unlimited",
-            chatWithFreelancers: true,
-            analytics: true,
-            aiMatching: true,
-            paymentEscrow: true,
-            supportLevel: "standard",
-        }
+        const user = await User.findById(req.user._id)
+        ensure(user, 404, "User not found")
 
         res.status(200).json({
             success: true,
-            features: features,
+            features: defaultClientFeatures,
             plan: "free",
         })
     } catch (error) {
-        res.status(res.statusCode || 500).json({
-            success: false,
-            error: error.message,
-        })
+        sendError(res, error)
     }
 }
 

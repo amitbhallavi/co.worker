@@ -1,4 +1,3 @@
-// ✅ PLAN PRICING & FEATURES CONFIGURATION
 // All prices in INR (₹)
 
 export const PLANS = {

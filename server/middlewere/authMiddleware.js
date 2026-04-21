@@ -1,36 +1,31 @@
-
-import jwt from "jsonwebtoken"
-import User from "../models/userModel.js"
+import { getUserFromAuthorization } from "../utils/auth.js"
+import { createHttpError } from "../utils/http.js"
 
 const forAuthUsers = async (req, res, next) => {
     try {
-        let token = req.headers.authorization.split(" ")[1]
-        let decoded = jwt.verify(token, process.env.JWT_SECRET)
-        let user = await User.findById(decoded.id).select("-password")
-        req.user = user
+        req.user = await getUserFromAuthorization(req.headers.authorization || "")
         next()
     } catch (error) {
-        res.status(401)
-        next(new Error("Unauthorized Access : Access Denied"))
+        next(createHttpError(401, "Unauthorized Access : Access Denied"))
     }
 }
 
 const forAdmin = async (req, res, next) => {
     try {
-        let token = req.headers.authorization.split(" ")[1]
-        let decoded = jwt.verify(token, process.env.JWT_SECRET)
-        let user = await User.findById(decoded.id).select("-password")
+        const user = await getUserFromAuthorization(req.headers.authorization || "")
         req.user = user
 
-        if (user.isAdmin) {
-            next()
-        } else {
-            res.status(403)
-            next(new Error("Unauthorized Access : Admin Only"))
+        if (!user.isAdmin) {
+            throw createHttpError(403, "Unauthorized Access : Admin Only")
         }
+
+        next()
     } catch (error) {
-        res.status(403)
-        next(new Error("Unauthorized Access : Access Denied"))
+        if (error?.statusCode === 403) {
+            return next(error)
+        }
+
+        next(createHttpError(403, "Unauthorized Access : Access Denied"))
     }
 }
 
