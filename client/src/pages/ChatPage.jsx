@@ -320,7 +320,7 @@ const ChatPage = () => {
 
     // ── Restore activeConversation from localStorage ONCE ─────
     useEffect(() => {
-        if (conversations.length === 0 || didRestoreRef.current) return
+        if ((conversations || []).length === 0 || didRestoreRef.current) return
 
         const savedId = localStorage.getItem("activeConversationId")
         if (!savedId) return
@@ -504,7 +504,7 @@ const ChatPage = () => {
                                 </div>
                             )}
 
-                            {!msgLoading && messages.length === 0 && (
+                            {!msgLoading && (messages || []).length === 0 && (
                                 <div className="flex flex-col items-center justify-center h-full py-16 text-center">
                                     <div className="text-4xl mb-3">👋</div>
                                     <p className="text-white/60 text-sm font-semibold">Start the conversation!</p>
