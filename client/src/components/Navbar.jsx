@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { logoutUser } from "../features/auth/authSlice"
 import { getUnreadCount } from "../features/ChatsAndMessages/chatSlice"
-
+import { refreshUser } from "../features/auth/authSlice"
 // ── Brand ─────────────────────────────────────────────────
 const Logo = () => (
     <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
@@ -403,6 +403,8 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
 // MAIN NAVBAR
 // ══════════════════════════════════════════════════════════
 const Navbar = () => {
+
+
     const { user } = useSelector(state => state.auth)
     const { unreadTotal } = useSelector(state => state.chat)
     const dispatch = useDispatch()
@@ -414,6 +416,16 @@ const Navbar = () => {
     const [scrolled, setScrolled] = useState(false)
     const talentRef = useRef(null)
     const lastPathRef = useRef(location.pathname)
+
+    useEffect(() => {
+        if (user) {
+            dispatch(refreshUser())
+            const interval = setInterval(() => dispatch(refreshUser()), 60000)
+            return () => clearInterval(interval)
+        }
+    }, [user?._id, dispatch])
+
+
 
     // Close talent dropdown on route change
     useEffect(() => {
