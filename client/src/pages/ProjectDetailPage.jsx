@@ -20,7 +20,6 @@ const ProjectDetailPage = () => {
     const [updating, setUpdating] = useState(false)
     const [payProject, setPayProject] = useState(null)
 
-    // ── Fetch Project Details ──────────────────────────────────────────────────
     useEffect(() => {
         const fetchProject = async () => {
             setLoading(true)
@@ -38,7 +37,6 @@ const ProjectDetailPage = () => {
                 }
 
                 setProject(projectData)
-                console.log("📋 Project loaded:", projectData)
             } catch (err) {
                 console.error("❌ Error fetching project:", err)
                 setError(err.response?.data?.message || err.message || "Failed to load project details")
@@ -53,11 +51,10 @@ const ProjectDetailPage = () => {
         }
     }, [id, user?.token])
 
-    // ── Update Project Status ──────────────────────────────────────────────────
     const handleStatusUpdate = async (newStatus) => {
         setUpdating(true)
         try {
-            const response = await axios.put(
+            await axios.put(
                 `${BASE_URL}/api/project/${id}`,
                 { status: newStatus },
                 { headers: { authorization: `Bearer ${user?.token}` } }
@@ -68,7 +65,6 @@ const ProjectDetailPage = () => {
                 status: newStatus
             }))
 
-            console.log("✅ Status updated:", newStatus)
             toast.success(`✅ Project marked as ${newStatus}`)
         } catch (err) {
             console.error("❌ Error updating status:", err)

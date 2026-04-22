@@ -34,7 +34,7 @@ const StatusBadge = ({ status }) => {
 const WalletDashboard = () => {
     const dispatch = useDispatch()
     const { user } = useSelector(s => s.auth)
-    const { wallet, withdrawals, loading, success, error, errorMsg } = useSelector(s => s.wallet)
+    const { wallet, withdrawals, loading } = useSelector(s => s.wallet)
 
     const [showWithdraw, setShowWithdraw] = useState(false)
     const [amount, setAmount] = useState("")
@@ -48,17 +48,6 @@ const WalletDashboard = () => {
         dispatch(fetchMyWithdrawals())
     }, [dispatch])
 
-    useEffect(() => {
-        if (error && errorMsg) toast.error(errorMsg)
-        if (success && showWithdraw) {
-            toast.success("Withdrawal request submitted!")
-            setShowWithdraw(false)
-            setAmount("")
-            setUpiId("")
-            dispatch(resetWallet())
-        }
-    }, [error, success, errorMsg]) // eslint-disable-line
-
     const handleWithdraw = async () => {
         const amt = Number(amount)
         if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return }
@@ -66,7 +55,16 @@ const WalletDashboard = () => {
         if (amt <= WITHDRAWAL_FEE) { toast.error(`Amount must be greater than fee ₹${WITHDRAWAL_FEE}`); return }
         if (amt > (wallet?.balance || 0)) { toast.error("Insufficient balance"); return }
 
-        dispatch(requestWithdrawal({ amount: amt, upiId: upiId.trim() }))
+        try {
+            await dispatch(requestWithdrawal({ amount: amt, upiId: upiId.trim() })).unwrap()
+            toast.success("Withdrawal request submitted!")
+            setShowWithdraw(false)
+            setAmount("")
+            setUpiId("")
+            dispatch(resetWallet())
+        } catch (error) {
+            toast.error(typeof error === "string" ? error : "Failed to submit withdrawal request")
+        }
     }
 
     const inpStyle = "w-full px-4 py-3 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition bg-gray-50"

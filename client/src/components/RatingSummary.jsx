@@ -1,4 +1,3 @@
-// ✅ Yeh poora RatingSummary.jsx replace karo
 import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchRatings, clearSuccess } from '../features/rating/ratingSlice'
@@ -28,7 +27,6 @@ const RatingSummary = ({
         filter,
     } = useSelector((s) => s.rating)
 
-    // ✅ Safe fallbacks
     const safeRatings = Array.isArray(ratings) ? ratings : []
     const safeTotalReviews = typeof totalReviews === 'number' ? totalReviews : 0
     const safeAverage = typeof averageRating === 'number' ? averageRating : 0
@@ -40,15 +38,12 @@ const RatingSummary = ({
     const [showReviewForm, setShowReviewForm] = useState(false)
     const [editingRating, setEditingRating] = useState(null)
 
-    // ✅ Initial fetch
     useEffect(() => {
         if (userId) {
             dispatch(fetchRatings({ userId, sort: 'latest', filter: 'all' }))
         }
     }, [userId, dispatch])
 
-    // ✅ KEY FIX: success ke baad re-fetch karo — yahi problem hai
-    // createRating success hoti hai but UI update nahi hota
     useEffect(() => {
         if (success && userId) {
             dispatch(fetchRatings({ userId, sort: sort || 'latest', filter: filter || 'all' }))
@@ -71,7 +66,6 @@ const RatingSummary = ({
     const handleReviewSuccess = () => {
         setShowReviewForm(false)
         setEditingRating(null)
-        // ✅ Direct refetch after submit — don't wait for success state
         dispatch(fetchRatings({ userId, sort: 'latest', filter: 'all' }))
         onRatingChange?.()
     }

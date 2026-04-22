@@ -12,7 +12,7 @@ const SubscriptionManagement = () => {
   const navigate = useNavigate()
 
   const { user } = useSelector(s => s.auth)
-  const { currentPlan, planExpiresAt, planType, planStartedAt, history, loading } = useSelector(s => s.subscription)
+  const { currentPlan, planExpiresAt, planType, history, loading } = useSelector(s => s.subscription)
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [upgradePlan, setUpgradePlan] = useState(null)
@@ -170,23 +170,11 @@ const SubscriptionManagement = () => {
         <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {true ? (
-                <>
-                  <CheckCircle2 size={20} className="text-green-500" />
-                  <div>
-                    <p className="font-medium text-gray-900">Auto-Renewal Enabled</p>
-                    <p className="text-sm text-gray-500">Your plan will automatically renew on the renewal date</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <AlertCircle size={20} className="text-amber-500" />
-                  <div>
-                    <p className="font-medium text-gray-900">Auto-Renewal Disabled</p>
-                    <p className="text-sm text-gray-500">You will need to manually renew your plan</p>
-                  </div>
-                </>
-              )}
+              <CheckCircle2 size={20} className="text-green-500" />
+              <div>
+                <p className="font-medium text-gray-900">Auto-Renewal Enabled</p>
+                <p className="text-sm text-gray-500">Your plan will automatically renew on the renewal date</p>
+              </div>
             </div>
           </div>
         </div>

@@ -1,10 +1,14 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
+import {
+    getApiErrorMessage,
+    getAuthToken,
+    getStoredUser,
+    saveStoredUser,
+} from "../api/apiHelpers"
 import authService from "./authService"
 
-const storedUser = JSON.parse(localStorage.getItem("user") || "null")
-
 const initialState = {
-    user: storedUser,
+    user: getStoredUser(),
     isLoading: false,
     isSuccess: false,
     isError: false,
@@ -15,12 +19,7 @@ export const registerUser = createAsyncThunk("AUTH/REGISTER", async (formData, t
     try {
         return await authService.register(formData)
     } catch (error) {
-        const message =
-            error?.response?.data?.message ||
-            error?.response?.data?.error ||
-            error?.message ||
-            "Registration failed"
-        return thunkAPI.rejectWithValue(message)
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error, "Registration failed"))
     }
 })
 
@@ -28,35 +27,43 @@ export const loginUser = createAsyncThunk("AUTH/LOGIN", async (formData, thunkAP
     try {
         return await authService.login(formData)
     } catch (error) {
-        const message =
-            error?.response?.data?.message ||
-            error?.response?.data?.error ||
-            error?.message ||
-            "Login failed"
-        return thunkAPI.rejectWithValue(message)
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error, "Login failed"))
     }
 })
 
 export const logoutUser = createAsyncThunk("AUTH/LOGOUT", async () => {
-    localStorage.removeItem("user")
+    authService.logout()
 })
 
 export const refreshUser = createAsyncThunk("AUTH/REFRESH", async (_, thunkAPI) => {
-    try {
-        const { user } = thunkAPI.getState().auth
-        if (!user?.token) return thunkAPI.rejectWithValue("No token")
+    const token = getAuthToken(thunkAPI)
 
-        const axios = (await import("../api/axiosInstance")).default
-        const res = await axios.get("/api/auth/me", {
-            headers: { Authorization: `Bearer ${user.token}` },
-        })
-        const updated = { ...user, ...res.data }
-        localStorage.setItem("user", JSON.stringify(updated))
-        return updated
-    } catch (err) {
-        return thunkAPI.rejectWithValue(err.message)
+    if (!token) {
+        return thunkAPI.rejectWithValue("No token")
+    }
+
+    try {
+        const currentUser = thunkAPI.getState().auth.user
+        const profile = await authService.refreshProfile(token)
+        return saveStoredUser({ ...currentUser, ...profile })
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error, "Unable to refresh session"))
     }
 })
+
+const startRequest = (state) => {
+    state.isLoading = true
+    state.isSuccess = false
+    state.isError = false
+    state.message = ""
+}
+
+const failRequest = (state, action) => {
+    state.isLoading = false
+    state.isSuccess = false
+    state.isError = true
+    state.message = action.payload
+}
 
 const authSlice = createSlice({
     name: "auth",
@@ -64,49 +71,32 @@ const authSlice = createSlice({
     reducers: {
         updateCredits: (state, action) => {
             const { userId, credits } = action.payload
-            if (state.user && state.user._id === userId) {
-                state.user.credits = credits
-                localStorage.setItem("user", JSON.stringify(state.user))
+
+            if (state.user?._id !== userId) {
+                return
             }
+
+            state.user.credits = credits
+            saveStoredUser(state.user)
         },
     },
     extraReducers: (builder) => {
         builder
-            .addCase(registerUser.pending, (state) => {
-                state.isLoading = true
-                state.isSuccess = false
-                state.isError = false
-            })
+            .addCase(registerUser.pending, startRequest)
             .addCase(registerUser.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
                 state.user = action.payload
-                state.isError = false
             })
-            .addCase(registerUser.rejected, (state, action) => {
-                state.isLoading = false
-                state.isSuccess = false
-                state.isError = true
-                state.message = action.payload
-            })
+            .addCase(registerUser.rejected, failRequest)
 
-            .addCase(loginUser.pending, (state) => {
-                state.isLoading = true
-                state.isSuccess = false
-                state.isError = false
-            })
+            .addCase(loginUser.pending, startRequest)
             .addCase(loginUser.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
                 state.user = action.payload
-                state.isError = false
             })
-            .addCase(loginUser.rejected, (state, action) => {
-                state.isLoading = false
-                state.isSuccess = false
-                state.isError = true
-                state.message = action.payload
-            })
+            .addCase(loginUser.rejected, failRequest)
 
             .addCase(logoutUser.fulfilled, (state) => {
                 state.isLoading = false
@@ -118,6 +108,10 @@ const authSlice = createSlice({
 
             .addCase(refreshUser.fulfilled, (state, action) => {
                 state.user = action.payload
+                state.message = ""
+            })
+            .addCase(refreshUser.rejected, (state, action) => {
+                state.message = action.payload || ""
             })
     },
 })

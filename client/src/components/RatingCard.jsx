@@ -9,24 +9,22 @@ const RatingCard = ({ rating, isOwnRating = false, onEdit, onDelete }) => {
     const { loading } = useSelector(s => s.rating)
     const [showReportModal, setShowReportModal] = useState(false)
     const [reportReason, setReportReason] = useState('')
+    const [renderTime] = useState(() => Date.now())
 
     if (!rating || !rating.rater || !rating._id) return null
 
     const { rater, rating: ratingScore, review, createdAt, _id, isVerified, project } = rating
 
-    // ✅ FIX: Support both name formats (name OR firstName+lastName)
     const raterName = rater?.name ||
         `${rater?.firstName || ''} ${rater?.lastName || ''}`.trim() ||
         'Anonymous'
 
-    // ✅ FIX: Support both avatar field names
     const raterAvatar = rater?.profilePic || rater?.avatar || null
 
-    // ✅ FIX: Safe date formatting without date-fns dependency issues
     const formatDate = (dateStr) => {
         if (!dateStr) return ''
         try {
-            const diff = Date.now() - new Date(dateStr).getTime()
+            const diff = renderTime - new Date(dateStr).getTime()
             const days = Math.floor(diff / 86400000)
             if (days === 0) return 'Today'
             if (days === 1) return '1 day ago'
@@ -36,7 +34,6 @@ const RatingCard = ({ rating, isOwnRating = false, onEdit, onDelete }) => {
         } catch {
             return ''
         }
-        
     }
 
     const handleDelete = async () => {
@@ -69,7 +66,6 @@ const RatingCard = ({ rating, isOwnRating = false, onEdit, onDelete }) => {
         <>
             <div className="group border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all bg-white">
                 <div className="flex items-start gap-3 mb-3">
-                    {/* ✅ Avatar — handles both profilePic and avatar fields */}
                     <div className="flex-shrink-0">
                         {raterAvatar ? (
                             <img
@@ -91,7 +87,6 @@ const RatingCard = ({ rating, isOwnRating = false, onEdit, onDelete }) => {
                     <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                             <div>
-                                {/* ✅ FIX: uses raterName (handles both name and firstName+lastName) */}
                                 <h4 className="font-bold text-gray-900 text-sm">{raterName}</h4>
                                 <div className="flex gap-0.5 mt-1">
                                     {Array.from({ length: 5 }).map((_, i) => (

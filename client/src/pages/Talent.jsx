@@ -1,449 +1,485 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, memo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { getFreelancers } from '../features/Freelancer/freelancerSlice'
 
-// ── Intersection Observer ──────────────────────────────────
-const useInView = (threshold = 0.15) => {
-  const ref = useRef(null)
-  const [inView, setInView] = useState(false)
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true) }, { threshold })
-    if (ref.current) obs.observe(ref.current)
-    return () => obs.disconnect()
-  }, [threshold])
-  return [ref, inView]
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+const ACCENT_BG  = 'bg-gradient-to-r from-blue-500 to-cyan-400'
+const CARD       = 'bg-white/[0.03] border border-white/[0.08] backdrop-blur-sm'
+const CARD_HOVER = 'hover:bg-white/[0.06] hover:border-white/[0.14]'
+const TEXT_1     = 'text-white'
+const TEXT_2     = 'text-white/55'
+const TEXT_3     = 'text-white/30'
+
+// ─── Intersection Observer Hook ───────────────────────────────────────────────
+const useInView = (threshold = 0.12) => {
+    const ref = useRef(null)
+    const [inView, setInView] = useState(false)
+    useEffect(() => {
+        const obs = new IntersectionObserver(
+            ([e]) => { if (e.isIntersecting) setInView(true) },
+            { threshold }
+        )
+        if (ref.current) obs.observe(ref.current)
+        return () => obs.disconnect()
+    }, [threshold])
+    return [ref, inView]
 }
 
-// ── Animated Counter ───────────────────────────────────────
-const useCounter = (end, duration = 2000, inView = false) => {
-  const [count, setCount] = useState(0)
-  useEffect(() => {
-    if (!inView) return
-    let start = 0
-    const increment = end / (duration / 16)
-    const timer = setInterval(() => {
-      start += increment
-      if (start >= end) { setCount(end); clearInterval(timer) }
-      else setCount(Math.floor(start))
-    }, 16)
-    return () => clearInterval(timer)
-  }, [end, duration, inView])
-  return count
+// ─── Animated Counter ─────────────────────────────────────────────────────────
+const useCounter = (end, duration = 2000, active = false) => {
+    const [count, setCount] = useState(0)
+    useEffect(() => {
+        if (!active) return
+        let current = 0
+        const step = end / (duration / 16)
+        const timer = setInterval(() => {
+            current += step
+            if (current >= end) { setCount(end); clearInterval(timer) }
+            else setCount(Math.floor(current))
+        }, 16)
+        return () => clearInterval(timer)
+    }, [end, duration, active])
+    return count
 }
 
-// ── Stats Row ──────────────────────────────────────────────
-const AnimatedStats = ({ inView }) => {
-  const freelancers = useCounter(50000, 2500, inView)
-  const projects = useCounter(120000, 2500, inView)
-  const rating = useCounter(49, 1500, inView) / 10
-
-  return (
-    <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
-      {[
-        { value: `${(freelancers / 1000).toFixed(0)}K+`, label: 'Freelancers' },
-        { value: `${(projects / 1000).toFixed(0)}K+`, label: 'Projects Done' },
-        { value: `${(rating).toFixed(1)}★`, label: 'Avg Rating' },
-      ].map((s, i) => (
-        <div key={s.label} className={`
-          bg-white/[0.03] border border-white/[0.08] rounded-2xl px-4 py-4 text-center
-          hover:bg-white/[0.06] hover:border-white/[0.12] hover:-translate-y-0.5 transition-all duration-300
-          ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
-        `} style={{ transitionDelay: `${i * 100}ms` }}>
-          <div className="text-lg sm:text-xl font-bold text-white">{inView ? s.value : '0'}</div>
-          <div className="text-[11px] sm:text-xs text-white/40 mt-1">{s.label}</div>
-        </div>
-      ))}
-    </div>
-  )
+// ─── Category color map ───────────────────────────────────────────────────────
+const CAT = {
+    blue:    { bar: 'from-blue-500 to-blue-600',    badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20',    skill: 'bg-blue-500/10 text-blue-300 border-blue-500/15'    },
+    violet:  { bar: 'from-violet-500 to-violet-600', badge: 'bg-violet-500/10 text-violet-400 border-violet-500/20', skill: 'bg-violet-500/10 text-violet-300 border-violet-500/15' },
+    amber:   { bar: 'from-amber-500 to-amber-600',  badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20',  skill: 'bg-amber-500/10 text-amber-300 border-amber-500/15'  },
+    rose:    { bar: 'from-rose-500 to-rose-600',    badge: 'bg-rose-500/10 text-rose-400 border-rose-500/20',    skill: 'bg-rose-500/10 text-rose-300 border-rose-500/15'    },
+    emerald: { bar: 'from-emerald-500 to-emerald-600', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', skill: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/15' },
+    cyan:    { bar: 'from-cyan-500 to-cyan-600',    badge: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',    skill: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/15'    },
 }
+const CAT_PALETTE = [CAT.blue, CAT.violet, CAT.amber, CAT.rose, CAT.emerald, CAT.cyan]
 
-// ── Category Config ─────────────────────────────────────────
-const CAT_COLORS = {
-  web: { gradient: 'from-blue-500 to-blue-600', light: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30', badge: 'bg-blue-500/20' },
-  design: { gradient: 'from-violet-500 to-violet-600', light: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/30', badge: 'bg-violet-500/20' },
-  marketing: { gradient: 'from-amber-500 to-amber-600', light: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30', badge: 'bg-amber-500/20' },
-  ai: { gradient: 'from-rose-500 to-rose-600', light: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/30', badge: 'bg-rose-500/20' },
-  apps: { gradient: 'from-emerald-500 to-emerald-600', light: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30', badge: 'bg-emerald-500/20' },
-  data: { gradient: 'from-cyan-500 to-cyan-600', light: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30', badge: 'bg-cyan-500/20' },
-  default: { gradient: 'from-gray-500 to-gray-600', light: 'bg-gray-500/10', text: 'text-gray-400', border: 'border-gray-500/30', badge: 'bg-gray-500/20' },
-}
-
-const getCatStyle = (category = '') => {
-  const l = category.toLowerCase()
-  if (l.includes('web') || l.includes('software') || l.includes('full')) return CAT_COLORS.web
-  if (l.includes('design') || l.includes('creative') || l.includes('ui')) return CAT_COLORS.design
-  if (l.includes('market') || l.includes('sales')) return CAT_COLORS.marketing
-  if (l.includes('ai') || l.includes('ml') || l.includes('machine')) return CAT_COLORS.ai
-  if (l.includes('app') || l.includes('mobile')) return CAT_COLORS.apps
-  if (l.includes('data') || l.includes('analyst')) return CAT_COLORS.data
-  return CAT_COLORS.default
-}
-
+// ─── Filter Config ────────────────────────────────────────────────────────────
 const FILTERS = ['All', 'Web Dev', 'Design', 'AI / ML', 'Apps', 'Marketing', 'Data']
 
 function filterMatch(f, filter) {
-  if (filter === 'All') return true
-  const cat = (f.category || '').toLowerCase()
-  if (filter === 'Web Dev') return cat.includes('web') || cat.includes('software') || cat.includes('full')
-  if (filter === 'Design') return cat.includes('design') || cat.includes('creative') || cat.includes('ui')
-  if (filter === 'AI / ML') return cat.includes('ai') || cat.includes('ml') || cat.includes('machine')
-  if (filter === 'Apps') return cat.includes('app') || cat.includes('mobile')
-  if (filter === 'Marketing') return cat.includes('market') || cat.includes('sales')
-  if (filter === 'Data') return cat.includes('data') || cat.includes('analyst')
-  return true
+    if (filter === 'All') return true
+    const cat = (f.category || '').toLowerCase()
+    if (filter === 'Web Dev')   return cat.includes('web')    || cat.includes('software') || cat.includes('full')
+    if (filter === 'Design')    return cat.includes('design') || cat.includes('creative') || cat.includes('ui')
+    if (filter === 'AI / ML')   return cat.includes('ai')     || cat.includes('ml')       || cat.includes('machine')
+    if (filter === 'Apps')      return cat.includes('app')    || cat.includes('mobile')
+    if (filter === 'Marketing') return cat.includes('market') || cat.includes('sales')
+    if (filter === 'Data')      return cat.includes('data')   || cat.includes('analyst')
+    return true
 }
 
-// ── Freelancer Card ─────────────────────────────────────────
-const FreelancerCard = ({ freelancer, index, colorIndex }) => {
-  const [ref, inView] = useInView(0.1)
-  const [hovered, setHovered] = useState(false)
+// ─── Animated Stats ───────────────────────────────────────────────────────────
+const AnimatedStats = memo(function AnimatedStats({ inView }) {
+    const fl  = useCounter(50000,  2500, inView)
+    const pr  = useCounter(120000, 2500, inView)
+    const raw = useCounter(49,     1500, inView)
 
-  const s = getCatStyle(freelancer.category)
-  const skills = Array.isArray(freelancer.skills)
-    ? freelancer.skills
-    : (freelancer.skills || '').split(',').map(sk => sk.trim()).filter(Boolean)
+    const stats = [
+        { value: `${Math.floor(fl / 1000)}K+`,        label: 'Freelancers'   },
+        { value: `${Math.floor(pr / 1000)}K+`,        label: 'Projects Done' },
+        { value: `${(raw / 10).toFixed(1)}★`,         label: 'Avg Rating'    },
+    ]
 
-  const catColors = [CAT_COLORS.web, CAT_COLORS.design, CAT_COLORS.marketing, CAT_COLORS.ai, CAT_COLORS.apps, CAT_COLORS.data]
-  const cardColor = catColors[colorIndex % catColors.length]
-
-  return (
-    <div
-      ref={ref}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className={`
-        relative flex flex-col rounded-2xl overflow-hidden transition-all duration-500
-        ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
-        ${hovered ? 'scale-[1.02] shadow-2xl' : 'shadow-lg'}
-      `}
-      style={{ transitionDelay: `${index * 60}ms` }}
-    >
-      {/* Top gradient bar */}
-      <div className={`h-1.5 bg-gradient-to-r ${cardColor.gradient}`} />
-
-      {/* Card bg */}
-      <div className={`
-        flex flex-col flex-1 rounded-b-2xl border backdrop-blur-sm transition-all duration-300
-        ${hovered
-          ? 'bg-white/[0.08] border-white/20'
-          : 'bg-white/[0.03] border-white/[0.08]'
-        }
-      `}>
-        {/* Header */}
-        <div className={`relative px-5 pt-5 pb-4 border-b border-white/[0.05]`}>
-          <span className={`
-            absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full
-            ${cardColor.badge} ${cardColor.text} border ${cardColor.border}
-          `}>
-            {freelancer.category || 'Freelancer'}
-          </span>
-
-          <div className="flex items-center gap-3.5">
-            {/* Avatar */}
-            <div className="relative flex-shrink-0">
-              {freelancer.user?.profilePic ? (
-                <img
-                  src={freelancer.user.profilePic}
-                  alt={freelancer.user?.name}
-                  className="w-16 h-16 rounded-2xl object-cover ring-2 ring-white/20 shadow-lg"
-                  onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
-                />
-              ) : null}
-              <div
-                className={`
-                  ${freelancer.user?.profilePic ? 'hidden' : 'flex'}
-                  w-16 h-16 rounded-2xl bg-gradient-to-br ${cardColor.gradient}
-                  items-center justify-center ring-2 ring-white/20 shadow-lg
-                `}
-              >
-                <span className="text-white font-bold text-lg">
-                  {(freelancer.user?.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                </span>
-              </div>
-              {/* Online indicator */}
-              <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-400 border-2 border-[#0f172a]"
-                style={{ animation: 'pulse 2s ease infinite' }}
-              />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <h3 className="font-bold text-white text-[15px] mb-0.5 truncate">
-                {freelancer.user?.name || 'Unknown'}
-              </h3>
-              <p className="text-xs text-white/40 truncate mb-1.5">
-                {freelancer.user?.email}
-              </p>
-              <div className={`
-                inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full
-                ${cardColor.badge} ${cardColor.text} border ${cardColor.border}
-              `}>
-                {freelancer.experience || 0} yrs exp
-              </div>
-            </div>
-          </div>
+    return (
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-lg mx-auto mt-8">
+            {stats.map((s, i) => (
+                <div
+                    key={s.label}
+                    className={`${CARD} ${CARD_HOVER} rounded-xl sm:rounded-2xl px-3 py-3.5 sm:px-4 sm:py-4 text-center
+                        transition-all duration-500 cursor-default
+                        ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+                    style={{ transitionDelay: `${300 + i * 80}ms` }}
+                >
+                    <div className={`text-base sm:text-lg font-bold ${TEXT_1}`}>
+                        {inView ? s.value : '—'}
+                    </div>
+                    <div className={`text-[10px] sm:text-xs ${TEXT_3} mt-1 font-medium`}>{s.label}</div>
+                </div>
+            ))}
         </div>
+    )
+})
 
-        {/* Body */}
-        <div className="px-5 py-4 flex-1 flex flex-col gap-3">
-          <p className="text-[13px] text-white/60 leading-relaxed line-clamp-2">
-            {freelancer.description || 'Experienced freelancer ready to help with your project.'}
-          </p>
+// ─── Freelancer Card ──────────────────────────────────────────────────────────
+const FreelancerCard = memo(function FreelancerCard({ freelancer, index, colorIndex }) {
+    const [ref, inView] = useInView(0.08)
+    const color = CAT_PALETTE[colorIndex % CAT_PALETTE.length]
 
-          {skills.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {skills.slice(0, 4).map((sk, si) => (
-                <span key={si} className={`
-                  text-[10px] font-semibold px-2 py-0.5 rounded-full border
-                  ${cardColor.badge} ${cardColor.text} ${cardColor.border}
-                `}>
-                  {sk}
-                </span>
-              ))}
-              {skills.length > 4 && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/[0.05] text-white/40 border border-white/10">
-                  +{skills.length - 4}
-                </span>
-              )}
-            </div>
-          )}
+    const skills = Array.isArray(freelancer.skills)
+        ? freelancer.skills
+        : (freelancer.skills || '').split(',').map(s => s.trim()).filter(Boolean)
 
-          {/* Rating + Rate */}
-          <div className="flex items-center justify-between pt-3 border-t border-white/[0.05] mt-auto">
-            <div className="flex items-center gap-1.5">
-              <div className="flex gap-0.5">
-                {Array.from({ length: Math.round(freelancer.rating || 0) }).map((_, i) => (
-                  <span key={i} className="text-amber-400 text-xs">★</span>
-                ))}
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="font-bold text-sm text-white">{(freelancer.rating || 0).toFixed(1)}</span>
-                <span className="text-xs text-white/30">({freelancer.totalRatings || 0})</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="text-base font-extrabold text-white">
-                {freelancer.hourlyRate ? `₹${freelancer.hourlyRate}` : 'Open'}
-              </span>
-              <span className="text-xs text-white/30">/hr</span>
-            </div>
-          </div>
-        </div>
+    const initials = (freelancer.user?.name || '?')
+        .split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
 
-        {/* Footer */}
-        <div className="px-5 pb-5">
-          <Link
-            to={`/profile/${freelancer.user?._id}`}
-            className="block text-center py-2.5 text-sm font-bold text-white rounded-xl no-underline transition-all duration-200
-              bg-gradient-to-r from-blue-500 to-cyan-500 hover:shadow-lg hover:shadow-blue-500/30"
-            style={{ boxShadow: hovered ? '0 8px 24px rgba(59,130,246,0.3)' : 'none' }}
-          >
-            View Profile ↗
-          </Link>
-        </div>
-      </div>
-    </div>
-  )
-}
+    const stars = Math.round(freelancer.rating || 0)
 
-// ── Main Component ──────────────────────────────────────────
-function Talent() {
-  const { freelancers, freelancerLoading, freelancerError, freelancerErrorMessage } = useSelector(s => s.freelancer)
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
+    return (
+        <div
+            ref={ref}
+            className={`flex flex-col rounded-2xl overflow-hidden transition-all duration-500 group
+                ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            style={{ transitionDelay: `${index * 55}ms` }}
+        >
+            {/* top accent bar */}
+            <div className={`h-px bg-gradient-to-r ${color.bar} flex-shrink-0`} />
 
-  const [search, setSearch] = useState('')
-  const [activeFilter, setActiveFilter] = useState('All')
-  const [heroRef, heroInView] = useInView(0.1)
-
-  useEffect(() => { dispatch(getFreelancers()) }, [dispatch])
-  useEffect(() => {
-    if (freelancerError && freelancerErrorMessage) toast.error(freelancerErrorMessage)
-  }, [freelancerError, freelancerErrorMessage])
-
-  const filtered = (freelancers || []).filter(f => {
-    const matchSearch =
-      (f.user?.name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (f.category || '').toLowerCase().includes(search.toLowerCase()) ||
-      (f.skills || '').toLowerCase().includes(search.toLowerCase())
-    return matchSearch && filterMatch(f, activeFilter)
-  })
-
-  return (
-    <div className="min-h-screen bg-[#020617]" style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}>
-
-      {/* ══ HERO ══════════════════════════════════════════════ */}
-      <div className="relative z-10 bg-[#0f172a]">
-
-        <div ref={heroRef} className="relative max-w-4xl mx-auto px-4 sm:px-8 pt-16 sm:pt-24 pb-14 sm:pb-20 text-center">
-
-          {/* Live badge */}
-          <div className={`
-            inline-flex items-center gap-2 bg-white/[0.05] border border-white/10 rounded-full px-5 py-2 mb-8
-            transition-all duration-700 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-          `}>
-            <span className="relative flex w-2.5 h-2.5 flex-shrink-0">
-              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping" />
-              <span className="relative rounded-full bg-emerald-400 w-2.5 h-2.5" />
-            </span>
-            <span className="text-xs sm:text-sm text-white/70 font-semibold">
-              {freelancers.length}+ verified freelancers available now
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h1 className={`
-            text-4xl sm:text-6xl font-extrabold text-white leading-tight mb-3
-            transition-all duration-700 delay-100 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-          `}>
-            Hire the World's
-            <br />
-            <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
-              Best Talent
-            </span>
-          </h1>
-
-          <p className={`
-            text-base text-white/50 max-w-lg mx-auto mb-8 leading-relaxed
-            transition-all duration-700 delay-200 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-          `}>
-            Browse verified, skilled freelancers — ready to deliver results on your project.
-          </p>
-
-          {/* Search */}
-          <div className={`
-            flex gap-2 sm:gap-3 max-w-xl mx-auto mb-8
-            transition-all duration-700 delay-300 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-          `}>
-            <div className="relative flex-1">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-lg pointer-events-none">🔍</span>
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search by name, category, or skills..."
-                className="w-full pl-11 pr-4 py-3.5 text-sm text-white placeholder-white/30 bg-white/[0.05] border border-white/10
-                  rounded-xl outline-none transition-all
-                  focus:bg-white/[0.08] focus:border-white/20 focus:ring-2 focus:ring-blue-500/20"
-              />
-            </div>
-            <button
-              onClick={() => navigate('/register')}
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3.5 rounded-xl font-semibold text-sm
-                hover:shadow-lg hover:shadow-blue-500/30 hover:scale-105 transition-all cursor-pointer border-none whitespace-nowrap"
+            {/* card body */}
+            <div className={`flex flex-col flex-1 ${CARD} rounded-b-2xl border-t-0
+                transition-all duration-300 group-hover:bg-white/[0.06] group-hover:border-white/[0.15]
+                group-hover:-translate-y-1 group-hover:shadow-2xl`}
             >
-              Post a Project
-            </button>
-          </div>
+                {/* header */}
+                <div className="relative px-5 pt-5 pb-4 border-b border-white/[0.05]">
+                    {/* category badge */}
+                    <span className={`absolute top-3.5 right-4 text-[10px] font-semibold px-2.5 py-1 rounded-full border ${color.badge}`}>
+                        {freelancer.category || 'Freelancer'}
+                    </span>
 
-          {/* Filter pills */}
-          <div className={`
-            flex flex-wrap justify-center gap-2 mb-8
-            transition-all duration-700 delay-300 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-          `}>
-            {FILTERS.map((f, i) => (
-              <button
-                key={f}
-                onClick={() => setActiveFilter(f)}
-                className={`
-                  px-4 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-200 cursor-pointer border
-                  ${activeFilter === f
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-transparent shadow-lg shadow-blue-500/20'
-                    : 'bg-white/[0.05] text-white/50 border-white/10 hover:bg-white/[0.08] hover:text-white/70'
-                  }
-                `}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+                    <div className="flex items-center gap-3.5">
+                        {/* avatar */}
+                        <div className="relative flex-shrink-0">
+                            {freelancer.user?.profilePic ? (
+                                <img
+                                    src={freelancer.user.profilePic}
+                                    alt={freelancer.user?.name}
+                                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover ring-2 ring-white/10 shadow-lg"
+                                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+                                />
+                            ) : null}
+                            <div className={`${freelancer.user?.profilePic ? 'hidden' : 'flex'}
+                                w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${color.bar}
+                                items-center justify-center ring-2 ring-white/10 shadow-lg`}>
+                                <span className="text-white font-bold text-base">{initials}</span>
+                            </div>
+                            {/* online dot */}
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400
+                                border-2 border-[#020617] shadow shadow-emerald-400/40" />
+                        </div>
 
-          {/* Animated Stats */}
-          <AnimatedStats inView={heroInView} />
+                        <div className="min-w-0 flex-1 pr-12">
+                            <h3 className={`font-semibold ${TEXT_1} text-[15px] leading-tight truncate mb-0.5`}>
+                                {freelancer.user?.name || 'Unknown'}
+                            </h3>
+                            <p className={`text-xs ${TEXT_3} truncate mb-2`}>
+                                {freelancer.user?.email}
+                            </p>
+                            <span className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full border ${color.badge}`}>
+                                {freelancer.experience || 0}y exp
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* body */}
+                <div className="px-5 py-4 flex-1 flex flex-col gap-3">
+                    <p className={`text-[13px] ${TEXT_2} leading-relaxed line-clamp-2`}>
+                        {freelancer.description || 'Experienced freelancer ready to help with your project.'}
+                    </p>
+
+                    {skills.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                            {skills.slice(0, 4).map((sk, i) => (
+                                <span key={i} className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${color.skill}`}>
+                                    {sk}
+                                </span>
+                            ))}
+                            {skills.length > 4 && (
+                                <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${CARD} ${TEXT_3} border-white/10`}>
+                                    +{skills.length - 4}
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* rating + rate */}
+                    <div className={`flex items-center justify-between pt-3 border-t border-white/[0.05] mt-auto`}>
+                        <div className="flex items-center gap-1.5">
+                            <div className="flex gap-0.5">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <span key={i} className={`text-xs ${i < stars ? 'text-amber-400' : 'text-white/10'}`}>★</span>
+                                ))}
+                            </div>
+                            <span className={`text-sm font-semibold ${TEXT_1}`}>{(freelancer.rating || 0).toFixed(1)}</span>
+                            <span className={`text-xs ${TEXT_3}`}>({freelancer.totalRatings || 0})</span>
+                        </div>
+                        <div className="text-right">
+                            <span className={`text-base font-bold ${TEXT_1}`}>
+                                {freelancer.hourlyRate ? `₹${freelancer.hourlyRate}` : 'Open'}
+                            </span>
+                            <span className={`text-xs ${TEXT_3}`}>/hr</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* footer CTA */}
+                <div className="px-5 pb-5">
+                    <Link
+                        to={`/profile/${freelancer.user?._id}`}
+                        className={`block text-center py-2.5 text-sm font-semibold text-white rounded-xl no-underline
+                            ${ACCENT_BG} transition-all duration-200
+                            group-hover:shadow-lg group-hover:shadow-blue-500/25`}
+                    >
+                        View Profile ↗
+                    </Link>
+                </div>
+            </div>
         </div>
-      </div>
+    )
+})
 
-      {/* ══ MAIN CONTENT ═══════════════════════════════════════ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-12 sm:py-20">
-
-        {/* Stats bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
-          <p className="text-sm text-white/40">
-            Showing <strong className="text-white">{filtered.length}</strong> freelancers
-            {activeFilter !== 'All' && <span className="text-blue-400"> in {activeFilter}</span>}
-            {search && <span className="text-white/60"> matching "{search}"</span>}
-          </p>
-          <div className="flex gap-5 text-sm">
-            <span className="text-white/30"><strong className="text-white">{freelancers.length}+</strong> Total</span>
-            <span className="text-white/30"><strong className="text-white">50K+</strong> Hired</span>
-            <span className="text-white/30"><strong className="text-white">4.9★</strong> Avg</span>
-          </div>
+// ─── Skeleton Card ─────────────────────────────────────────────────────────────
+const SkeletonCard = memo(function SkeletonCard() {
+    return (
+        <div className={`${CARD} rounded-2xl overflow-hidden animate-pulse`}>
+            <div className="h-px bg-white/10" />
+            <div className="p-5 space-y-4">
+                <div className="flex items-center gap-3.5">
+                    <div className="w-16 h-16 rounded-2xl bg-white/[0.06]" />
+                    <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-white/[0.06] rounded-lg w-3/4" />
+                        <div className="h-3 bg-white/[0.04] rounded-lg w-1/2" />
+                    </div>
+                </div>
+                <div className="h-3 bg-white/[0.04] rounded-lg" />
+                <div className="h-3 bg-white/[0.04] rounded-lg w-4/5" />
+                <div className="flex gap-2">
+                    {[1, 2, 3].map(i => <div key={i} className="h-5 w-14 bg-white/[0.04] rounded-full" />)}
+                </div>
+                <div className="h-10 bg-white/[0.04] rounded-xl mt-2" />
+            </div>
         </div>
+    )
+})
 
-        {/* Grid */}
-        {freelancerLoading && filtered.length === 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="rounded-2xl bg-white/[0.03] border border-white/[0.08] h-72 animate-pulse" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20">
+// ─── Empty State ───────────────────────────────────────────────────────────────
+const EmptyState = memo(function EmptyState({ onReset }) {
+    return (
+        <div className="col-span-full text-center py-20">
             <div className="text-5xl mb-4">🔍</div>
-            <h3 className="text-xl font-bold text-white mb-2">No freelancers found</h3>
-            <p className="text-white/40 mb-5">Try a different search or filter</p>
+            <h3 className={`text-xl font-bold ${TEXT_1} mb-2`}>No freelancers found</h3>
+            <p className={`text-sm ${TEXT_2} mb-6`}>Try adjusting your search or filter</p>
             <button
-              onClick={() => { setSearch(''); setActiveFilter('All') }}
-              className="px-6 py-2.5 rounded-xl font-bold text-sm cursor-pointer border-none
-                bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg"
+                onClick={onReset}
+                className={`${ACCENT_BG} text-white px-6 py-2.5 rounded-xl font-semibold text-sm
+                    cursor-pointer border-none hover:shadow-lg hover:shadow-blue-500/25 transition-all`}
             >
-              Clear Filters
+                Clear Filters
             </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filtered.map((freelancer, i) => (
-              <FreelancerCard
-                key={freelancer._id}
-                freelancer={freelancer}
-                index={i}
-                colorIndex={i}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ══ BOTTOM CTA ════════════════════════════════════════ */}
-      <div className="bg-[#0f172a] py-16 sm:py-24 px-4 border-t border-white/[0.05]">
-        <div className="relative max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 leading-tight">
-            Can't find what<br />
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent"> you need?</span>
-          </h2>
-          <p className="text-white/50 text-sm sm:text-base mb-8 max-w-lg mx-auto">
-            Post a project and let the right freelancers come to you. Our AI matches you with the best talent.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <button
-              onClick={() => navigate('/register')}
-              className="px-8 py-3.5 rounded-xl font-bold text-sm cursor-pointer border-none
-                bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-2xl hover:shadow-blue-500/30 hover:scale-105 transition-all"
-            >
-              Post a Project ↗
-            </button>
-            <button
-              onClick={() => navigate('/register')}
-              className="px-8 py-3.5 rounded-xl cursor-pointer bg-transparent text-white font-bold text-sm
-                border-2 border-white/20 hover:border-white/40 hover:bg-white/[0.05] transition-all"
-            >
-              Join as Freelancer
-            </button>
-          </div>
         </div>
-      </div>
-    </div>
-  )
+    )
+})
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT — all logic unchanged
+// ══════════════════════════════════════════════════════════════════════════════
+function Talent() {
+    const { freelancers, freelancerLoading, freelancerError, freelancerErrorMessage } =
+        useSelector(s => s.freelancer)
+    const dispatch = useDispatch()
+    const navigate = useNavigate()
+
+    const [search,       setSearch]       = useState('')
+    const [activeFilter, setActiveFilter] = useState('All')
+    const [heroRef,      heroInView]      = useInView(0.1)
+
+    useEffect(() => { dispatch(getFreelancers()) }, [dispatch])
+    useEffect(() => {
+        if (freelancerError && freelancerErrorMessage) toast.error(freelancerErrorMessage)
+    }, [freelancerError, freelancerErrorMessage])
+
+    const filtered = (freelancers || []).filter(f => {
+        const q = search.toLowerCase()
+        const matchSearch =
+            (f.user?.name     || '').toLowerCase().includes(q) ||
+            (f.category       || '').toLowerCase().includes(q) ||
+            (f.skills         || '').toLowerCase().includes(q)
+        return matchSearch && filterMatch(f, activeFilter)
+    })
+
+    const handleReset = () => { setSearch(''); setActiveFilter('All') }
+
+    return (
+        <div className="min-h-screen bg-[#020617]" style={{ fontFamily: "'DM Sans','Inter',system-ui,sans-serif" }}>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap');
+                * { box-sizing: border-box }
+            `}</style>
+
+            {/* ══ HERO ════════════════════════════════════════════════════════ */}
+            <section
+                className="relative overflow-hidden"
+                style={{ background: 'linear-gradient(160deg,#020617 0%,#0c1a38 50%,#020617 100%)' }}
+            >
+                {/* ambient glows */}
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-40 -right-20 w-[500px] h-[500px] rounded-full opacity-[0.12]"
+                        style={{ background: 'radial-gradient(circle,#3b82f6 0%,transparent 65%)' }} />
+                    <div className="absolute -bottom-32 -left-10 w-80 h-80 rounded-full opacity-[0.08]"
+                        style={{ background: 'radial-gradient(circle,#06b6d4 0%,transparent 65%)' }} />
+                    {/* subtle grid */}
+                    <div className="absolute inset-0 opacity-[0.035]"
+                        style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px)', backgroundSize: '52px 52px' }} />
+                </div>
+
+                <div ref={heroRef} className="relative z-10 max-w-3xl mx-auto px-4 sm:px-8 pt-14 sm:pt-20 pb-12 sm:pb-16 text-center">
+
+                    {/* live badge */}
+                    <div className={`inline-flex items-center gap-2 bg-white/[0.04] border border-white/[0.09] 
+                        rounded-full px-4 py-2 mb-6 transition-all duration-700
+                        ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    >
+                        <span className="relative flex w-2 h-2 flex-shrink-0">
+                            <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                            <span className="relative rounded-full bg-emerald-400 w-2 h-2" />
+                        </span>
+                        <span className={`text-xs font-medium ${TEXT_2}`}>
+                            {freelancers.length}+ verified freelancers available now
+                        </span>
+                    </div>
+
+                    {/* headline */}
+                    <h1 className={`text-3xl sm:text-5xl lg:text-6xl font-bold ${TEXT_1} leading-tight mb-3 tracking-tight
+                        transition-all duration-700 delay-100 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    >
+                        Hire the World's
+                        <br />
+                        <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+                            Best Talent
+                        </span>
+                    </h1>
+
+                    <p className={`text-sm sm:text-base ${TEXT_2} max-w-md mx-auto mb-7 leading-relaxed
+                        transition-all duration-700 delay-200 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    >
+                        Browse verified, skilled freelancers — ready to deliver results on your project.
+                    </p>
+
+                    {/* search + CTA */}
+                    <div className={`flex flex-col sm:flex-row gap-2.5 max-w-xl mx-auto mb-6
+                        transition-all duration-700 delay-300 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    >
+                        <div className="relative flex-1">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none">🔍</span>
+                            <input
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="Search by name, category, skills..."
+                                className={`w-full pl-10 pr-4 py-3 text-sm ${TEXT_1} placeholder-white/25
+                                    ${CARD} rounded-xl outline-none transition-all
+                                    focus:bg-white/[0.07] focus:border-white/20 focus:ring-2 focus:ring-blue-500/20`}
+                            />
+                        </div>
+                        <button
+                            onClick={() => navigate('/register')}
+                            className={`${ACCENT_BG} text-white px-6 py-3 rounded-xl font-semibold text-sm
+                                cursor-pointer border-none whitespace-nowrap
+                                hover:shadow-lg hover:shadow-blue-500/25 hover:scale-105 transition-all`}
+                        >
+                            Post a Project
+                        </button>
+                    </div>
+
+                    {/* filter pills */}
+                    <div className={`flex flex-wrap justify-center gap-2 mb-2
+                        transition-all duration-700 delay-350 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                    >
+                        {FILTERS.map(f => (
+                            <button
+                                key={f}
+                                onClick={() => setActiveFilter(f)}
+                                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200
+                                    cursor-pointer border min-h-[32px]
+                                    ${activeFilter === f
+                                        ? `${ACCENT_BG} text-white border-transparent shadow-md shadow-blue-500/20`
+                                        : `${CARD} ${TEXT_2} border-white/[0.08] hover:bg-white/[0.07] hover:text-white`
+                                    }`}
+                            >
+                                {f}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* animated stats */}
+                    <AnimatedStats inView={heroInView} />
+                </div>
+            </section>
+
+            {/* ══ FREELANCER GRID ═════════════════════════════════════════════ */}
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+
+                {/* result meta row */}
+                <div className={`flex flex-wrap items-center justify-between gap-3 mb-6 pb-5 border-b border-white/[0.06]`}>
+                    <p className={`text-sm ${TEXT_3}`}>
+                        Showing&nbsp;
+                        <strong className={TEXT_1}>{filtered.length}</strong>
+                        &nbsp;freelancers
+                        {activeFilter !== 'All' && <span className="text-blue-400"> in {activeFilter}</span>}
+                        {search && <span className={TEXT_2}> matching "{search}"</span>}
+                    </p>
+                    <div className={`flex gap-5 text-xs ${TEXT_3}`}>
+                        <span><strong className={TEXT_1}>{freelancers.length}+</strong> Total</span>
+                        <span><strong className={TEXT_1}>50K+</strong> Hired</span>
+                        <span><strong className={TEXT_1}>4.9★</strong> Avg</span>
+                    </div>
+                </div>
+
+                {/* cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                    {freelancerLoading && filtered.length === 0
+                        ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
+                        : filtered.length === 0
+                        ? <EmptyState onReset={handleReset} />
+                        : filtered.map((f, i) => (
+                            <FreelancerCard
+                                key={f._id}
+                                freelancer={f}
+                                index={i}
+                                colorIndex={i}
+                            />
+                        ))
+                    }
+                </div>
+            </main>
+
+            {/* ══ BOTTOM CTA ══════════════════════════════════════════════════ */}
+            <footer className="border-t border-white/[0.05]"
+                style={{ background: 'linear-gradient(160deg,#020617 0%,#0c1824 50%,#020617 100%)' }}
+            >
+                <div className="relative max-w-2xl mx-auto px-4 py-14 sm:py-20 text-center overflow-hidden">
+                    {/* glow */}
+                    <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                        w-96 h-96 rounded-full opacity-[0.07]"
+                        style={{ background: 'radial-gradient(circle,#3b82f6 0%,transparent 65%)' }} />
+
+                    <h2 className={`text-2xl sm:text-4xl font-bold ${TEXT_1} mb-3 leading-tight relative`}>
+                        Can't find what you need?
+                    </h2>
+                    <p className={`text-sm sm:text-base ${TEXT_2} mb-8 max-w-md mx-auto leading-relaxed relative`}>
+                        Post a project and let the right freelancers come to you.
+                    </p>
+                    <div className="flex flex-col sm:flex-row justify-center gap-3 relative">
+                        <button
+                            onClick={() => navigate('/register')}
+                            className={`${ACCENT_BG} text-white px-8 py-3 rounded-xl font-semibold text-sm
+                                cursor-pointer border-none hover:shadow-xl hover:shadow-blue-500/25 hover:scale-105 transition-all`}
+                        >
+                            Post a Project ↗
+                        </button>
+                        <button
+                            onClick={() => navigate('/register')}
+                            className={`bg-transparent ${TEXT_1} font-semibold text-sm px-8 py-3 rounded-xl
+                                cursor-pointer border border-white/15 hover:border-white/30 hover:bg-white/[0.04] transition-all`}
+                        >
+                            Join as Freelancer
+                        </button>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    )
 }
 
 export default Talent

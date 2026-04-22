@@ -1,63 +1,43 @@
-
 import API from "../api/axiosInstance"
+import { buildAuthConfig } from "../api/apiHelpers"
 
-// ── Fetch all projects ────────────────────────────────────────────────────────
-const fetchProject = async () => {
+const fetchProjects = async () => {
     const response = await API.get("/api/project")
     return response.data
 }
 
-// ── Get assigned projects for freelancer ──────────────────────────────────────
 const getAssignedProjects = async (token) => {
-    // ✅ Spec endpoint (server supports both /api/projects/assigned and legacy /api/project/assigned/mine)
-    const response = await API.get("/api/projects/assigned", {
-        headers: { authorization: `Bearer ${token}` }
-    })
+    const response = await API.get("/api/projects/assigned", buildAuthConfig(token))
     return response.data
 }
 
-// ── Create a new project ──────────────────────────────────────────────────────
 const createProject = async (formData, token) => {
-    const response = await API.post("/api/project/add", formData, {
-        headers: { authorization: `Bearer ${token}` }
-    })
+    const response = await API.post("/api/project/add", formData, buildAuthConfig(token))
     return response.data
 }
 
-// ── Get bids FOR a project ────────────────────────────────────────────────────
 const getProjectBids = async (projectId, token) => {
-    const response = await API.get(`/api/project/${projectId}`, {
-        headers: { authorization: `Bearer ${token}` }
-    })
+    const response = await API.get(`/api/project/${projectId}`, buildAuthConfig(token))
     return response.data
 }
 
-// ── Update bid status (Accept / Reject / Pending) ────────────────────────────
 const updateBidStatus = async (bidId, status, token) => {
-    const response = await API.post(`/api/project/${bidId}`, { status }, {
-        headers: { authorization: `Bearer ${token}` }
-    })
+    const response = await API.post(`/api/project/${bidId}`, { status }, buildAuthConfig(token))
     return response.data
 }
 
-// ── Accept bid (shorthand for updateBidStatus with "accepted") ────────────────
 const acceptBid = async (bidId, token) => {
-    const response = await API.post(`/api/project/${bidId}`, { status: "accepted" }, {
-        headers: { authorization: `Bearer ${token}` }
-    })
+    const response = await API.post(`/api/project/${bidId}`, { status: "accepted" }, buildAuthConfig(token))
     return response.data
 }
 
-// ── Update PROJECT status ─────────────────────────────────────────────────────
 const updateProjectStatus = async (projectId, status, token) => {
-    const response = await API.put(`/api/project/${projectId}`, { status }, {
-        headers: { authorization: `Bearer ${token}` }
-    })
+    const response = await API.put(`/api/project/${projectId}`, { status }, buildAuthConfig(token))
     return response.data
 }
 
 const projectService = {
-    fetchProject,
+    fetchProjects,
     getAssignedProjects,
     createProject,
     getProjectBids,

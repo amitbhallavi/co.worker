@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { useDispatch, useSelector } from 'react-redux'
 import { addPreviousProject, getFreelancer, removePreviousWork } from "../features/Freelancer/freelancerSlice"
 import { toast } from "react-toastify"
@@ -7,7 +7,6 @@ import LoaderGradient from "../components/LoaderGradient"
 import { getProjects, getBids, updateBidStatus, resetUpdate } from "../features/project/projectSlice"
 import ListProject from "../components/ListProject"
 import BecomeFreelancerModal from "../components/Becomefreelancermodal"
-import { getOrCreateConversation } from "../features/ChatsAndMessages/chatSlice"
 import RatingSummary from "../components/RatingSummary"
 
 // ── Status maps ────────────────────────────────────────────
@@ -34,24 +33,15 @@ const BID_STATUS_COLORS = {
 
 // ── Project + Bids Modal (Redux-based) ─────────────────────
 const ProjectModal = ({ project, onClose, onBidStatusChange }) => {
-    if (!project) return null
-
     const dispatch = useDispatch()
     const { bids, projectLoading: bidsLoading, updatingBidId, updateSuccess, updateError, updateErrorMessage } =
         useSelector(state => state.project)
 
     const [activeView, setActiveView] = useState("details")
 
-    const initials = (project.user?.name || '?')
-        .split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-
-    const techList = project.technology
-        ? project.technology.split(',').map(t => t.trim()).filter(Boolean)
-        : []
-
     useEffect(() => {
-        if (project._id) dispatch(getBids(project._id))
-    }, [project._id, dispatch])
+        if (project?._id) dispatch(getBids(project._id))
+    }, [project?._id, dispatch])
 
     useEffect(() => {
         if (updateSuccess) {
@@ -63,9 +53,18 @@ const ProjectModal = ({ project, onClose, onBidStatusChange }) => {
             toast.error(updateErrorMessage || "Failed to update bid status")
             dispatch(resetUpdate())
         }
-    }, [updateSuccess, updateError])
+    }, [dispatch, onBidStatusChange, updateError, updateErrorMessage, updateSuccess])
 
     const handleBidStatus = (bidId, status) => dispatch(updateBidStatus({ bidId, status }))
+
+    if (!project) return null
+
+    const initials = (project.user?.name || '?')
+        .split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+
+    const techList = project.technology
+        ? project.technology.split(',').map(t => t.trim()).filter(Boolean)
+        : []
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -247,14 +246,12 @@ const ProjectModal = ({ project, onClose, onBidStatusChange }) => {
 
 // ══════════════════════════════════════════════════════════
 const UserProfilePage = () => {
-    const navigate = useNavigate()
     const { user } = useSelector(state => state.auth)
-    const { freelancer, freelancerLoading, freelancerError, freelancerErrorMessage, freelancerSuccess } =
+    const { freelancer, freelancerLoading, freelancerError, freelancerErrorMessage } =
         useSelector(state => state.freelancer)
     const { listedProjects } = useSelector(state => state.project)
     const dispatch = useDispatch()
 
-    // ✅ Track local freelancer status for instant UI update
     const [justBecameFreelancer, setJustBecameFreelancer] = useState(false)
     const isFreelancer = user?.isFreelancer || justBecameFreelancer
 
@@ -272,19 +269,21 @@ const UserProfilePage = () => {
     const { projectLink, projectDescription, projectImage } = formData
 
     const handleChange = e => setFormData({ ...formData, [e.target.name]: e.target.value })
-    const handleSubmit = e => { e.preventDefault(); dispatch(addPreviousProject(formData)) }
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        try {
+            await dispatch(addPreviousProject(formData)).unwrap()
+            setShowAddModal(false)
+            setShowDeleteModal(false)
+            setFormData({ projectLink: "", projectDescription: "", projectImage: "" })
+        } catch {
+            // Errors are surfaced through the existing freelancer error effect.
+        }
+    }
 
     const myProjects = Array.isArray(listedProjects)
         ? listedProjects.filter(p => p.user?._id === user?._id)
         : []
-
-    useEffect(() => {
-        if (freelancerSuccess) {
-            setShowAddModal(false)
-            setShowDeleteModal(false)
-            setFormData({ projectLink: "", projectDescription: "", projectImage: "" })
-        }
-    }, [freelancerSuccess])
 
     useEffect(() => {
         if (user?._id) {
@@ -293,27 +292,18 @@ const UserProfilePage = () => {
         }
     }, [dispatch, user?._id])
 
-    useEffect(() => {
-        if (freelancerError && freelancerErrorMessage?.trim()) toast.error(freelancerErrorMessage)
-    }, [freelancerError, freelancerErrorMessage])
-
-    // ✅ Sync inFreelancer with justBecameFreelancer
-    useEffect(() => {
-        if (justBecameFreelancer) {
-            setIsFreelancer(true)
-            setActiveTab("portfolio")
-        }
-    }, [justBecameFreelancer])
-
-    const handleRemove = () => {
+    const handleRemove = async () => {
         if (deleteTargetId) {
-            dispatch(removePreviousWork(deleteTargetId))
-            setShowDeleteModal(false)
-            setDeleteTargetId(null)
+            try {
+                await dispatch(removePreviousWork(deleteTargetId)).unwrap()
+                setShowDeleteModal(false)
+                setDeleteTargetId(null)
+            } catch {
+                // Errors are surfaced through the existing freelancer error effect.
+            }
         }
     }
     useEffect(() => {
-        //  Sirf real errors pe toast dikho, "not found" pe nahi
         if (freelancerError && freelancerErrorMessage?.trim() &&
             freelancerErrorMessage !== "Freelancer not found") {
             toast.error(freelancerErrorMessage)
@@ -345,14 +335,15 @@ const UserProfilePage = () => {
                 .modal-in {animation:modalIn .3s cubic-bezier(.34,1.56,.64,1) both}
             `}</style>
 
-            {/* ✅ BecomeFreelancerModal — real API, 2-step form */}
             {showBecomeFModal && (
                 <BecomeFreelancerModal
                     onClose={() => setShowBecomeFModal(false)}
                     onSuccess={() => {
                         setShowBecomeFModal(false)
-                        setJustBecameFreelancer(true)   // ✅ instant UI update
-                        dispatch(getFreelancer(user._id)) // ✅ refresh freelancer data
+                        setJustBecameFreelancer(true)
+                        setIsFreelancer(true)
+                        setActiveTab("portfolio")
+                        dispatch(getFreelancer(user._id))
                     }}
                 />
             )}
@@ -424,7 +415,6 @@ const UserProfilePage = () => {
                                     className="px-10 py-2 text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:opacity-90 transition cursor-pointer shadow border-none">
                                     ✏️ Edit Profile
                                 </button>
-                                {/* ✅ Button changes on activation */}
                                 {!inFreelancer && (
                                     <button onClick={() => setShowBecomeFModal(true)}
                                         className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:opacity-90 transition shadow cursor-pointer border-none">

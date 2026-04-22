@@ -11,8 +11,18 @@ import subscription from './subscription/planSlice'
 import client from './client/clientSlice'
 
 const store = configureStore({
-    reducer: {auth  , admin  , freelancer , project , wallet , payment , chat , rating , subscription , client }
+    reducer: {
+        auth,
+        admin,
+        freelancer,
+        project,
+        wallet,
+        payment,
+        chat,
+        rating,
+        subscription,
+        client,
+    },
 })
 
-
-export default store;
+export default store

@@ -5,6 +5,9 @@ import { useDispatch, useSelector } from "react-redux"
 import { logoutUser, refreshUser } from "../features/auth/authSlice"
 import { getUnreadCount } from "../features/ChatsAndMessages/chatSlice"
 import { motion, AnimatePresence } from "framer-motion"
+import CoworkerIcon from "./CoworkerIcon"
+
+const MotionPanel = motion.div
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -44,17 +47,23 @@ const useClickOutside = (ref, handler) => {
 // Logo
 // ─────────────────────────────────────────────────────────────
 const Logo = () => (
-    <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0 select-none">
-        <div className="relative w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0">
-            <div className="absolute inset-0 rounded-[10px] bg-gradient-to-br from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/25 group-hover:shadow-blue-500/45 transition-all duration-300 group-hover:scale-105" />
-            <span className="absolute inset-0 flex items-center justify-center text-white font-black text-sm sm:text-base" style={{ fontFamily: "Georgia, serif" }}>
-                C.
+    <Link to="/" className="group flex items-center gap-3 flex-shrink-0 select-none">
+        <div className="relative flex-shrink-0">
+            <div className="absolute inset-0 rounded-[20px] bg-cyan-300/35 blur-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="relative rounded-[18px] border border-sky-100/80 bg-white/80 p-1.5 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.35)] transition-all duration-300 group-hover:-translate-y-0.5 group-hover:shadow-[0_22px_50px_-28px_rgba(43,196,212,0.42)]">
+                <CoworkerIcon size={30} />
+            </div>
+        </div>
+        <div className="hidden sm:flex flex-col leading-none">
+            <span className="auth-serif text-[18px] font-semibold tracking-[-0.04em] text-slate-900">
+                <span className="text-slate-900">Co</span>
+                <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">.</span>
+                <span className="font-medium text-slate-700">worker</span>
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700/70">
+                Secure freelance workspace
             </span>
         </div>
-        <span className="hidden sm:block font-bold text-[17px] tracking-tight leading-none">
-            <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Co</span>
-            <span className="text-gray-800">.worker</span>
-        </span>
     </Link>
 )
 
@@ -361,7 +370,7 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
     const location = useLocation()
 
     // Close on route change
-    useEffect(() => { onClose() }, [location.pathname])
+    useEffect(() => { onClose() }, [location.pathname, onClose])
 
     // Lock body scroll when open
     useEffect(() => {
@@ -380,7 +389,7 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
             {open && (
                 <>
                     {/* Backdrop */}
-                    <motion.div
+                    <MotionPanel
                         key="backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -583,15 +592,18 @@ const Navbar = () => {
         dispatch(refreshUser())
         const id = setInterval(() => dispatch(refreshUser()), 60_000)
         return () => clearInterval(id)
-    }, [user?._id, dispatch])
+    }, [user, dispatch])
 
     // ── Fetch unread on mount ──────────────────────────────
     useEffect(() => {
         if (user) dispatch(getUnreadCount())
-    }, [user?._id, dispatch])
+    }, [user, dispatch])
 
     // ── Close talent dropdown on route change ──────────────
-    useEffect(() => { setTalentOpen(false) }, [location.pathname])
+    useEffect(() => {
+        const timer = setTimeout(() => setTalentOpen(false), 0)
+        return () => clearTimeout(timer)
+    }, [location.pathname])
 
     // ── Scroll shadow ──────────────────────────────────────
     useEffect(() => {

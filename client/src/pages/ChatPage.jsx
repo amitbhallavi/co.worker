@@ -11,6 +11,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "react-toastify"
 
+const MotionPanel = motion.div
+
 // ─────────────────────────────────────────────────────────────
 // Socket Singleton
 // ─────────────────────────────────────────────────────────────
@@ -35,13 +37,6 @@ const getSocket = (token) => {
 
     _socketInstance.connect()
     return _socketInstance
-}
-
-export const disconnectSocket = () => {
-    if (_socketInstance) {
-        _socketInstance.disconnect()
-        _socketInstance = null
-    }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -521,14 +516,14 @@ const AuthLoadingScreen = () => (
 const LoginRequiredScreen = () => (
     <div className="h-screen flex flex-col items-center justify-center bg-[#020617] text-center px-6"
         style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-        <motion.div
+        <MotionPanel
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", damping: 20 }}
             className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-3xl flex items-center justify-center text-4xl mb-6"
         >
             🔒
-        </motion.div>
+        </MotionPanel>
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <h2 className="text-2xl font-extrabold text-white mb-2">Login Required</h2>
             <p className="text-white/40 text-sm mb-6 max-w-xs">
@@ -547,19 +542,8 @@ const LoginRequiredScreen = () => (
 // ─────────────────────────────────────────────────────────────
 // ChatPage (Main)
 // ─────────────────────────────────────────────────────────────
-const ChatPage = () => {
+const ChatPageContent = ({ user }) => {
     const dispatch = useDispatch()
-    // Read both user AND loading from auth slice
-    // loading covers the window when Redux is rehydrating from localStorage
-    const { user, loading: authLoading, isLoading } = useSelector(s => s.auth)
-
-    // ── While auth is still resolving, show skeleton (not login screen) ──
-    // This prevents the flash of "Login Required" on page refresh when user IS logged in
-    const authPending = authLoading || isLoading
-    if (authPending && !user) return <AuthLoadingScreen />
-
-    // ── Auth fully resolved, no user = redirect to login ──
-    if (!user?._id) return <LoginRequiredScreen />
     const {
         conversations, activeConversation, messages,
         onlineUsers, typingUsers, msgLoading, sendLoading,
@@ -591,8 +575,6 @@ const ChatPage = () => {
             "messages_seen", "new_message_notification",
         ]
         events.forEach(e => sock.off(e))
-
-        sock.on("connect", () => console.log("[Socket] Connected:", sock.id))
 
         sock.on("receive_message", (data) => {
             const msgId = data.message?._id
@@ -811,6 +793,16 @@ const ChatPage = () => {
             </main>
         </div>
     )
+}
+
+const ChatPage = () => {
+    const { user, loading: authLoading, isLoading } = useSelector(s => s.auth)
+
+    const authPending = authLoading || isLoading
+    if (authPending && !user) return <AuthLoadingScreen />
+    if (!user?._id) return <LoginRequiredScreen />
+
+    return <ChatPageContent user={user} />
 }
 
 export default ChatPage

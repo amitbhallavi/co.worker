@@ -343,12 +343,10 @@ const AdminDashboard = () => {
 
   // ── Local UI state ─────────────────────────────────────────────────────────
   const [section, setSection] = useState("dashboard")
-  const [payments, setPayments] = useState(DUMMY_PAYMENTS)
+  const payments = DUMMY_PAYMENTS
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState("All")
   const [statusFilter, setStatusFilter] = useState("All")
-  const [methodFilter, setMethodFilter] = useState("All")
-  const [dateFilter, setDateFilter] = useState("")
   const [sortCfg, setSortCfg] = useState({ key: "name", dir: "asc" })
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showNotif, setShowNotif] = useState(false)
@@ -378,7 +376,7 @@ const AdminDashboard = () => {
   // ── Auth guard (stable deps — no navigate in deps) ─────────────────────────
   useEffect(() => {
     if (!user || !user.isAdmin) navigate("/")
-  }, [user?._id, user?.isAdmin]) // eslint-disable-line
+  }, [navigate, user])
 
   // ── Fetch all data once on mount ──────────────────────────────────────────
   useEffect(() => {
@@ -387,7 +385,7 @@ const AdminDashboard = () => {
     dispatch(getAllProjects())
     dispatch(getAllBids())
     dispatch(getDashboardStats())
-  }, [dispatch, user?.isAdmin]) // eslint-disable-line
+  }, [dispatch, user?.isAdmin])
 
   // ── Show error toasts ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -418,7 +416,7 @@ const AdminDashboard = () => {
     if (typeof av === "string") return (av || "").localeCompare(bv || "") * mod
     return ((av || 0) - (bv || 0)) * mod
   })
-  const SI = ({ col }) => <span className="ml-1 opacity-60">{sortCfg.key === col ? (sortCfg.dir === "asc" ? "↑" : "↓") : "↕"}</span>
+  const getSortIcon = col => sortCfg.key === col ? (sortCfg.dir === "asc" ? "↑" : "↓") : "↕"
 
   // ── Computed ───────────────────────────────────────────────────────────────
   const q = search.toLowerCase()
@@ -446,14 +444,6 @@ const AdminDashboard = () => {
     const ms = statusFilter === "All" || b.status === statusFilter
     return mq && ms
   })
-  const filteredPayments = payments.filter(p => {
-    const mq = !q || p.user?.toLowerCase().includes(q) || p.txId?.toLowerCase().includes(q)
-    const ms = statusFilter === "All" || p.status === statusFilter
-    const mm = methodFilter === "All" || p.method === methodFilter
-    const md = !dateFilter || p.date === dateFilter
-    return mq && ms && mm && md
-  })
-
   // ── Admin actions ──────────────────────────────────────────────────────────
   const doUpdateUser = (uid, data) => {
     dispatch(localUpdateUser({ uid, data }))
@@ -484,12 +474,6 @@ const AdminDashboard = () => {
       .then(() => { toast.success(`Bid ${data.status || "updated"}`); pushActivity(`Bid ${data.status || "updated"}`, data.status === "Accepted" ? "success" : "warn") })
       .catch(() => { })
   }
-  const doUpdatePayment = (id, field, val) => {
-    setPayments(prev => prev.map(p => p._id === id ? { ...p, [field]: val } : p))
-    toast.success(`Payment marked ${val}`)
-    pushActivity(`Payment marked ${val}`, val === "Completed" ? "success" : "error")
-  }
-
   // ── Selects style ──────────────────────────────────────────────────────────
   const SEL = { background: t.selectBg, border: `1px solid ${t.inputBorder}`, color: t.text, borderRadius: 10, padding: "6px 12px", fontSize: 13, outline: "none", cursor: "pointer" }
 
@@ -703,12 +687,12 @@ const AdminDashboard = () => {
                       <table className="w-full text-sm">
                         <thead>
                           <tr>
-                            <TH onClick={() => toggleSort("name")}>Name / Email <SI col="name" /></TH>
+                            <TH onClick={() => toggleSort("name")}>Name / Email <span className="ml-1 opacity-60">{getSortIcon("name")}</span></TH>
                             <TH>Role</TH>
                             <TH>Skills</TH>
-                            <TH onClick={() => toggleSort("completedProjects")}>Projects <SI col="completedProjects" /></TH>
-                            <TH onClick={() => toggleSort("totalBids")}>Bids <SI col="totalBids" /></TH>
-                            <TH onClick={() => toggleSort("credits")}>Credits <SI col="credits" /></TH>
+                            <TH onClick={() => toggleSort("completedProjects")}>Projects <span className="ml-1 opacity-60">{getSortIcon("completedProjects")}</span></TH>
+                            <TH onClick={() => toggleSort("totalBids")}>Bids <span className="ml-1 opacity-60">{getSortIcon("totalBids")}</span></TH>
+                            <TH onClick={() => toggleSort("credits")}>Credits <span className="ml-1 opacity-60">{getSortIcon("credits")}</span></TH>
                             <TH>Status</TH>
                             <TH>Actions</TH>
                           </tr>
@@ -846,7 +830,7 @@ const AdminDashboard = () => {
                                 <option>Open</option><option>In-Progress</option><option>Completed</option><option>Cancelled</option>
                               </select>
                               <Btn onClick={() => { const fl = window.prompt("Assign freelancer:", p.assignedTo || ""); if (fl !== null) doUpdateProject(p._id, { assignedTo: fl }) }} color="indigo" size="sm">Assign</Btn>
-                              <Btn onClick={() => setConfirmModal({ title: "Delete Project", body: `Delete "${p.title}"?`, onConfirm: () => setProjects ? null : dispatch(localUpdateProject({ pid: p._id, data: {} })) })} color="red" size="sm">Delete</Btn>
+                              <Btn onClick={() => setConfirmModal({ title: "Delete Project", body: `Delete "${p.title}"?`, onConfirm: () => dispatch(localUpdateProject({ pid: p._id, data: {} })) })} color="red" size="sm">Delete</Btn>
                             </div>
                           </div>
                         </div>
@@ -885,8 +869,8 @@ const AdminDashboard = () => {
                         <thead>
                           <tr>
                             <TH>Freelancer</TH>
-                            <TH onClick={() => toggleSort("project")}>Project <SI col="project" /></TH>
-                            <TH onClick={() => toggleSort("amount")}>Amount <SI col="amount" /></TH>
+                            <TH onClick={() => toggleSort("project")}>Project <span className="ml-1 opacity-60">{getSortIcon("project")}</span></TH>
+                            <TH onClick={() => toggleSort("amount")}>Amount <span className="ml-1 opacity-60">{getSortIcon("amount")}</span></TH>
                             <TH>Status</TH>
                             <TH>Fraud</TH>
                             <TH>Actions</TH>

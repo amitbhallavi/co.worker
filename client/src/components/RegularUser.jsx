@@ -33,6 +33,7 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
     const [updatingId, setUpdatingId] = useState(null)
     const [activeView, setActiveView] = useState("details")
     const [completingId, setCompletingId] = useState(null)
+    const [payProject, setPayProject] = useState(null)
 
     const initials = (project.user?.name || '?')
         .split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
@@ -65,9 +66,7 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                     { status: "accepted" },
                     { headers: { authorization: `Bearer ${token}` } }
                 )
-                console.log("✅ Bid accepted:", response.data)
-                
-                // ✅ Reject all other bids
+
                 const otherBids = bids.filter(b => b._id !== bidId && (b.status === "Pending" || b.status === "pending"))
                 for (const bid of otherBids) {
                     try {
@@ -99,7 +98,6 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
         finally { setUpdatingId(null) }
     }
 
-    // ✅ FIX: POST /api/payment/release/:projectId (matches paymentRoutes.js)
     const handleMarkComplete = async (projectId) => {
         setCompletingId(projectId)
         try {
@@ -227,7 +225,6 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                                 </div>
                             )}
 
-                            {/* ✅ Pay Now — bid accepted, not paid */}
                             {acceptedBid && !isEscrowed && !isPaid && (
                                 <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3">
                                     <div className="flex-1">
@@ -241,7 +238,6 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                                 </div>
                             )}
 
-                            {/* ✅ In Escrow — mark complete */}
                             {isEscrowed && !isPaid && (
                                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3">
                                     <div className="flex-1">
@@ -259,7 +255,6 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                                 </div>
                             )}
 
-                            {/* ✅ Already completed */}
                             {isPaid && (
                                 <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
                                     <p className="text-2xl mb-1">🎊</p>
@@ -346,7 +341,6 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                                                         </button>
                                                     ))}
 
-                                                    {/* ✅ Pay Now on bid row */}
                                                     {bidAccepted && !isEscrowed && !isPaid && (
                                                         <button onClick={() => setPayProject(project)}
                                                             className="px-3 py-1.5 text-xs font-black text-white bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg hover:shadow-md hover:scale-105 transition-all cursor-pointer border-none">
@@ -354,7 +348,6 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                                                         </button>
                                                     )}
 
-                                                    {/* ✅ Mark Complete on bid row */}
                                                     {bidAccepted && isEscrowed && !isPaid && (
                                                         <button onClick={() => handleMarkComplete(project._id)}
                                                             disabled={!!completingId}
@@ -447,14 +440,12 @@ const RegularUser = () => {
         if (user?._id) dispatch(getProjects())
     }, [dispatch, user?._id])
 
-    // ✅ Socket listener (use shared socketManager)
     useEffect(() => {
         if (!user?._id) return
         const socket = getSocket()
         if (!socket) return
 
         const onBidAccepted = (data) => {
-            console.log("📢 bidAccepted:", data)
             if (!data?.projectId) return
             toast.success("Payment amount locked to freelancer bid. Proceed to secure payment.")
             dispatch(updateProjectAmount(data))
@@ -462,7 +453,6 @@ const RegularUser = () => {
         }
 
         const onProjectAssigned = (assignedProject) => {
-            console.log("📢 projectAssigned (client):", assignedProject)
             if (assignedProject?.client?._id === user?._id || assignedProject?.user?._id === user?._id) {
                 toast.info(`Freelancer assigned to "${assignedProject.title}"`)
                 setBidAccepted(true)
@@ -477,7 +467,6 @@ const RegularUser = () => {
         }
     }, [user?._id, dispatch])
 
-    // ✅ AUTO NAVIGATION AFTER BID ACCEPT
     useEffect(() => {
         if (bidAccepted) {
             navigate("/assigned-projects")
@@ -487,9 +476,6 @@ const RegularUser = () => {
     const myProjects = Array.isArray(listedProjects)
         ? listedProjects.filter(p => p.user?._id === user?._id)
         : []
-
-    // DEBUG SAFETY
-    console.log("assignedProjects:", myProjects.filter(p => p.freelancer))
 
     if (!user) return (
         <div className="min-h-screen flex items-center justify-center">
@@ -623,7 +609,6 @@ const RegularUser = () => {
                 <div className="flex gap-0.5 border-b border-zinc-200 mb-5">
                     {[
                         { id: "bids", label: "My Projects" },
-                        // ✅ CONDITIONAL TAB RENDERING (must be length > 0)
                         ...(myProjects.filter(p => p.freelancer && (p.status === "accepted" || p.status === "in-progress")).length > 0
                             ? [{ id: "assigned", label: "✦ Assigned Freelancers" }]
                             : []),
@@ -904,7 +889,6 @@ const RegularUser = () => {
                 </div>
             )}
 
-            {/* ✅ Payment Modal - For assigned freelancers tab */}
             {payProject && (
                 <PaymentModal
                     project={payProject}

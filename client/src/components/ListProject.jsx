@@ -45,7 +45,6 @@ const TECHNOLOGIES = [
 
 // ── useTypewriter hook ─────────────────────────────────────
 function useTypewriter() {
-    const [displayed, setDisplayed] = useState("")
     const [wordIdx, setWordIdx] = useState(0)
     const [phase, setPhase] = useState("typing")
     const [charIdx, setCharIdx] = useState(0)
@@ -55,7 +54,9 @@ function useTypewriter() {
         const word = WORDS[wordIdx]
         if (phase === "typing") {
             if (charIdx < word.length) {
-                timer = setTimeout(() => { setDisplayed(word.slice(0, charIdx + 1)); setCharIdx(c => c + 1) }, 72)
+                timer = setTimeout(() => {
+                    setCharIdx(currentIndex => currentIndex + 1)
+                }, 72)
             } else {
                 timer = setTimeout(() => setPhase("pause"), 1900)
             }
@@ -63,15 +64,20 @@ function useTypewriter() {
             timer = setTimeout(() => setPhase("deleting"), 200)
         } else if (phase === "deleting") {
             if (charIdx > 0) {
-                timer = setTimeout(() => { setDisplayed(word.slice(0, charIdx - 1)); setCharIdx(c => c - 1) }, 36)
+                timer = setTimeout(() => {
+                    setCharIdx(currentIndex => currentIndex - 1)
+                }, 36)
             } else {
-                setPhase("typing")
+                timer = setTimeout(() => {
+                    setWordIdx(currentIndex => (currentIndex + 1) % WORDS.length)
+                    setPhase("typing")
+                }, 0)
             }
         }
         return () => clearTimeout(timer)
     }, [phase, charIdx, wordIdx])
 
-    return { displayed, wordIdx }
+    return { wordIdx }
 }
 
 // ── Marquee strip ──────────────────────────────────────────
@@ -96,7 +102,7 @@ const ListProject = () => {
 
     const dispatch = useDispatch()
     const navigate = useNavigate()
-    const { displayed, wordIdx } = useTypewriter()
+    const { wordIdx } = useTypewriter()
     const color = WORD_COLORS[wordIdx]
 
     const [formData, setFormData] = useState({ title: "", description: "", budget: "", technology: "", category: "", duration: "" })

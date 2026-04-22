@@ -1,36 +1,24 @@
-import React from 'react'
-
 const CoworkerIcon = ({ size = 36 }) => {
     return (
-        <svg
-            width={size}
-            height={size}
-            viewBox="0 0 36 36"
-            xmlns="http://www.w3.org/2000/svg"
+        <span
+            aria-hidden="true"
+            className="inline-flex shrink-0 items-center justify-center rounded-full text-white ring-1 ring-white/35 shadow-[0_18px_40px_-20px_rgba(43,196,212,0.95)]"
+            style={{
+                width: size,
+                height: size,
+                background: 'linear-gradient(135deg, #3B7FF5 0%, #2BC4D4 100%)',
+            }}
         >
-            <defs>
-                <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3B7FF5" />
-                    <stop offset="100%" stopColor="#2BC4D4" />
-                </linearGradient>
-            </defs>
-
-            {/* Circle background */}
-            <circle cx="18" cy="18" r="18" fill="url(#iconGrad)" />
-
-            {/* Co. text inside */}
-            <text
-                x="18"
-                y="23"
-                fontFamily="Georgia, serif"
-                fontSize="12"
-                fontWeight="500"
-                fill="white"
-                textAnchor="middle"
+            <span
+                className="auth-serif select-none font-semibold leading-none tracking-[-0.08em]"
+                style={{
+                    fontSize: `${Math.max(15, size * 0.28)}px`,
+                    transform: 'translateY(1px)',
+                }}
             >
                 Co.
-            </text>
-        </svg>
+            </span>
+        </span>
     )
 }
 

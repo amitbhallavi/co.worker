@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from "react"
+import { useState, useEffect, useCallback, memo } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import axios from "axios"
+
+const MotionPanel = motion.div
 
 const AnimatedBackground = memo(function AnimatedBackground() {
     return (
@@ -53,7 +55,7 @@ const LiveActivityFeed = memo(function LiveActivityFeed() {
                 <span className="text-xs font-bold text-white/60 uppercase tracking-wider">Live Activity</span>
             </div>
             <AnimatePresence mode="wait">
-                <motion.div
+                <MotionPanel
                     key={currentIndex}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -62,7 +64,7 @@ const LiveActivityFeed = memo(function LiveActivityFeed() {
                     className="flex items-center gap-3"
                 >
                     <p className={`text-sm font-medium ${activities[currentIndex]?.color}`}>{activities[currentIndex]?.text}</p>
-                </motion.div>
+                </MotionPanel>
             </AnimatePresence>
             <div className="flex gap-1 mt-3">
                 {activities.slice(0, 5).map((_, i) => (
@@ -269,7 +271,7 @@ const FeatureCard = memo(function FeatureCard({ feature, index }) {
     )
 })
 
-const TestimonialCard = memo(function TestimonialCard({ testimonial, index }) {
+const TestimonialCard = memo(function TestimonialCard({ testimonial }) {
     const [isActive, setIsActive] = useState(false)
     return (
         <motion.div
@@ -376,7 +378,6 @@ const Home = () => {
     const navigate = useNavigate()
     const [searchQuery, setSearchQuery] = useState("")
     const [searchType, setSearchType] = useState("freelancers")
-    const [stats, setStats] = useState({})
     const [freelancers, setFreelancers] = useState([])
     const [loading, setLoading] = useState(true)
     const [activeStep, setActiveStep] = useState(0)
@@ -463,7 +464,7 @@ const Home = () => {
             setActiveStep((prev) => (prev + 1) % howItWorksSteps.length)
         }, 3000)
         return () => clearInterval(interval)
-    }, [])
+    }, [howItWorksSteps.length])
 
     const handleSearch = useCallback(
         (e) => {
@@ -585,7 +586,7 @@ const Home = () => {
                                 </Link>
                             </motion.div>
 
-                            <TrustBar stats={stats} />
+                    <TrustBar stats={{}} />
                         </div>
 
                         <motion.div

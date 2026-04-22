@@ -293,7 +293,7 @@ const FAQS = [
 // ══════════════════════════════════════════════════════════
 // PLAN CARD COMPONENT
 // ══════════════════════════════════════════════════════════
-const PlanCard = ({ plan, billing, onCTA, index, isFreelancer = false }) => {
+const PlanCard = ({ plan, billing, onCTA, index }) => {
   const [ref, inView] = useInView(0.1)
   const [hovered, setHovered] = useState(false)
   const isPopular = !!plan.popular
@@ -581,7 +581,6 @@ const PricingPage = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const { user } = useSelector(state => state.auth)
-  const { loading: clientLoading } = useSelector(state => state.client)
 
   const [tab, setTab] = useState('client') // 'client' | 'freelancer'
   const [billing, setBilling] = useState('monthly')
@@ -600,7 +599,6 @@ const PricingPage = () => {
     if (!socket) return
 
     const onPlanActivated = (data) => {
-      console.log('[Socket] Plan activated:', data)
       dispatch(fetchUserPlan())
       toast.success(`🎉 Your ${data.plan} plan is now active!`, {
         position: 'top-right',

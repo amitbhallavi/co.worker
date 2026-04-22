@@ -1,63 +1,10 @@
-// ===== FILE: client/src/features/client/clientSlice.js =====
-// Redux slice for client plan and features management
-
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
-import API from "../api/axiosInstance"
-
-const BASE = "/api/client"
-
-const authH = (token) => ({ headers: { Authorization: `Bearer ${token}` } })
-const errMsg = (e) => e?.response?.data?.error || e?.message || "Something went wrong"
-
-// ── THUNKS ─────────────────────────────────────────────────────────────────────
-
-/**
- * Activate free client plan (instant, no payment)
- */
-export const activateClientPlan = createAsyncThunk(
-    "client/activateClientPlan",
-    async (_, thunkAPI) => {
-        try {
-            const token = thunkAPI.getState().auth.user?.token
-            const res = await API.post(
-                `${BASE}/activate-plan`,
-                {},
-                authH(token)
-            )
-            return res.data
-        } catch (e) {
-            return thunkAPI.rejectWithValue(errMsg(e))
-        }
-    }
-)
-
-/**
- * Get client features and limitations
- */
-export const getClientFeatures = createAsyncThunk(
-    "client/getClientFeatures",
-    async (_, thunkAPI) => {
-        try {
-            const token = thunkAPI.getState().auth.user?.token
-            const res = await API.get(
-                `${BASE}/features`,
-                authH(token)
-            )
-            return res.data
-        } catch (e) {
-            return thunkAPI.rejectWithValue(errMsg(e))
-        }
-    }
-)
-
-// ── SLICE ──────────────────────────────────────────────────────────────────────
+import { getApiErrorMessage, getAuthToken } from "../api/apiHelpers"
+import clientService from "./clientService"
 
 const initialState = {
-    // Client plan status
     isActive: false,
     plan: "free",
-
-    // Client features
     features: {
         projectsLimit: "unlimited",
         bidsReceived: "unlimited",
@@ -67,62 +14,74 @@ const initialState = {
         paymentEscrow: true,
         supportLevel: "standard",
     },
-
-    // Loading & error
     loading: false,
     success: false,
     error: false,
     errorMsg: "",
 }
 
-const setPending = (s) => {
-    s.loading = true
-    s.success = false
-    s.error = false
-    s.errorMsg = ""
+export const activateClientPlan = createAsyncThunk("client/activateClientPlan", async (_, thunkAPI) => {
+    try {
+        return await clientService.activatePlan(getAuthToken(thunkAPI))
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+    }
+})
+
+export const getClientFeatures = createAsyncThunk("client/getClientFeatures", async (_, thunkAPI) => {
+    try {
+        return await clientService.fetchFeatures(getAuthToken(thunkAPI))
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+    }
+})
+
+const startRequest = (state) => {
+    state.loading = true
+    state.success = false
+    state.error = false
+    state.errorMsg = ""
 }
 
-const setError = (s, action) => {
-    s.loading = false
-    s.error = true
-    s.errorMsg = action.payload
+const failRequest = (state, action) => {
+    state.loading = false
+    state.error = true
+    state.errorMsg = action.payload
 }
 
 const clientSlice = createSlice({
     name: "client",
     initialState,
     reducers: {
-        resetClientState: (s) => {
-            s.loading = false
-            s.success = false
-            s.error = false
-            s.errorMsg = ""
+        resetClientState: (state) => {
+            state.loading = false
+            state.success = false
+            state.error = false
+            state.errorMsg = ""
         },
-        clearSuccess: (s) => {
-            s.success = false
+        clearSuccess: (state) => {
+            state.success = false
         },
     },
-    extraReducers: (b) => {
-        b
-            // ── Activate Client Plan
-            .addCase(activateClientPlan.pending, setPending)
-            .addCase(activateClientPlan.fulfilled, (s, a) => {
-                s.loading = false
-                s.success = true
-                s.isActive = true
-                s.plan = "free"
+    extraReducers: (builder) => {
+        builder
+            .addCase(activateClientPlan.pending, startRequest)
+            .addCase(activateClientPlan.fulfilled, (state) => {
+                state.loading = false
+                state.success = true
+                state.isActive = true
+                state.plan = "free"
             })
-            .addCase(activateClientPlan.rejected, setError)
+            .addCase(activateClientPlan.rejected, failRequest)
 
-            // ── Get Client Features
-            .addCase(getClientFeatures.pending, setPending)
-            .addCase(getClientFeatures.fulfilled, (s, a) => {
-                s.loading = false
-                s.success = true
-                s.features = a.payload.features || initialState.features
-                s.plan = a.payload.plan || "free"
+            .addCase(getClientFeatures.pending, startRequest)
+            .addCase(getClientFeatures.fulfilled, (state, action) => {
+                state.loading = false
+                state.success = true
+                state.features = action.payload.features || initialState.features
+                state.plan = action.payload.plan || "free"
             })
-            .addCase(getClientFeatures.rejected, setError)
+            .addCase(getClientFeatures.rejected, failRequest)
     },
 })
 

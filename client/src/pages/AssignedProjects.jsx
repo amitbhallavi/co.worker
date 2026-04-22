@@ -1,19 +1,14 @@
-// ===== FILE: client/src/pages/AssignedProjects.jsx =====
-// Freelancer's view of assigned projects (with payment status)
-
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { getAssignedProjects, addAssignedProject } from '../features/project/projectSlice'
 import LoaderGradient from '../components/LoaderGradient'
-import { Clock, MapPin, AlertCircle, CheckCircle2, Briefcase } from 'lucide-react'
+import { Clock, Briefcase } from 'lucide-react'
 import { getSocket } from '../utils/socketManager'
 
 const AssignedProjects = () => {
     const dispatch = useDispatch()
-    const navigate = useNavigate()
-    const { user } = useSelector(s => s.auth)
     const { assignedProjects, projectLoading } = useSelector(s => s.project)
     const [filter, setFilter] = useState("all") // all | in-progress | completed | pending-payment
 
@@ -21,12 +16,10 @@ const AssignedProjects = () => {
         dispatch(getAssignedProjects())
     }, [dispatch])
 
-    // ✅ Socket.IO listener for real-time project assignment
     useEffect(() => {
         const socket = getSocket()
         if (socket) {
             const handleProjectAssigned = (project) => {
-                console.log('[Socket] Project assigned:', project)
                 dispatch(addAssignedProject(project))
                 toast.success(`🎉 Project "${project.title}" assigned to you!`, {
                     position: 'top-right',
@@ -122,10 +115,6 @@ const AssignedProjects = () => {
         </div>
     )
 }
-
-// ════════════════════════════════════════════════════════════════════════════════
-// PROJECT CARD COMPONENT
-// ════════════════════════════════════════════════════════════════════════════════
 
 function ProjectCard({ project }) {
     const statusColors = {

@@ -230,7 +230,7 @@ const StepCard = ({ step, index }) => {
 
       {/* Tips */}
       <ul className="space-y-1.5">
-        {step.tips.map((tip, i) => (
+        {step.tips.map((tip) => (
           <li key={tip} className="text-xs text-white/50 flex items-center gap-2">
             <span className={`w-1.5 h-1.5 rounded-full bg-gradient-to-r ${step.color} flex-shrink-0`} />
             {tip}

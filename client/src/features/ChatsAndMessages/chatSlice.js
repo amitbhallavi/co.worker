@@ -1,5 +1,6 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
-import axios from "../api/axiosInstance"
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
+import { getApiErrorMessage, getAuthToken } from "../api/apiHelpers"
+import chatService from "./chatService"
 
 const initialState = {
     conversations: [],
@@ -15,49 +16,39 @@ const initialState = {
     chatErrorMsg: "",
 }
 
-const authHeader = (thunkAPI) => ({
-    authorization: `Bearer ${thunkAPI.getState().auth.user?.token}`,
-})
-
 export const getOrCreateConversation = createAsyncThunk(
     "chat/GET_OR_CREATE",
     async ({ receiverId, projectId }, thunkAPI) => {
         try {
-            const res = await axios.post(
-                "/api/chat/conversation",
+            const response = await chatService.getOrCreateConversation(
                 { receiverId, projectId },
-                { headers: authHeader(thunkAPI) }
+                getAuthToken(thunkAPI)
             )
-            return res.data.conversation
-        } catch (err) {
-            return thunkAPI.rejectWithValue(err.response?.data?.message || err.message)
+
+            return response.conversation
+        } catch (error) {
+            return thunkAPI.rejectWithValue(getApiErrorMessage(error))
         }
     }
 )
 
-export const getMyConversations = createAsyncThunk(
-    "chat/GET_CONVERSATIONS",
-    async (_, thunkAPI) => {
-        try {
-            const res = await axios.get("/api/chat/conversations", { headers: authHeader(thunkAPI) })
-            return res.data.conversations
-        } catch (err) {
-            return thunkAPI.rejectWithValue(err.response?.data?.message || err.message)
-        }
+export const getMyConversations = createAsyncThunk("chat/GET_CONVERSATIONS", async (_, thunkAPI) => {
+    try {
+        const response = await chatService.getConversations(getAuthToken(thunkAPI))
+        return response.conversations
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
     }
-)
+})
 
 export const getMessages = createAsyncThunk(
     "chat/GET_MESSAGES",
     async ({ conversationId, page = 1 }, thunkAPI) => {
         try {
-            const res = await axios.get(
-                `/api/chat/conversation/${conversationId}/messages?page=${page}`,
-                { headers: authHeader(thunkAPI) }
-            )
-            return { messages: res.data.messages, page }
-        } catch (err) {
-            return thunkAPI.rejectWithValue(err.response?.data?.message || err.message)
+            const response = await chatService.getMessages({ conversationId, page }, getAuthToken(thunkAPI))
+            return { messages: response.messages, page }
+        } catch (error) {
+            return thunkAPI.rejectWithValue(getApiErrorMessage(error))
         }
     }
 )
@@ -66,22 +57,22 @@ export const sendMessage = createAsyncThunk(
     "chat/SEND_MESSAGE",
     async ({ conversationId, text, fileUrl, fileType }, thunkAPI) => {
         try {
-            const res = await axios.post(
-                `/api/chat/conversation/${conversationId}/message`,
-                { text, fileUrl, fileType },
-                { headers: authHeader(thunkAPI) }
+            const response = await chatService.sendMessage(
+                { conversationId, text, fileUrl, fileType },
+                getAuthToken(thunkAPI)
             )
-            return { conversationId, message: res.data.message }
-        } catch (err) {
-            return thunkAPI.rejectWithValue(err.response?.data?.message || err.message)
+
+            return { conversationId, message: response.message }
+        } catch (error) {
+            return thunkAPI.rejectWithValue(getApiErrorMessage(error))
         }
     }
 )
 
 export const getUnreadCount = createAsyncThunk("chat/GET_UNREAD", async (_, thunkAPI) => {
     try {
-        const res = await axios.get("/api/chat/unread", { headers: authHeader(thunkAPI) })
-        return res.data.unreadCount
+        const response = await chatService.getUnreadCount(getAuthToken(thunkAPI))
+        return response.unreadCount
     } catch {
         return 0
     }
@@ -95,56 +86,51 @@ const chatSlice = createSlice({
             state.activeConversation = action.payload
             state.messages = []
         },
-
         receiveMessage: (state, action) => {
             const { conversationId, message } = action.payload
+            const isActiveConversation = state.activeConversation?._id === conversationId
 
-            if (state.activeConversation?._id === conversationId) {
+            if (isActiveConversation) {
                 state.messages.push(message)
             }
 
-            const isActive = state.activeConversation?._id === conversationId
-            state.conversations = state.conversations.map((conv) =>
-                conv._id === conversationId
+            state.conversations = state.conversations.map((conversation) => (
+                conversation._id === conversationId
                     ? {
-                        ...conv,
+                        ...conversation,
                         lastMessage: { text: message.text, createdAt: message.createdAt },
-                        unreadCount: isActive ? 0 : (conv.unreadCount || 0) + 1,
+                        unreadCount: isActiveConversation ? 0 : (conversation.unreadCount || 0) + 1,
                     }
-                    : conv
-            )
+                    : conversation
+            ))
         },
-
         setOnlineUsers: (state, action) => {
             state.onlineUsers = action.payload
         },
-
         setUserTyping: (state, action) => {
             const { conversationId, userId } = action.payload
-            const current = state.typingUsers[conversationId] || []
-            if (!current.includes(userId)) {
-                state.typingUsers[conversationId] = [...current, userId]
+            const typingUsers = state.typingUsers[conversationId] || []
+
+            if (!typingUsers.includes(userId)) {
+                state.typingUsers[conversationId] = [...typingUsers, userId]
             }
         },
-
         clearUserTyping: (state, action) => {
             const { conversationId, userId } = action.payload
             state.typingUsers[conversationId] = (state.typingUsers[conversationId] || []).filter(
                 (id) => id !== userId
             )
         },
-
         resetConversationUnread: (state, action) => {
-            const convId = action.payload
-            state.conversations = state.conversations.map((conv) =>
-                conv._id === convId ? { ...conv, unreadCount: 0 } : conv
-            )
+            state.conversations = state.conversations.map((conversation) => (
+                conversation._id === action.payload
+                    ? { ...conversation, unreadCount: 0 }
+                    : conversation
+            ))
         },
-
         markConversationSeen: (state) => {
-            state.messages = state.messages.map((msg) => ({ ...msg, seen: true }))
+            state.messages = state.messages.map((message) => ({ ...message, seen: true }))
         },
-
         clearChatError: (state) => {
             state.chatError = false
             state.chatErrorMsg = ""
@@ -167,8 +153,10 @@ const chatSlice = createSlice({
 
             .addCase(getOrCreateConversation.fulfilled, (state, action) => {
                 state.activeConversation = action.payload
-                const exists = state.conversations.find((c) => c._id === action.payload._id)
-                if (!exists) state.conversations.unshift(action.payload)
+
+                if (!state.conversations.find((conversation) => conversation._id === action.payload._id)) {
+                    state.conversations.unshift(action.payload)
+                }
             })
 
             .addCase(getMessages.pending, (state) => {
@@ -176,11 +164,13 @@ const chatSlice = createSlice({
             })
             .addCase(getMessages.fulfilled, (state, action) => {
                 state.msgLoading = false
+
                 if (action.payload.page === 1) {
                     state.messages = action.payload.messages
-                } else {
-                    state.messages = [...action.payload.messages, ...state.messages]
+                    return
                 }
+
+                state.messages = [...action.payload.messages, ...state.messages]
             })
             .addCase(getMessages.rejected, (state) => {
                 state.msgLoading = false
@@ -191,8 +181,8 @@ const chatSlice = createSlice({
             })
             .addCase(sendMessage.fulfilled, (state, action) => {
                 state.sendLoading = false
-                const alreadyExists = state.messages.find((m) => m._id === action.payload.message._id)
-                if (!alreadyExists) {
+
+                if (!state.messages.find((message) => message._id === action.payload.message._id)) {
                     state.messages.push(action.payload.message)
                 }
             })

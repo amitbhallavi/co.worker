@@ -1,11 +1,8 @@
-// ===== FILE: client/src/components/PaymentModal.jsx =====
-// Usage (in RegularUser or project detail):
-//   <PaymentModal project={project} onClose={...} />
-
 import { useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { toast } from "react-toastify"
 import { createOrder, verifyPayment, releaseEscrow } from "../features/wallet/walletSlice"
+import { loadRazorpayCheckout } from "../utils/loadRazorpay"
 
 const PaymentModal = ({ project, onClose, onPaymentDone }) => {
     const dispatch = useDispatch()
@@ -15,26 +12,18 @@ const PaymentModal = ({ project, onClose, onPaymentDone }) => {
 
     if (!project) return null
 
-    // ✅ Pay ONLY accepted bid amount (source of truth synced from backend)
     const amount = project.selectedBid?.amount || project.finalAmount || 0
     const fee = amount < 5000 ? 11 : amount < 15000 ? 19 : amount < 30000 ? 21 : 24
     const flAmount = amount - fee
 
-    // ── Load Razorpay script ───────────────────────────────────────────────────
-    const loadRazorpay = () =>
-        new Promise((resolve) => {
-            if (window.Razorpay) return resolve(true)
-            const s = document.createElement("script")
-            s.src = "https://checkout.razorpay.com/v1/checkout.js"
-            s.onload = () => resolve(true)
-            s.onerror = () => resolve(false)
-            document.body.appendChild(s)
-        })
-
-    // ── Handle Pay Now ─────────────────────────────────────────────────────────
     const handlePay = async () => {
-        const ok = await loadRazorpay()
-        if (!ok) { toast.error("Razorpay failed to load"); return }
+        let RazorpayCheckout
+        try {
+            RazorpayCheckout = await loadRazorpayCheckout()
+        } catch (error) {
+            toast.error(error.message)
+            return
+        }
 
         setStep("paying")
 
@@ -78,7 +67,7 @@ const PaymentModal = ({ project, onClose, onPaymentDone }) => {
             modal: { ondismiss: () => setStep("confirm") },
         }
 
-        const rzp = new window.Razorpay(options)
+        const rzp = new RazorpayCheckout(options)
         rzp.open()
     }
 

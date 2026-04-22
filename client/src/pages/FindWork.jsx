@@ -422,7 +422,6 @@ const FindWork = () => {
   const dispatch = useDispatch()
 
   const { listedProjects, bids, projectLoading, projectError, projectErrorMessage } = useSelector(state => state.project)
-  const { freelancerSuccess, freelancerError, freelancerErrorMessage } = useSelector(state => state.freelancer)
   const { user } = useSelector(state => state.auth)
 
   const [search, setSearch] = useState('')
@@ -438,19 +437,6 @@ const FindWork = () => {
   const myBids = Array.isArray(bids) ? bids : []
 
   useEffect(() => { dispatch(getProjects()) }, [dispatch])
-
-  useEffect(() => {
-    if (freelancerSuccess) {
-      dispatch(getProjects())
-      setBidProject(null)
-      setBidLoading(false)
-      dispatch(resetFreelancerSuccess())
-    }
-  }, [freelancerSuccess, dispatch])
-
-  useEffect(() => {
-    if (freelancerError && freelancerErrorMessage) toast.error(freelancerErrorMessage)
-  }, [freelancerError, freelancerErrorMessage])
 
   const allProjects = Array.isArray(listedProjects) ? listedProjects : []
   const hasData = allProjects.length > 0
@@ -485,6 +471,10 @@ const FindWork = () => {
     try {
       await dispatch(applyForProject({ projectId, amount })).unwrap()
       toast.success('Bid placed successfully! 🎉')
+      dispatch(getProjects())
+      setBidProject(null)
+      setBidLoading(false)
+      dispatch(resetFreelancerSuccess())
     } catch (err) {
       toast.error(typeof err === 'string' ? err : err?.message || 'Failed to place bid. Try again.')
       setBidLoading(false)

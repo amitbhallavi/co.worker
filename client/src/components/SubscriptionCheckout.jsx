@@ -1,40 +1,23 @@
-import React, { useState, useEffect } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { X, Loader } from 'lucide-react'
 import { createSubscriptionOrder, verifySubscriptionPayment, fetchUserPlan } from '../features/subscription/planSlice'
 import { PLANS } from '../config/planFeatures'
+import { loadRazorpayCheckout } from '../utils/loadRazorpay'
 
-/**
- * SubscriptionCheckout - Modal for subscription payment
- * Props:
- *   - isOpen: boolean (show/hide modal)
- *   - onClose: function() callback to close
- *   - planId: string (free|pro|elite)
- *   - planType: string (monthly|yearly)
- */
 const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
     const dispatch = useDispatch()
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
 
-    const { currentOrder, loading: orderLoading, error, errorMsg } = useSelector((s) => s.subscription)
+    const { loading: orderLoading, error, errorMsg } = useSelector((s) => s.subscription)
     const { user } = useSelector((s) => s.auth)
 
     const plan = PLANS[planId]
 
-    useEffect(() => {
-        if (!isOpen) return
-
-        // Handle free plan - direct activation
-        if (plan?.monthlyPrice === 0 && plan?.yearlyPrice === 0) {
-            handleFreeUpgrade()
-        }
-    }, [isOpen, planId])
-
-    // ✅ FREE PLAN ACTIVATION
-    const handleFreeUpgrade = async () => {
+    const handleFreeUpgrade = useCallback(async () => {
         try {
             setLoading(true)
             await dispatch(
@@ -52,9 +35,20 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
             toast.error(err || "Failed to activate plan")
             setLoading(false)
         }
-    }
+    }, [dispatch, onClose, planId])
 
-    // ✅ PAID PLAN CHECKOUT
+    useEffect(() => {
+        if (!isOpen) return
+
+        if (plan?.monthlyPrice === 0 && plan?.yearlyPrice === 0) {
+            const timer = setTimeout(() => {
+                handleFreeUpgrade()
+            }, 0)
+
+            return () => clearTimeout(timer)
+        }
+    }, [handleFreeUpgrade, isOpen, plan?.monthlyPrice, plan?.yearlyPrice])
+
     const handlePaymentClick = async () => {
         try {
             if (!user) {
@@ -63,16 +57,16 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                 return
             }
 
-            // Check if Razorpay is loaded
-            if (typeof window.Razorpay === "undefined") {
-                console.error("❌ Razorpay script not loaded!")
-                toast.error("Payment gateway not loaded. Please refresh the page and try again.")
+            let RazorpayCheckout
+            try {
+                RazorpayCheckout = await loadRazorpayCheckout()
+            } catch (error) {
+                toast.error(error.message)
                 return
             }
 
             setLoading(true)
 
-            // Step 1: Create order on backend
             let orderResult
             try {
                 orderResult = await dispatch(
@@ -106,9 +100,6 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                 return
             }
 
-            console.log("✅ Order created:", orderResult)
-
-            // Step 2: Prepare Razorpay options
             const options = {
                 key: orderResult.razorpayKeyId,
                 amount: orderResult.amount * 100, // Convert ₹ to paise
@@ -119,10 +110,7 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                 
                 handler: async (response) => {
                     try {
-                        console.log("✅ Payment response received:", response)
-                        
-                        // Step 3: Verify payment on backend
-                        const verifyResult = await dispatch(
+                        await dispatch(
                             verifySubscriptionPayment({
                                 razorpayOrderId: response.razorpay_order_id,
                                 razorpayPaymentId: response.razorpay_payment_id,
@@ -130,9 +118,6 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                             })
                         ).unwrap()
 
-                        console.log("✅ Payment verified:", verifyResult)
-
-                        // Step 4: Fetch updated plan
                         await dispatch(fetchUserPlan()).unwrap()
 
                         toast.success(
@@ -151,7 +136,6 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                 
                 modal: {
                     ondismiss: () => {
-                        console.log("User dismissed payment modal")
                         setLoading(false)
                     }
                 },
@@ -167,9 +151,7 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                 },
             }
 
-            // Step 3: Open Razorpay checkout
-            console.log("Opening Razorpay with options:", options)
-            const razorpayInstance = new window.Razorpay(options)
+            const razorpayInstance = new RazorpayCheckout(options)
             
             razorpayInstance.on("payment.failed", (response) => {
                 const errorMsg = response?.error?.description || "Payment failed"
@@ -282,7 +264,7 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
 
                         {/* Action Button */}
                         <button
-                            onClick={handlePaymentClick}
+                            onClick={isFree ? handleFreeUpgrade : handlePaymentClick}
                             disabled={loading || orderLoading}
                             className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold py-3 rounded-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >

@@ -1,98 +1,90 @@
-// ===== FILE: client/src/features/wallet/walletSlice.js =====
-
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
-import API from "../api/axiosInstance"
-
-const BASE = "/api/payment"
-
-const authH = (token) => ({ headers: { Authorization: `Bearer ${token}` } })
-const errMsg = (e) => e?.response?.data?.message || e?.message || "Something went wrong"
-
-// ── THUNKS ─────────────────────────────────────────────────────────────────────
+import { getApiErrorMessage, getAuthToken } from "../api/apiHelpers"
+import walletService from "./walletService"
 
 export const createOrder = createAsyncThunk("wallet/createOrder", async ({ projectId }, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user?.token
-        // ✅ Security: backend computes amount from accepted bid (selectedBid/finalAmount)
-        const res = await API.post(`${BASE}/create-order`, { projectId }, authH(token))
-        return res.data
-    } catch (e) { return thunkAPI.rejectWithValue(errMsg(e)) }
+        return await walletService.createOrder({ projectId }, getAuthToken(thunkAPI))
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+    }
 })
 
-export const verifyPayment = createAsyncThunk("wallet/verifyPayment", async (data, thunkAPI) => {
+export const verifyPayment = createAsyncThunk("wallet/verifyPayment", async (paymentData, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user?.token
-        const res = await API.post(`${BASE}/verify`, data, authH(token))
-        return res.data
-    } catch (e) { return thunkAPI.rejectWithValue(errMsg(e)) }
+        return await walletService.verifyPayment(paymentData, getAuthToken(thunkAPI))
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+    }
 })
 
 export const releaseEscrow = createAsyncThunk("wallet/releaseEscrow", async (projectId, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user?.token
-        const res = await API.post(`${BASE}/release/${projectId}`, {}, authH(token))
-        return res.data
-    } catch (e) { return thunkAPI.rejectWithValue(errMsg(e)) }
+        return await walletService.releaseEscrow(projectId, getAuthToken(thunkAPI))
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+    }
 })
 
 export const fetchMyWallet = createAsyncThunk("wallet/fetchMyWallet", async (_, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user?.token
-        const res = await API.get(`${BASE}/wallet/me`, authH(token))
-        return res.data
-    } catch (e) { return thunkAPI.rejectWithValue(errMsg(e)) }
+        return await walletService.fetchWallet(getAuthToken(thunkAPI))
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+    }
 })
 
 export const requestWithdrawal = createAsyncThunk("wallet/requestWithdrawal", async ({ amount, upiId }, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user?.token
-        const res = await API.post(`${BASE}/wallet/withdraw`, { amount, upiId }, authH(token))
-        return res.data
-    } catch (e) { return thunkAPI.rejectWithValue(errMsg(e)) }
+        return await walletService.requestWithdrawal({ amount, upiId }, getAuthToken(thunkAPI))
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+    }
 })
 
 export const fetchMyWithdrawals = createAsyncThunk("wallet/fetchMyWithdrawals", async (_, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user?.token
-        const res = await API.get(`${BASE}/wallet/withdrawals`, authH(token))
-        return res.data
-    } catch (e) { return thunkAPI.rejectWithValue(errMsg(e)) }
+        return await walletService.fetchWithdrawals(getAuthToken(thunkAPI))
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+    }
 })
 
 export const fetchProjectPayment = createAsyncThunk("wallet/fetchProjectPayment", async (projectId, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user?.token
-        const res = await API.get(`${BASE}/project/${projectId}`, authH(token))
-        return res.data
-    } catch (e) { return thunkAPI.rejectWithValue(errMsg(e)) }
+        return await walletService.fetchProjectPayment(projectId, getAuthToken(thunkAPI))
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+    }
 })
 
-// admin
 export const fetchAllPayments = createAsyncThunk("wallet/fetchAllPayments", async (_, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user?.token
-        const res = await API.get(`${BASE}/all`, authH(token))
-        return res.data
-    } catch (e) { return thunkAPI.rejectWithValue(errMsg(e)) }
+        return await walletService.fetchAllPayments(getAuthToken(thunkAPI))
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+    }
 })
 
 export const fetchAllWithdrawals = createAsyncThunk("wallet/fetchAllWithdrawals", async (_, thunkAPI) => {
     try {
-        const token = thunkAPI.getState().auth.user?.token
-        const res = await API.get(`${BASE}/wallet/admin/withdrawals`, authH(token))
-        return res.data
-    } catch (e) { return thunkAPI.rejectWithValue(errMsg(e)) }
+        return await walletService.fetchAllWithdrawals(getAuthToken(thunkAPI))
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+    }
 })
 
-export const processWithdrawal = createAsyncThunk("wallet/processWithdrawal", async ({ id, status, adminNote }, thunkAPI) => {
-    try {
-        const token = thunkAPI.getState().auth.user?.token
-        const res = await API.put(`${BASE}/wallet/admin/withdrawals/${id}`, { status, adminNote }, authH(token))
-        return res.data
-    } catch (e) { return thunkAPI.rejectWithValue(errMsg(e)) }
-})
+export const processWithdrawal = createAsyncThunk(
+    "wallet/processWithdrawal",
+    async ({ id, status, adminNote }, thunkAPI) => {
+        try {
+            return await walletService.processWithdrawal({ id, status, adminNote }, getAuthToken(thunkAPI))
+        } catch (error) {
+            return thunkAPI.rejectWithValue(getApiErrorMessage(error))
+        }
+    }
+)
 
-// ── SLICE ──────────────────────────────────────────────────────────────────────
 const initialState = {
     wallet: null,
     withdrawals: [],
@@ -105,65 +97,115 @@ const initialState = {
     errorMsg: "",
 }
 
-const p = (s) => { s.loading = true; s.success = false; s.error = false; s.errorMsg = "" }
-const r = (s, a) => { s.loading = false; s.error = true; s.errorMsg = a.payload }
+const startRequest = (state) => {
+    state.loading = true
+    state.success = false
+    state.error = false
+    state.errorMsg = ""
+}
+
+const failRequest = (state, action) => {
+    state.loading = false
+    state.error = true
+    state.errorMsg = action.payload
+}
 
 const walletSlice = createSlice({
     name: "wallet",
     initialState,
     reducers: {
-        resetWallet: (s) => { s.loading = false; s.success = false; s.error = false; s.errorMsg = "" },
+        resetWallet: (state) => {
+            state.loading = false
+            state.success = false
+            state.error = false
+            state.errorMsg = ""
+        },
     },
-    extraReducers: (b) => {
-        b
-            .addCase(fetchMyWallet.pending, p)
-            .addCase(fetchMyWallet.fulfilled, (s, a) => { s.loading = false; s.success = true; s.wallet = a.payload })
-            .addCase(fetchMyWallet.rejected, r)
-
-            .addCase(requestWithdrawal.pending, p)
-            .addCase(requestWithdrawal.fulfilled, (s, a) => {
-                s.loading = false; s.success = true
-                if (s.wallet) s.wallet.balance = a.payload.walletBalance
-                s.withdrawals.unshift(a.payload.withdrawal)
+    extraReducers: (builder) => {
+        builder
+            .addCase(fetchMyWallet.pending, startRequest)
+            .addCase(fetchMyWallet.fulfilled, (state, action) => {
+                state.loading = false
+                state.success = true
+                state.wallet = action.payload
             })
-            .addCase(requestWithdrawal.rejected, r)
+            .addCase(fetchMyWallet.rejected, failRequest)
 
-            .addCase(fetchMyWithdrawals.pending, p)
-            .addCase(fetchMyWithdrawals.fulfilled, (s, a) => { s.loading = false; s.success = true; s.withdrawals = a.payload })
-            .addCase(fetchMyWithdrawals.rejected, r)
+            .addCase(requestWithdrawal.pending, startRequest)
+            .addCase(requestWithdrawal.fulfilled, (state, action) => {
+                state.loading = false
+                state.success = true
 
-            .addCase(createOrder.pending, p)
-            .addCase(createOrder.fulfilled, (s) => { s.loading = false; s.success = true })
-            .addCase(createOrder.rejected, r)
+                if (state.wallet) {
+                    state.wallet.balance = action.payload.walletBalance
+                }
 
-            .addCase(verifyPayment.pending, p)
-            .addCase(verifyPayment.fulfilled, (s) => { s.loading = false; s.success = true })
-            .addCase(verifyPayment.rejected, r)
-
-            .addCase(releaseEscrow.pending, p)
-            .addCase(releaseEscrow.fulfilled, (s) => { s.loading = false; s.success = true })
-            .addCase(releaseEscrow.rejected, r)
-
-            .addCase(fetchProjectPayment.pending, p)
-            .addCase(fetchProjectPayment.fulfilled, (s, a) => { s.loading = false; s.success = true; s.projectPayment = a.payload })
-            .addCase(fetchProjectPayment.rejected, r)
-
-            .addCase(fetchAllPayments.pending, p)
-            .addCase(fetchAllPayments.fulfilled, (s, a) => { s.loading = false; s.allPayments = a.payload })
-            .addCase(fetchAllPayments.rejected, r)
-
-            .addCase(fetchAllWithdrawals.pending, p)
-            .addCase(fetchAllWithdrawals.fulfilled, (s, a) => { s.loading = false; s.allWithdrawals = a.payload })
-            .addCase(fetchAllWithdrawals.rejected, r)
-
-            .addCase(processWithdrawal.pending, p)
-            .addCase(processWithdrawal.fulfilled, (s, a) => {
-                s.loading = false; s.success = true
-                s.allWithdrawals = s.allWithdrawals.map((w) =>
-                    w._id === a.payload.withdrawal._id ? a.payload.withdrawal : w
-                )
+                state.withdrawals.unshift(action.payload.withdrawal)
             })
-            .addCase(processWithdrawal.rejected, r)
+            .addCase(requestWithdrawal.rejected, failRequest)
+
+            .addCase(fetchMyWithdrawals.pending, startRequest)
+            .addCase(fetchMyWithdrawals.fulfilled, (state, action) => {
+                state.loading = false
+                state.success = true
+                state.withdrawals = action.payload
+            })
+            .addCase(fetchMyWithdrawals.rejected, failRequest)
+
+            .addCase(createOrder.pending, startRequest)
+            .addCase(createOrder.fulfilled, (state) => {
+                state.loading = false
+                state.success = true
+            })
+            .addCase(createOrder.rejected, failRequest)
+
+            .addCase(verifyPayment.pending, startRequest)
+            .addCase(verifyPayment.fulfilled, (state) => {
+                state.loading = false
+                state.success = true
+            })
+            .addCase(verifyPayment.rejected, failRequest)
+
+            .addCase(releaseEscrow.pending, startRequest)
+            .addCase(releaseEscrow.fulfilled, (state) => {
+                state.loading = false
+                state.success = true
+            })
+            .addCase(releaseEscrow.rejected, failRequest)
+
+            .addCase(fetchProjectPayment.pending, startRequest)
+            .addCase(fetchProjectPayment.fulfilled, (state, action) => {
+                state.loading = false
+                state.success = true
+                state.projectPayment = action.payload
+            })
+            .addCase(fetchProjectPayment.rejected, failRequest)
+
+            .addCase(fetchAllPayments.pending, startRequest)
+            .addCase(fetchAllPayments.fulfilled, (state, action) => {
+                state.loading = false
+                state.allPayments = action.payload
+            })
+            .addCase(fetchAllPayments.rejected, failRequest)
+
+            .addCase(fetchAllWithdrawals.pending, startRequest)
+            .addCase(fetchAllWithdrawals.fulfilled, (state, action) => {
+                state.loading = false
+                state.allWithdrawals = action.payload
+            })
+            .addCase(fetchAllWithdrawals.rejected, failRequest)
+
+            .addCase(processWithdrawal.pending, startRequest)
+            .addCase(processWithdrawal.fulfilled, (state, action) => {
+                state.loading = false
+                state.success = true
+                state.allWithdrawals = state.allWithdrawals.map((withdrawal) => (
+                    withdrawal._id === action.payload.withdrawal._id
+                        ? action.payload.withdrawal
+                        : withdrawal
+                ))
+            })
+            .addCase(processWithdrawal.rejected, failRequest)
     },
 })
 

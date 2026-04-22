@@ -6,10 +6,9 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { getProjects } from '../features/project/projectSlice'
-import { fetchProjectPayment } from '../features/wallet/walletSlice'
 import PaymentModal from '../components/Paymentmodal'
 import LoaderGradient from '../components/LoaderGradient'
-import { Clock, User, AlertCircle, CheckCircle2, CreditCard } from 'lucide-react'
+import { Clock, User, AlertCircle } from 'lucide-react'
 
 const ClientAssignedProjects = () => {
     const dispatch = useDispatch()

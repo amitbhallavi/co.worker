@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSelector } from "react-redux"
 import axios from "axios"
 import { toast } from "react-toastify"
@@ -35,34 +35,34 @@ const AdminPayments = () => {
     const [actionId, setActionId] = useState(null)
     const [filterStatus, setFilterStatus] = useState("")
 
-    const headers = { authorization: `Bearer ${token}` }
-
-    // ── Fetch payments ──
-    const fetchPayments = async () => {
+    const fetchPayments = useCallback(async () => {
         setLoading(true)
         try {
-            const res = await axios.get(`/api/payment/all`, { headers })
+            const res = await axios.get(`/api/payment/all`, {
+                headers: { authorization: `Bearer ${token}` },
+            })
             setPayments(Array.isArray(res.data) ? res.data : res.data.payments || [])
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to load payments")
         } finally { setLoading(false) }
-    }
+    }, [token])
 
-    // ── Fetch withdrawals ──
-    const fetchWithdrawals = async () => {
+    const fetchWithdrawals = useCallback(async () => {
         setLoading(true)
         try {
-            const res = await axios.get(`/api/wallet/admin/withdrawals`, { headers })
+            const res = await axios.get(`/api/wallet/admin/withdrawals`, {
+                headers: { authorization: `Bearer ${token}` },
+            })
             setWithdrawals(Array.isArray(res.data) ? res.data : res.data.withdrawals || [])
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to load withdrawals")
         } finally { setLoading(false) }
-    }
+    }, [token])
 
     useEffect(() => {
         if (tab === "payments") fetchPayments()
         if (tab === "withdrawals") fetchWithdrawals()
-    }, [tab])
+    }, [tab, fetchPayments, fetchWithdrawals])
 
     // ── Release escrow (admin) ──
     const handleReleaseEscrow = async (paymentId) => {
@@ -70,7 +70,11 @@ const AdminPayments = () => {
         try {
             const payment = payments.find(p => p._id === paymentId)
             if (!payment) throw new Error("Payment not found")
-            await axios.post(`/api/payment/release/${payment.project}`, {}, { headers })
+            await axios.post(
+                `/api/payment/release/${payment.project}`,
+                {},
+                { headers: { authorization: `Bearer ${token}` } }
+            )
             toast.success("Escrow released to freelancer!")
             fetchPayments()
         } catch (err) {
@@ -82,7 +86,11 @@ const AdminPayments = () => {
     const handleApprove = async (id) => {
         setActionId(id)
         try {
-            await axios.put(`/api/wallet/admin/withdrawals/${id}`, { status: "approved", adminNote: "Approved by admin" }, { headers })
+            await axios.put(
+                `/api/wallet/admin/withdrawals/${id}`,
+                { status: "approved", adminNote: "Approved by admin" },
+                { headers: { authorization: `Bearer ${token}` } }
+            )
             toast.success("Withdrawal approved!")
             fetchWithdrawals()
         } catch (err) {
@@ -94,7 +102,11 @@ const AdminPayments = () => {
     const handleReject = async (id) => {
         setActionId(id)
         try {
-            await axios.put(`/api/wallet/admin/withdrawals/${id}`, { status: "rejected", adminNote: "Rejected by admin" }, { headers })
+            await axios.put(
+                `/api/wallet/admin/withdrawals/${id}`,
+                { status: "rejected", adminNote: "Rejected by admin" },
+                { headers: { authorization: `Bearer ${token}` } }
+            )
             toast.success("Withdrawal rejected, amount refunded.")
             fetchWithdrawals()
         } catch (err) {

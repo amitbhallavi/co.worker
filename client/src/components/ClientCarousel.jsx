@@ -36,14 +36,14 @@ function useClients(listedProjects) {
 }
 
 // ── Trust Score Logic ──────────────────────────────────────
-function getTrustScore(client) {
+function getTrustScore(client, referenceTime = Date.now()) {
     let score = 60
     if (client.totalProjects >= 3) score += 20
     else if (client.totalProjects >= 1) score += 10
     if (client.totalBudget >= 50000) score += 15
     else if (client.totalBudget >= 10000) score += 8
     const daysSince = client.lastActive
-        ? (Date.now() - client.lastActive.getTime()) / 86400000
+        ? (referenceTime - client.lastActive.getTime()) / 86400000
         : 999
     if (daysSince < 7) score += 5
     return Math.min(score, 99)
@@ -78,10 +78,11 @@ function Avatar({ name, pic, size = 'lg' }) {
 
 // ── Client Card ────────────────────────────────────────────
 function ClientCard({ client, onClick }) {
-    const score = getTrustScore(client)
+    const [renderTime] = useState(() => Date.now())
+    const score = getTrustScore(client, renderTime)
     const lastActiveMs = client.lastActive ? client.lastActive.getTime() : null
     const daysSince = lastActiveMs !== null
-        ? Math.floor((Date.now() - lastActiveMs) / 86400000)
+        ? Math.floor((renderTime - lastActiveMs) / 86400000)
         : null
     const isActive = daysSince !== null && daysSince < 14
 
