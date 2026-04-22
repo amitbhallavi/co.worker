@@ -370,7 +370,11 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
     const location = useLocation()
 
     // Close on route change
-    useEffect(() => { onClose() }, [location.pathname, onClose])
+    useEffect(() => {
+        if (open) {
+            onClose()
+        }
+    }, [location.pathname, open, onClose])
 
     // Lock body scroll when open
     useEffect(() => {
@@ -395,7 +399,7 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70]"
                         onClick={onClose}
                         aria-hidden="true"
                     />
@@ -407,7 +411,7 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
                         transition={{ type: "spring", damping: 28, stiffness: 300 }}
-                        className="fixed top-0 right-0 h-full w-[310px] max-w-[88vw] bg-white z-50 shadow-2xl flex flex-col"
+                        className="fixed top-0 right-0 h-full w-[310px] max-w-[88vw] bg-white z-[80] shadow-2xl flex flex-col"
                         role="dialog"
                         aria-modal="true"
                         aria-label="Navigation menu"
@@ -588,22 +592,17 @@ const Navbar = () => {
 
     // ── Refresh user data ──────────────────────────────────
     useEffect(() => {
-        if (!user) return
+        if (!user?.token) return
         dispatch(refreshUser())
-        const id = setInterval(() => dispatch(refreshUser()), 60_000)
-        return () => clearInterval(id)
-    }, [user, dispatch])
+        const id = window.setInterval(() => dispatch(refreshUser()), 5 * 60_000)
+        return () => window.clearInterval(id)
+    }, [user?.token, dispatch])
 
     // ── Fetch unread on mount ──────────────────────────────
     useEffect(() => {
-        if (user) dispatch(getUnreadCount())
-    }, [user, dispatch])
-
-    // ── Close talent dropdown on route change ──────────────
-    useEffect(() => {
-        const timer = setTimeout(() => setTalentOpen(false), 0)
-        return () => clearTimeout(timer)
-    }, [location.pathname])
+        if (!user?.token) return
+        dispatch(getUnreadCount())
+    }, [user?.token, dispatch])
 
     // ── Scroll shadow ──────────────────────────────────────
     useEffect(() => {
@@ -619,6 +618,10 @@ const Navbar = () => {
         dispatch(logoutUser())
         navigate("/")
     }, [dispatch, navigate])
+
+    const handleCloseMobileMenu = useCallback(() => {
+        setMobileOpen(false)
+    }, [])
 
     const isActive = (href) => location.pathname === href
 
@@ -706,7 +709,7 @@ const Navbar = () => {
 
             <MobileMenu
                 open={mobileOpen}
-                onClose={() => setMobileOpen(false)}
+                onClose={handleCloseMobileMenu}
                 user={user}
                 onLogout={handleLogout}
                 unreadTotal={unreadTotal}

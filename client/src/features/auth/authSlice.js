@@ -14,6 +14,8 @@ const initialState = {
     isError: false,
     message: "",
 }
+const PROFILE_REFRESH_COOLDOWN_MS = 10_000
+let lastRefreshRequestAt = 0
 
 export const registerUser = createAsyncThunk("AUTH/REGISTER", async (formData, thunkAPI) => {
     try {
@@ -35,21 +37,41 @@ export const logoutUser = createAsyncThunk("AUTH/LOGOUT", async () => {
     authService.logout()
 })
 
-export const refreshUser = createAsyncThunk("AUTH/REFRESH", async (_, thunkAPI) => {
-    const token = getAuthToken(thunkAPI)
+export const refreshUser = createAsyncThunk(
+    "AUTH/REFRESH",
+    async (_, thunkAPI) => {
+        const token = getAuthToken(thunkAPI)
 
-    if (!token) {
-        return thunkAPI.rejectWithValue("No token")
-    }
+        if (!token) {
+            return thunkAPI.rejectWithValue("No token")
+        }
 
-    try {
-        const currentUser = thunkAPI.getState().auth.user
-        const profile = await authService.refreshProfile(token)
-        return saveStoredUser({ ...currentUser, ...profile })
-    } catch (error) {
-        return thunkAPI.rejectWithValue(getApiErrorMessage(error, "Unable to refresh session"))
+        try {
+            const currentUser = thunkAPI.getState().auth.user
+            const profile = await authService.refreshProfile(token)
+            return saveStoredUser({ ...currentUser, ...profile })
+        } catch (error) {
+            return thunkAPI.rejectWithValue(getApiErrorMessage(error, "Unable to refresh session"))
+        }
+    },
+    {
+        condition: (_, { getState }) => {
+            const token = getState().auth.user?.token
+
+            if (!token) {
+                return false
+            }
+
+            const now = Date.now()
+            if (now - lastRefreshRequestAt < PROFILE_REFRESH_COOLDOWN_MS) {
+                return false
+            }
+
+            lastRefreshRequestAt = now
+            return true
+        },
     }
-})
+)
 
 const startRequest = (state) => {
     state.isLoading = true
@@ -99,6 +121,7 @@ const authSlice = createSlice({
             .addCase(loginUser.rejected, failRequest)
 
             .addCase(logoutUser.fulfilled, (state) => {
+                lastRefreshRequestAt = 0
                 state.isLoading = false
                 state.isSuccess = false
                 state.isError = false

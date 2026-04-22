@@ -14,40 +14,10 @@ import { TbArrowsJoin2 } from 'react-icons/tb'
 import { getOrCreateConversation } from '../features/ChatsAndMessages/chatSlice'
 import { getSocket } from '../utils/socketManager'
 import RatingSummary from '../components/RatingSummary'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 
-const MotionSection = motion.div
-
-// ─── Typewriter Hook ──────────────────────────────────────────────────────────
-function useTypewriter(words, { typeSpeed = 80, deleteSpeed = 40, pauseMs = 1800 } = {}) {
-    const [displayed, setDisplayed] = useState('')
-    const [wordIdx, setWordIdx] = useState(0)
-    const [phase, setPhase] = useState('typing')
-    const [charIdx, setCharIdx] = useState(0)
-
-    useEffect(() => {
-        let timer
-        const word = words[wordIdx]
-        if (phase === 'typing') {
-            if (charIdx < word.length) {
-                timer = setTimeout(() => { setDisplayed(word.slice(0, charIdx + 1)); setCharIdx(c => c + 1) }, typeSpeed)
-            } else {
-                timer = setTimeout(() => setPhase('pause'), pauseMs)
-            }
-        } else if (phase === 'pause') {
-            timer = setTimeout(() => setPhase('deleting'), 200)
-        } else if (phase === 'deleting') {
-            if (charIdx > 0) {
-                timer = setTimeout(() => { setDisplayed(word.slice(0, charIdx - 1)); setCharIdx(c => c - 1) }, deleteSpeed)
-            } else {
-                timer = setTimeout(() => { setWordIdx(i => (i + 1) % words.length); setPhase('typing') }, 0)
-            }
-        }
-        return () => clearTimeout(timer)
-    }, [charIdx, deleteSpeed, pauseMs, phase, typeSpeed, wordIdx, words])
-
-    return { displayed, wordIdx }
-}
+const MotionDiv = motion.div
+const MotionButton = motion.button
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const ACCENT = 'from-blue-500 to-cyan-400'
@@ -58,15 +28,6 @@ const TEXT_1 = 'text-white'
 const TEXT_2 = 'text-white/60'
 const TEXT_3 = 'text-white/35'
 
-const WORDS = ['Web Developers', 'UI/UX Designers', 'Marketers', 'Data Experts', 'Full-Stack Devs']
-const COLORS = [
-    { from: '#3B82F6', to: '#06B6D4' },
-    { from: '#8B5CF6', to: '#EC4899' },
-    { from: '#F59E0B', to: '#EF4444' },
-    { from: '#10B981', to: '#3B82F6' },
-    { from: '#F43F5E', to: '#8B5CF6' },
-]
-
 // fade-up variant used across sections
 const fadeUp = (delay = 0) => ({
     initial: { opacity: 0, y: 18 },
@@ -74,76 +35,174 @@ const fadeUp = (delay = 0) => ({
     transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94], delay },
 })
 
+const getReveal = (delay = 0, reducedMotion = false) => (reducedMotion ? {} : fadeUp(delay))
+
+function useAdaptiveMotion() {
+    const prefersReducedMotion = useReducedMotion()
+    const [coarsePointer, setCoarsePointer] = useState(false)
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || !window.matchMedia) return
+
+        const mediaQuery = window.matchMedia('(pointer: coarse)')
+        const update = () => setCoarsePointer(mediaQuery.matches)
+
+        update()
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', update)
+            return () => mediaQuery.removeEventListener('change', update)
+        }
+
+        mediaQuery.addListener(update)
+        return () => mediaQuery.removeListener(update)
+    }, [])
+
+    return prefersReducedMotion || coarsePointer
+}
+
 // ─── Hero Banner ──────────────────────────────────────────────────────────────
-const HeroBanner = memo(function HeroBanner({ displayed, wordIdx }) {
-    const c = COLORS[wordIdx]
+const HeroBanner = memo(function HeroBanner({
+    profile,
+    profileUser,
+    works,
+    isOwnProfile,
+    assignedProjectsCount,
+    onContact,
+    msgLoading,
+    reducedMotion,
+}) {
+    const heroFacts = [
+        profile?.category || 'Freelancer',
+        profile?.experience ? `${profile.experience} years experience` : 'Building portfolio',
+        profileUser?.location || 'India',
+        `${works.length} showcased projects`,
+    ]
+
+    const heroStats = [
+        { label: 'Portfolio', value: works.length, tone: 'from-blue-500 to-cyan-400' },
+        { label: isOwnProfile ? 'Assigned' : 'Response', value: isOwnProfile ? assignedProjectsCount : '< 2h', tone: 'from-violet-500 to-fuchsia-500' },
+        { label: 'Status', value: isOwnProfile ? 'Your profile' : 'Available', tone: 'from-emerald-500 to-teal-400' },
+    ]
+
     return (
-        <div
-            className="relative overflow-hidden px-4 sm:px-8 lg:px-12 pt-12 pb-14"
+        <section
+            className="relative overflow-hidden px-4 pb-12 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pb-14"
             style={{ background: 'linear-gradient(135deg,#020617 0%,#0c1a3a 55%,#020617 100%)' }}
         >
-            {/* ambient glows */}
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -top-32 -right-16 w-[420px] h-[420px] rounded-full opacity-20 transition-all duration-700"
-                    style={{ background: `radial-gradient(circle,${c.from}55 0%,transparent 65%)` }} />
-                <div className="absolute -bottom-32 -left-10 w-72 h-72 rounded-full opacity-15 transition-all duration-700"
-                    style={{ background: `radial-gradient(circle,${c.to}44 0%,transparent 65%)` }} />
-                {/* subtle grid */}
-                <div className="absolute inset-0 opacity-[0.04]"
-                    style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
+                <div
+                    className="absolute -right-12 top-0 h-72 w-72 rounded-full opacity-25"
+                    style={{ background: 'radial-gradient(circle,#38bdf855 0%,transparent 68%)' }}
+                />
+                <div
+                    className="absolute -bottom-20 left-0 h-64 w-64 rounded-full opacity-20"
+                    style={{ background: 'radial-gradient(circle,#8b5cf655 0%,transparent 68%)' }}
+                />
+                <div
+                    className="absolute inset-0 opacity-[0.04]"
+                    style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px)', backgroundSize: '48px 48px' }}
+                />
             </div>
 
-            <div className="relative z-10 max-w-3xl">
-                {/* live badge */}
-                <motion.div {...fadeUp(0)}
-                    className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 mb-6 bg-white/[0.05] border border-white/10">
-                    <span className="relative flex w-2 h-2">
-                        <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
-                        <span className="relative rounded-full bg-emerald-400 w-2 h-2" />
-                    </span>
-                    <span className="text-xs font-medium text-white/60 tracking-wide">10,000+ verified experts online</span>
-                </motion.div>
+            <div className="relative z-10 mx-auto max-w-5xl">
+                <MotionDiv
+                    {...getReveal(0, reducedMotion)}
+                    className="rounded-[32px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_24px_80px_-40px_rgba(59,130,246,0.45)] backdrop-blur-xl sm:p-7 lg:p-8"
+                >
+                    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr),320px] lg:items-end">
+                        <div className="min-w-0">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-200">
+                                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                                {isOwnProfile ? 'Freelancer dashboard view' : 'Available for work'}
+                            </div>
 
-                <motion.h1 {...fadeUp(0.08)}
-                    className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-3 tracking-tight">
-                    Hire the Best
-                </motion.h1>
+                            <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
+                                {profileUser?.profilePic ? (
+                                    <img
+                                        src={profileUser.profilePic}
+                                        alt={profileUser?.name || 'Freelancer'}
+                                        className="h-24 w-24 rounded-[28px] object-cover ring-4 ring-white/10 shadow-2xl"
+                                    />
+                                ) : (
+                                    <div className={`flex h-24 w-24 items-center justify-center rounded-[28px] ${ACCENT_BG} text-3xl font-black text-white shadow-2xl`}>
+                                        {profileUser?.name?.[0] || 'F'}
+                                    </div>
+                                )}
 
-                {/* typewriter */}
-                <motion.div {...fadeUp(0.14)} className="flex items-center gap-3 mb-4 min-h-[2.5rem]">
-                    <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight"
-                        style={{ backgroundImage: `linear-gradient(135deg,${c.from},${c.to})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                        {displayed}
-                    </span>
-                    <span className="inline-block w-0.5 h-7 rounded-full animate-pulse"
-                        style={{ background: `linear-gradient(${c.from},${c.to})` }} />
-                </motion.div>
+                                <div className="min-w-0">
+                                    <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
+                                        {profileUser?.name || 'Freelancer'}
+                                    </h1>
+                                    <p className="mt-2 text-sm font-semibold text-cyan-200 sm:text-base">
+                                        {profile?.category || 'Independent freelancer'}
+                                    </p>
+                                    <p className="mt-3 max-w-2xl text-sm leading-7 text-white/65 sm:text-base">
+                                        {profile?.description || 'This profile needs a sharper summary. Add proof of work, clearer positioning, and stronger category focus.'}
+                                    </p>
+                                </div>
+                            </div>
 
-                <motion.div {...fadeUp(0.18)}
-                    className="h-0.5 w-40 rounded-full mb-5"
-                    style={{ background: `linear-gradient(90deg,${c.from},${c.to})` }} />
+                            <div className="mt-5 flex flex-wrap gap-2.5">
+                                {heroFacts.map((fact) => (
+                                    <span key={fact} className="rounded-full border border-white/10 bg-white/[0.05] px-3.5 py-2 text-xs font-semibold text-white/70">
+                                        {fact}
+                                    </span>
+                                ))}
+                            </div>
 
-                <motion.p {...fadeUp(0.22)}
-                    className="text-sm sm:text-base text-white/45 max-w-md leading-relaxed mb-7">
-                    Connect with top-tier freelancers who deliver results — on time, every time.
-                </motion.p>
+                            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                                {isOwnProfile ? (
+                                    <>
+                                        <Link
+                                            to="/auth/profile"
+                                            className={`inline-flex items-center justify-center gap-2 rounded-2xl ${ACCENT_BG} px-5 py-3 text-sm font-bold text-white no-underline transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/25`}
+                                        >
+                                            Manage Profile
+                                        </Link>
+                                        <Link
+                                            to="/assigned-projects"
+                                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-semibold text-white/75 no-underline transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                        >
+                                            View Assigned Work
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={onContact}
+                                        disabled={msgLoading}
+                                        className={`inline-flex items-center justify-center gap-2 rounded-2xl ${ACCENT_BG} px-5 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/25 disabled:cursor-not-allowed disabled:opacity-60`}
+                                    >
+                                        <MessageCircle size={16} />
+                                        {msgLoading ? 'Opening chat...' : 'Message Freelancer'}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
 
-                {/* word pills */}
-                <div className="flex flex-wrap gap-2">
-                    {WORDS.map((w, i) => (
-                        <motion.span key={w} {...fadeUp(0.28 + i * 0.04)}
-                            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-500 cursor-default"
-                            style={{
-                                background: i === wordIdx ? `linear-gradient(135deg,${COLORS[i].from},${COLORS[i].to})` : 'rgba(255,255,255,0.05)',
-                                color: i === wordIdx ? '#fff' : 'rgba(255,255,255,0.38)',
-                                border: i === wordIdx ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                            }}>
-                            {w}
-                        </motion.span>
-                    ))}
-                </div>
+                        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                            {heroStats.map((stat) => (
+                                <div key={stat.label} className="rounded-[24px] border border-white/10 bg-black/20 p-4 backdrop-blur-sm">
+                                    <div className={`inline-flex rounded-full bg-gradient-to-r ${stat.tone} px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-white`}>
+                                        {stat.label}
+                                    </div>
+                                    <div className="mt-4 text-3xl font-black tracking-tight text-white">{stat.value}</div>
+                                    <div className="mt-1 text-sm text-white/45">
+                                        {stat.label === 'Portfolio'
+                                            ? 'Visible proof of work'
+                                            : stat.label === 'Assigned'
+                                                ? 'Active work linked to this account'
+                                                : stat.label === 'Response'
+                                                    ? 'Expected first reply'
+                                                    : 'Current profile availability'}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </MotionDiv>
             </div>
-        </div>
+        </section>
     )
 })
 
@@ -191,7 +250,7 @@ const InfoRow = memo(function InfoRow({ icon, text }) {
 // ─── Primary Button ───────────────────────────────────────────────────────────
 const PrimaryBtn = memo(function PrimaryBtn({ onClick, disabled, loading, icon, label, className = '' }) {
     return (
-        <motion.button
+        <MotionButton
             whileHover={!disabled ? { scale: 1.03 } : {}}
             whileTap={!disabled ? { scale: 0.97 } : {}}
             onClick={onClick}
@@ -204,14 +263,14 @@ const PrimaryBtn = memo(function PrimaryBtn({ onClick, disabled, loading, icon, 
             {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 : icon}
             {loading ? 'Opening...' : label}
-        </motion.button>
+        </MotionButton>
     )
 })
 
 // ─── Ghost Button ─────────────────────────────────────────────────────────────
 const GhostBtn = memo(function GhostBtn({ onClick, icon, label, active, className = '' }) {
     return (
-        <motion.button
+        <MotionButton
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={onClick}
@@ -224,14 +283,14 @@ const GhostBtn = memo(function GhostBtn({ onClick, icon, label, active, classNam
         >
             {icon}
             {label}
-        </motion.button>
+        </MotionButton>
     )
 })
 
 // ─── Profile Card ─────────────────────────────────────────────────────────────
-const ProfileCard = memo(function ProfileCard({ profile, profileUser, works, isOwnProfile, onContact, msgLoading, isSaved, onSave }) {
+const ProfileCard = memo(function ProfileCard({ profile, profileUser, works, isOwnProfile, onContact, msgLoading, isSaved, onSave, reducedMotion }) {
     return (
-        <motion.div {...fadeUp(0.1)} className={`${CARD} rounded-2xl overflow-hidden`}>
+        <MotionDiv {...getReveal(0.1, reducedMotion)} className={`${CARD} rounded-2xl overflow-hidden`}>
             {/* top accent bar */}
             <div className={`h-px w-full ${ACCENT_BG}`} />
 
@@ -357,12 +416,12 @@ const ProfileCard = memo(function ProfileCard({ profile, profileUser, works, isO
                     </div>
                 </div>
             </div>
-        </motion.div>
+        </MotionDiv>
     )
 })
 
 // ─── Skills Section ────────────────────────────────────────────────────────────
-const SkillsSection = memo(function SkillsSection({ skills }) {
+const SkillsSection = memo(function SkillsSection({ skills, reducedMotion }) {
     const list = skills ? skills.split(',').map(s => s.trim()).filter(Boolean) : []
     if (list.length === 0) return null
 
@@ -370,7 +429,7 @@ const SkillsSection = memo(function SkillsSection({ skills }) {
     const tints = ['bg-blue-500/10 text-blue-300 border-blue-500/20', 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20']
 
     return (
-        <motion.div {...fadeUp(0.2)} className={`${CARD} rounded-2xl p-5 sm:p-6`}>
+        <MotionDiv {...getReveal(0.2, reducedMotion)} className={`${CARD} rounded-2xl p-5 sm:p-6`}>
             <h3 className={`text-base font-semibold ${TEXT_1} mb-4`}>Skills</h3>
             <div className="flex flex-wrap gap-2">
                 {list.map((sk, i) => (
@@ -380,18 +439,16 @@ const SkillsSection = memo(function SkillsSection({ skills }) {
                     </span>
                 ))}
             </div>
-        </motion.div>
+        </MotionDiv>
     )
 })
 
 // ─── Portfolio Card ────────────────────────────────────────────────────────────
-const PortfolioCard = memo(function PortfolioCard({ project, index }) {
+const PortfolioCard = memo(function PortfolioCard({ project, index, reducedMotion }) {
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + index * 0.07, duration: 0.35 }}
-            whileHover={{ y: -4 }}
+        <MotionDiv
+            {...getReveal(0.1 + index * 0.07, reducedMotion)}
+            whileHover={reducedMotion ? undefined : { y: -4 }}
             className={`${CARD} ${CARD_HOVER} rounded-2xl overflow-hidden group transition-all duration-300 cursor-default`}
         >
             <div className="relative h-44 overflow-hidden bg-gradient-to-br from-blue-500/5 to-cyan-500/5">
@@ -416,12 +473,12 @@ const PortfolioCard = memo(function PortfolioCard({ project, index }) {
                     </a>
                 )}
             </div>
-        </motion.div>
+        </MotionDiv>
     )
 })
 
 // ─── Assigned Project Card ─────────────────────────────────────────────────────
-const AssignedProjectCard = memo(function AssignedProjectCard({ project, index }) {
+const AssignedProjectCard = memo(function AssignedProjectCard({ project, index, reducedMotion }) {
     const statusMap = {
         'accepted': { bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/25', label: '💳 Pending Payment' },
         'in-progress': { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'border-blue-500/25', label: '🔄 In Progress' },
@@ -430,10 +487,8 @@ const AssignedProjectCard = memo(function AssignedProjectCard({ project, index }
     const s = statusMap[project.status] || statusMap['accepted']
 
     return (
-        <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.07 }}
+        <MotionDiv
+            {...getReveal(index * 0.07, reducedMotion)}
         >
             <Link to="/assigned-projects"
                 className={`group block p-5 rounded-xl ${CARD} ${CARD_HOVER} hover:border-emerald-500/30 transition-all duration-300 no-underline`}>
@@ -455,14 +510,14 @@ const AssignedProjectCard = memo(function AssignedProjectCard({ project, index }
                     <span className="text-sm font-bold text-emerald-400">₹{project.budget}</span>
                 </div>
             </Link>
-        </motion.div>
+        </MotionDiv>
     )
 })
 
 // ─── Section Wrapper ───────────────────────────────────────────────────────────
-const Section = memo(function Section({ title, badge, icon, delay = 0, children }) {
+const Section = memo(function Section({ title, badge, icon, delay = 0, children, reducedMotion }) {
     return (
-        <motion.div {...fadeUp(delay)} className={`${CARD} rounded-2xl overflow-hidden`}>
+        <MotionDiv {...getReveal(delay, reducedMotion)} className={`${CARD} rounded-2xl overflow-hidden`}>
             <div className="px-5 sm:px-6 pt-5 pb-4 sm:pt-6 flex items-center justify-between border-b border-white/[0.06]">
                 <h3 className={`text-base font-semibold ${TEXT_1} flex items-center gap-2.5`}>
                     {icon && <span className="opacity-70">{icon}</span>}
@@ -475,7 +530,7 @@ const Section = memo(function Section({ title, badge, icon, delay = 0, children 
                 )}
             </div>
             <div className="p-5 sm:p-6">{children}</div>
-        </motion.div>
+        </MotionDiv>
     )
 })
 
@@ -503,7 +558,7 @@ const FreelancerProfile = () => {
     const [msgLoading, setMsgLoading] = useState(false)
 
     const isOwnProfile = user?._id === id
-    const { displayed, wordIdx } = useTypewriter(WORDS)
+    const reducedMotion = useAdaptiveMotion()
 
     useEffect(() => { if (id) dispatch(getFreelancer(id)) }, [dispatch, id])
     useEffect(() => { if (freelancerError && freelancerErrorMessage) toast.error(freelancerErrorMessage) }, [freelancerError, freelancerErrorMessage])
@@ -558,7 +613,16 @@ const FreelancerProfile = () => {
             `}</style>
 
             {/* ── Hero ── */}
-            <HeroBanner displayed={displayed} wordIdx={wordIdx} />
+            {/* <HeroBanner
+                profile={profile}
+                profileUser={profileUser}
+                works={works}
+                isOwnProfile={isOwnProfile}
+                assignedProjectsCount={assignedProjects?.length || 0}
+                onContact={handleContact}
+                msgLoading={msgLoading}
+                reducedMotion={reducedMotion}
+            /> */}
 
             {/* ── Content ── */}
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-5 sm:space-y-6">
@@ -573,18 +637,19 @@ const FreelancerProfile = () => {
                     msgLoading={msgLoading}
                     isSaved={isSaved}
                     onSave={() => setIsSaved(v => !v)}
+                    reducedMotion={reducedMotion}
                 />
 
                 {/* Skills */}
-                <SkillsSection skills={profile?.skills} />
+                <SkillsSection skills={profile?.skills} reducedMotion={reducedMotion} />
 
                 {/* Portfolio */}
-                <Section title="Portfolio" badge={`${works.length} projects`} delay={0.3}>
+                <Section title="Portfolio" badge={`${works.length} projects`} delay={0.3} reducedMotion={reducedMotion}>
                     {works.length === 0
                         ? <EmptyPortfolio />
                         : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {works.map((p, i) => <PortfolioCard key={p._id} project={p} index={i} />)}
+                                {works.map((p, i) => <PortfolioCard key={p._id} project={p} index={i} reducedMotion={reducedMotion} />)}
                             </div>
                         )}
                 </Section>
@@ -594,6 +659,7 @@ const FreelancerProfile = () => {
                     title="Client Reviews"
                     icon={<Star size={16} className="text-amber-400" />}
                     delay={0.4}
+                    reducedMotion={reducedMotion}
                 >
                     <RatingSummary
                         userId={id}
@@ -610,10 +676,11 @@ const FreelancerProfile = () => {
                         badge={`${assignedProjects.length} active`}
                         icon={<Zap size={15} className="text-emerald-400" />}
                         delay={0.5}
+                        reducedMotion={reducedMotion}
                     >
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                             {assignedProjects.map((p, i) => (
-                                <AssignedProjectCard key={p._id} project={p} index={i} />
+                                <AssignedProjectCard key={p._id} project={p} index={i} reducedMotion={reducedMotion} />
                             ))}
                         </div>
                         <Link to="/assigned-projects"
@@ -628,8 +695,8 @@ const FreelancerProfile = () => {
 
                 {/* CTA — other profiles only */}
                 {!isOwnProfile && (
-                    <motion.div
-                        {...fadeUp(0.6)}
+                    <MotionDiv
+                        {...getReveal(0.6, reducedMotion)}
                         className="relative rounded-2xl p-8 sm:p-12 text-center overflow-hidden"
                         style={{ background: 'linear-gradient(135deg,#0a1628 0%,#0d1f3c 50%,#0a1628 100%)' }}
                     >
@@ -657,7 +724,7 @@ const FreelancerProfile = () => {
                                 className="mx-auto"
                             />
                         </div>
-                    </motion.div>
+                    </MotionDiv>
                 )}
 
                 {/* bottom spacer */}

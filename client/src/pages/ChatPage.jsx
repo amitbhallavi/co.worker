@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Link } from "react-router-dom"
-import { io } from "socket.io-client"
 import {
     getMyConversations, getMessages, sendMessage,
     setActiveConversation, receiveMessage,
@@ -10,34 +9,9 @@ import {
 } from "../features/ChatsAndMessages/chatSlice"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "react-toastify"
+import { initSocket } from "../utils/socketManager"
 
 const MotionPanel = motion.div
-
-// ─────────────────────────────────────────────────────────────
-// Socket Singleton
-// ─────────────────────────────────────────────────────────────
-let _socketInstance = null
-
-const getSocket = (token) => {
-    if (_socketInstance?.connected) return _socketInstance
-
-    if (_socketInstance) {
-        _socketInstance.auth = { token }
-        _socketInstance.connect()
-        return _socketInstance
-    }
-
-    _socketInstance = io(import.meta.env.VITE_API_URL || window.location.origin, {
-        auth: { token },
-        reconnection: true,
-        reconnectionAttempts: 5,
-        transports: ["websocket", "polling"],
-        autoConnect: false,
-    })
-
-    _socketInstance.connect()
-    return _socketInstance
-}
 
 // ─────────────────────────────────────────────────────────────
 // Pure Utility Functions
@@ -253,7 +227,8 @@ const ConversationItem = memo(function ConversationItem({
 // ─────────────────────────────────────────────────────────────
 const Sidebar = memo(function Sidebar({
     conversations, activeConversation, onlineUsers,
-    search, onSearchChange, onSelectConversation, getOther
+    search, onSearchChange, onSelectConversation, getOther,
+    hasActiveConversation, onCloseSidebar,
 }) {
     const filtered = conversations.filter(conv => {
         const other = getOther(conv)
@@ -266,10 +241,20 @@ const Sidebar = memo(function Sidebar({
             <div className="px-5 pt-6 pb-4 border-b border-white/5 flex-shrink-0">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-extrabold text-white">Messages</h2>
-                    <span className="relative flex w-2 h-2">
-                        <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping" />
-                        <span className="relative rounded-full bg-emerald-400 w-2 h-2" />
-                    </span>
+                    <div className="flex items-center gap-3">
+                        <span className="relative flex w-2 h-2">
+                            <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping" />
+                            <span className="relative rounded-full bg-emerald-400 w-2 h-2" />
+                        </span>
+                        {hasActiveConversation && (
+                            <button
+                                onClick={onCloseSidebar}
+                                className="sm:hidden px-3 py-2 text-[11px] font-bold text-white bg-white/5 border border-white/10 rounded-xl"
+                            >
+                                Back to chat
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 text-sm pointer-events-none">🔍</span>
@@ -320,7 +305,7 @@ const ChatHeader = memo(function ChatHeader({
     const isOnline = onlineUsers.includes(otherUser?._id?.toString())
 
     return (
-        <div className="px-4 py-3 sm:py-4 bg-[#0f172a]/80 backdrop-blur-xl border-b border-white/5 flex items-center gap-3 flex-shrink-0">
+        <div className="sticky top-0 z-10 px-4 py-3 sm:py-4 bg-[#0f172a]/95 backdrop-blur-xl border-b border-white/5 flex items-center gap-3 flex-shrink-0">
             {/* Back button — mobile only */}
             <button
                 onClick={onBack}
@@ -358,10 +343,13 @@ const ChatHeader = memo(function ChatHeader({
 // Messages List
 // ─────────────────────────────────────────────────────────────
 const MessagesList = memo(function MessagesList({
-    messages, msgLoading, otherUser, userId, isOtherTyping, messagesEndRef
+    messages, msgLoading, otherUser, userId, isOtherTyping, messagesEndRef, messageListRef
 }) {
     return (
-        <div className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 bg-[#020617]">
+        <div
+            ref={messageListRef}
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 bg-[#020617]"
+        >
             {msgLoading ? (
                 <MessageSkeleton />
             ) : messages.length === 0 ? (
@@ -475,7 +463,9 @@ const EmptyChatState = memo(function EmptyChatState({ onOpenSidebar }) {
 // Auth Loading Skeleton
 // ─────────────────────────────────────────────────────────────
 const AuthLoadingScreen = () => (
-    <div className="h-screen flex bg-[#020617] overflow-hidden">
+    <div
+        className="flex h-[calc(100dvh-3.5rem)] bg-[#020617] overflow-hidden sm:h-[calc(100dvh-4rem)]"
+    >
         {/* Sidebar skeleton */}
         <div className="hidden sm:flex flex-col w-72 lg:w-80 bg-[#0f172a] border-r border-white/5 animate-pulse">
             <div className="px-5 pt-6 pb-4 border-b border-white/5">
@@ -514,8 +504,10 @@ const AuthLoadingScreen = () => (
 // Login Required Screen
 // ─────────────────────────────────────────────────────────────
 const LoginRequiredScreen = () => (
-    <div className="h-screen flex flex-col items-center justify-center bg-[#020617] text-center px-6"
-        style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div
+        className="flex min-h-[calc(100dvh-3.5rem)] flex-col items-center justify-center bg-[#020617] px-6 text-center sm:min-h-[calc(100dvh-4rem)]"
+        style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+    >
         <MotionPanel
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -551,21 +543,26 @@ const ChatPageContent = ({ user }) => {
 
     const [text, setText] = useState("")
     const [search, setSearch] = useState("")
-    const [sidebarOpen, setSidebarOpen] = useState(true)
+    const [sidebarOpen, setSidebarOpen] = useState(() => {
+        if (typeof window === "undefined") return true
+        return window.innerWidth >= 640
+    })
 
     const typingTimerRef = useRef(null)
     const isTypingRef = useRef(false)
     const messagesEndRef = useRef(null)
+    const messageListRef = useRef(null)
     const inputRef = useRef(null)
     const socketRef = useRef(null)
     const addedMsgIds = useRef(new Set())
     const didRestoreRef = useRef(false)
+    const shouldAnimateScrollRef = useRef(false)
 
     // ── Socket: init once ────────────────────────────────────
     useEffect(() => {
         if (!user?.token) return
 
-        const sock = getSocket(user.token)
+        const sock = initSocket(user.token)
         socketRef.current = sock
 
         // Clean listeners before attaching to avoid duplicates
@@ -596,6 +593,19 @@ const ChatPageContent = ({ user }) => {
         return () => events.forEach(e => sock.off(e))
     }, [user?.token, dispatch])
 
+    useEffect(() => {
+        const previousBodyOverflow = document.body.style.overflow
+        const previousHtmlOverflow = document.documentElement.style.overflow
+
+        document.body.style.overflow = "hidden"
+        document.documentElement.style.overflow = "hidden"
+
+        return () => {
+            document.body.style.overflow = previousBodyOverflow
+            document.documentElement.style.overflow = previousHtmlOverflow
+        }
+    }, [])
+
     // Load conversations — only when authenticated
     // Prevents 401 errors firing before auth resolves
     useEffect(() => {
@@ -619,6 +629,7 @@ const ChatPageContent = ({ user }) => {
     useEffect(() => {
         if (!activeConversation?._id) return
         addedMsgIds.current = new Set()
+        shouldAnimateScrollRef.current = false
         dispatch(getMessages({ conversationId: activeConversation._id }))
         dispatch(resetConversationUnread(activeConversation._id))
         socketRef.current?.emit("join_conversation", activeConversation._id)
@@ -634,7 +645,12 @@ const ChatPageContent = ({ user }) => {
 
     // ── Auto-scroll on new message ───────────────────────────
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+        const container = messageListRef.current
+        if (!container) return
+
+        const behavior = shouldAnimateScrollRef.current ? "smooth" : "auto"
+        container.scrollTo({ top: container.scrollHeight, behavior })
+        shouldAnimateScrollRef.current = true
     }, [messages])
 
     // ─────────────────────────────────────────────────────────
@@ -713,7 +729,7 @@ const ChatPageContent = ({ user }) => {
     // ─────────────────────────────────────────────────────────
     return (
         <div
-            className="h-screen flex bg-[#020617] overflow-hidden"
+            className="flex h-[calc(100dvh-3.5rem)] bg-[#020617] overflow-hidden sm:h-[calc(100dvh-4rem)]"
             style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
         >
             {/*
@@ -751,6 +767,8 @@ const ChatPageContent = ({ user }) => {
                             onSearchChange={setSearch}
                             onSelectConversation={handleSelectConversation}
                             getOther={getOther}
+                            hasActiveConversation={Boolean(activeConversation)}
+                            onCloseSidebar={() => setSidebarOpen(false)}
                         />
                     </motion.aside>
                 )}
@@ -759,9 +777,8 @@ const ChatPageContent = ({ user }) => {
             {/* ── CHAT PANEL ─────────────────────────────── */}
             <main className={`
                 flex-1 flex flex-col min-w-0 min-h-0
-                /* On mobile: hide chat when sidebar is open */
-                ${sidebarOpen && !activeConversation ? "hidden sm:flex" : "flex"}
-                ${sidebarOpen && activeConversation ? "hidden sm:flex" : ""}
+                /* On mobile: show either sidebar or active chat, never both */
+                ${!activeConversation || sidebarOpen ? "hidden sm:flex" : "flex"}
             `}>
                 {!activeConversation ? (
                     <EmptyChatState onOpenSidebar={() => setSidebarOpen(true)} />
@@ -780,6 +797,7 @@ const ChatPageContent = ({ user }) => {
                             userId={user?._id}
                             isOtherTyping={isOtherTyping}
                             messagesEndRef={messagesEndRef}
+                            messageListRef={messageListRef}
                         />
                         <MessageInput
                             text={text}

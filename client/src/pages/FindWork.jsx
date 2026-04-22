@@ -4,23 +4,34 @@ import { getProjects } from '../features/project/projectSlice'
 import { toast } from 'react-toastify'
 import { applyForProject, resetFreelancerSuccess } from '../features/Freelancer/freelancerSlice'
 
+const shouldReduceMotion = () => {
+  if (typeof window === 'undefined') return false
+
+  return (
+    window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ||
+    window.matchMedia?.('(pointer: coarse)')?.matches
+  )
+}
+
 // ── Intersection Observer ──────────────────────────────────
-const useInView = (threshold = 0.15) => {
+const useInView = (threshold = 0.15, disabled = false) => {
   const ref = useRef(null)
   const [inView, setInView] = useState(false)
   useEffect(() => {
+    if (disabled) return
+
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true) }, { threshold })
     if (ref.current) obs.observe(ref.current)
     return () => obs.disconnect()
-  }, [threshold])
-  return [ref, inView]
+  }, [threshold, disabled])
+  return [ref, disabled || inView]
 }
 
 // ── Animated Counter ───────────────────────────────────────
-const useCounter = (end, duration = 2000, inView = false) => {
+const useCounter = (end, duration = 2000, inView = false, disabled = false) => {
   const [count, setCount] = useState(0)
   useEffect(() => {
-    if (!inView) return
+    if (disabled || !inView) return
     let start = 0
     const increment = end / (duration / 16)
     const timer = setInterval(() => {
@@ -29,15 +40,15 @@ const useCounter = (end, duration = 2000, inView = false) => {
       else setCount(Math.floor(start))
     }, 16)
     return () => clearInterval(timer)
-  }, [end, duration, inView])
-  return count
+  }, [end, duration, inView, disabled])
+  return disabled ? end : count
 }
 
 // ── Animated Stats ────────────────────────────────────────
-const AnimatedStats = ({ inView }) => {
-  const projects = useCounter(12400, 2500, inView)
-  const satisfaction = useCounter(98, 1500, inView)
-  const freelancers = useCounter(50, 1500, inView)
+const AnimatedStats = ({ inView, reducedMotion }) => {
+  const projects = useCounter(12400, 2500, inView, reducedMotion)
+  const satisfaction = useCounter(98, 1500, inView, reducedMotion)
+  const freelancers = useCounter(50, 1500, inView, reducedMotion)
 
   return (
     <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
@@ -246,8 +257,8 @@ const BidModal = ({ project, onClose, onSubmit, loading }) => {
 }
 
 // ── Project Card ───────────────────────────────────────────
-const ProjectCard = ({ project, index, onBidClick, myBids }) => {
-  const [ref, inView] = useInView(0.1)
+const ProjectCard = ({ project, index, onBidClick, myBids, reducedMotion = false }) => {
+  const [ref, inView] = useInView(0.1, reducedMotion)
   const [saved, setSaved] = useState(false)
   const [hovered, setHovered] = useState(false)
 
@@ -277,13 +288,13 @@ const ProjectCard = ({ project, index, onBidClick, myBids }) => {
   return (
     <div
       ref={ref}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => !reducedMotion && setHovered(true)}
+      onMouseLeave={() => !reducedMotion && setHovered(false)}
       className={`
         relative rounded-2xl border transition-all duration-300 overflow-hidden
         ${isDone ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'}
         ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
-        ${hovered && !isDone
+        ${hovered && !reducedMotion && !isDone
           ? 'bg-white/[0.08] border-white/20 shadow-xl -translate-y-0.5'
           : 'bg-white/[0.03] border-white/[0.08] shadow-lg'
         }
@@ -291,7 +302,7 @@ const ProjectCard = ({ project, index, onBidClick, myBids }) => {
       style={{ transitionDelay: `${index * 60}ms` }}
     >
       {/* Top gradient bar on hover */}
-      {hovered && !isDone && (
+      {hovered && !reducedMotion && !isDone && (
         <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${catStyle.gradient}`} />
       )}
 
@@ -381,7 +392,7 @@ const ProjectCard = ({ project, index, onBidClick, myBids }) => {
                 ? 'bg-white/[0.05] text-white/30 border-white/10 cursor-not-allowed'
                 : alreadyBid
                   ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 cursor-default'
-                  : hovered
+                  : hovered && !reducedMotion
                     ? `bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-transparent shadow-lg shadow-blue-500/30 cursor-pointer`
                     : 'bg-white/[0.05] text-white border-white/20 hover:border-white/40 cursor-pointer'
               }`}
@@ -420,6 +431,7 @@ const CategoryList = ({ category, setCategory, setPage, onSelect }) => (
 // ══════════════════════════════════════════════════════════
 const FindWork = () => {
   const dispatch = useDispatch()
+  const reducedMotion = shouldReduceMotion()
 
   const { listedProjects, bids, projectLoading, projectError, projectErrorMessage } = useSelector(state => state.project)
   const { user } = useSelector(state => state.auth)
@@ -432,7 +444,7 @@ const FindWork = () => {
   const [bidProject, setBidProject] = useState(null)
   const [bidLoading, setBidLoading] = useState(false)
 
-  const [heroRef, heroInView] = useInView(0.1)
+  const [heroRef, heroInView] = useInView(0.1, reducedMotion)
 
   const myBids = Array.isArray(bids) ? bids : []
 
@@ -555,7 +567,7 @@ const FindWork = () => {
           </div>
 
           {/* Animated Stats */}
-          <AnimatedStats inView={heroInView} />
+          <AnimatedStats inView={heroInView} reducedMotion={reducedMotion} />
         </div>
       </div>
 
@@ -642,6 +654,7 @@ const FindWork = () => {
                     index={i}
                     onBidClick={handleBidClick}
                     myBids={myBids}
+                    reducedMotion={reducedMotion}
                   />
                 ))}
               </div>

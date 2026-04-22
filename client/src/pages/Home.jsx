@@ -5,13 +5,48 @@ import axios from "axios"
 
 const MotionPanel = motion.div
 
-const AnimatedBackground = memo(function AnimatedBackground() {
+const shouldReduceHomepageMotion = () => {
+    if (typeof window === "undefined") {
+        return false
+    }
+
+    const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false
+    const coarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches ?? false
+    const isIOS = /iPad|iPhone|iPod/.test(window.navigator.userAgent)
+
+    return prefersReducedMotion || coarsePointer || isIOS
+}
+
+const getIntroMotion = (shouldAnimate, delay = 0, offset = 20) => (
+    shouldAnimate
+        ? {
+            initial: { opacity: 0, y: offset },
+            animate: { opacity: 1, y: 0 },
+            transition: { delay },
+        }
+        : {}
+)
+
+const getRevealMotion = (shouldAnimate, delay = 0, offset = 20) => (
+    shouldAnimate
+        ? {
+            initial: { opacity: 0, y: offset },
+            whileInView: { opacity: 1, y: 0 },
+            viewport: { once: true, amount: 0.2 },
+            transition: { delay },
+        }
+        : {}
+)
+
+const AnimatedBackground = memo(function AnimatedBackground({ isLowPower = false }) {
     return (
         <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-1/4 -left-32 w-96 h-96 bg-violet-500/20 rounded-full blur-[128px]" />
-            <div className="absolute top-1/3 right-0 w-[480px] h-[480px] bg-blue-500/20 rounded-full blur-[128px]" />
-            <div className="absolute bottom-0 left-1/3 w-[640px] h-[640px] bg-emerald-500/10 rounded-full blur-[128px]" />
-            <div className="absolute -bottom-20 right-1/4 w-80 h-80 bg-amber-500/10 rounded-full blur-[128px]" />
+            <div className={`absolute top-1/4 -left-24 rounded-full bg-violet-500/20 ${isLowPower ? "w-64 h-64 blur-[72px]" : "w-96 h-96 blur-[128px]"}`} />
+            <div className={`absolute top-1/3 right-0 rounded-full bg-blue-500/20 ${isLowPower ? "w-72 h-72 blur-[80px]" : "w-[480px] h-[480px] blur-[128px]"}`} />
+            <div className={`absolute bottom-0 left-1/3 rounded-full bg-emerald-500/10 ${isLowPower ? "w-80 h-80 blur-[88px]" : "w-[640px] h-[640px] blur-[128px]"}`} />
+            {!isLowPower && (
+                <div className="absolute -bottom-20 right-1/4 w-80 h-80 bg-amber-500/10 rounded-full blur-[128px]" />
+            )}
         </div>
     )
 })
@@ -77,7 +112,7 @@ const LiveActivityFeed = memo(function LiveActivityFeed() {
     )
 })
 
-const TrustBar = memo(function TrustBar({ stats }) {
+const TrustBar = memo(function TrustBar({ stats, shouldAnimate = true }) {
     const statItems = [
         { value: stats?.freelancers || "50K+", label: "Active Freelancers" },
         { value: stats?.projects || "100K+", label: "Projects Done" },
@@ -90,9 +125,7 @@ const TrustBar = memo(function TrustBar({ stats }) {
             {statItems.map((stat, i) => (
                 <motion.div
                     key={stat.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
+                    {...getIntroMotion(shouldAnimate, i * 0.1)}
                     className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-3 text-center hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300"
                 >
                     <div className="text-xl sm:text-2xl font-bold text-white">{stat.value}</div>
@@ -103,7 +136,7 @@ const TrustBar = memo(function TrustBar({ stats }) {
     )
 })
 
-const CategoryCard = memo(function CategoryCard({ category, index, onClick }) {
+const CategoryCard = memo(function CategoryCard({ category, index, onClick, shouldAnimate = true }) {
     const colors = {
         web: { gradient: "from-blue-500 to-cyan-500", glow: "shadow-blue-500/20", hover: "hover:shadow-blue-500/40" },
         design: { gradient: "from-violet-500 to-purple-500", glow: "shadow-violet-500/20", hover: "hover:shadow-violet-500/40" },
@@ -116,9 +149,7 @@ const CategoryCard = memo(function CategoryCard({ category, index, onClick }) {
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.08 }}
+            {...getRevealMotion(shouldAnimate, index * 0.08, 12)}
             whileHover={{ scale: 1.05, y: -4 }}
             onClick={onClick}
             className={`group relative bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:bg-white/[0.06] hover:border-white/20 hover:shadow-2xl ${color.glow} ${color.hover}`}
@@ -140,7 +171,7 @@ const CategoryCard = memo(function CategoryCard({ category, index, onClick }) {
     )
 })
 
-const FreelancerCard = memo(function FreelancerCard({ freelancer, index }) {
+const FreelancerCard = memo(function FreelancerCard({ freelancer, index, shouldAnimate = true }) {
     const skills = Array.isArray(freelancer.skills)
         ? freelancer.skills
         : (freelancer.skills || "").split(",").slice(0, 3)
@@ -155,9 +186,7 @@ const FreelancerCard = memo(function FreelancerCard({ freelancer, index }) {
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.08 }}
+            {...getRevealMotion(shouldAnimate, index * 0.08)}
             whileHover={{ y: -4 }}
             className="group bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 hover:bg-white/[0.06] hover:border-white/20 hover:shadow-2xl transition-all duration-300"
         >
@@ -213,7 +242,7 @@ const FreelancerCard = memo(function FreelancerCard({ freelancer, index }) {
     )
 })
 
-const HowItWorksStep = memo(function HowItWorksStep({ step, index, isActive }) {
+const HowItWorksStep = memo(function HowItWorksStep({ step, index, isActive, shouldAnimate = true }) {
     const colors = ["from-blue-500 to-cyan-500", "from-emerald-500 to-teal-500", "from-orange-500 to-amber-500"]
     const icons = [
         <svg key="1" className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,9 +258,7 @@ const HowItWorksStep = memo(function HowItWorksStep({ step, index, isActive }) {
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.15 }}
+            {...getRevealMotion(shouldAnimate, index * 0.15)}
             className={`relative flex flex-col items-center text-center p-6 rounded-2xl transition-all duration-300 ${isActive ? "bg-white/[0.06] border border-white/20 shadow-xl" : "hover:bg-white/[0.03]"}`}
         >
             <motion.div
@@ -251,12 +278,10 @@ const HowItWorksStep = memo(function HowItWorksStep({ step, index, isActive }) {
     )
 })
 
-const FeatureCard = memo(function FeatureCard({ feature, index }) {
+const FeatureCard = memo(function FeatureCard({ feature, index, shouldAnimate = true }) {
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
+            {...getRevealMotion(shouldAnimate, index * 0.1)}
             whileHover={{ scale: 1.03, y: -2 }}
             className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/[0.06] hover:border-white/20 hover:shadow-xl transition-all duration-300 group"
         >
@@ -271,12 +296,11 @@ const FeatureCard = memo(function FeatureCard({ feature, index }) {
     )
 })
 
-const TestimonialCard = memo(function TestimonialCard({ testimonial }) {
+const TestimonialCard = memo(function TestimonialCard({ testimonial, shouldAnimate = true }) {
     const [isActive, setIsActive] = useState(false)
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            {...getRevealMotion(shouldAnimate, 0, 12)}
             onMouseEnter={() => setIsActive(true)}
             onMouseLeave={() => setIsActive(false)}
             className={`bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 transition-all duration-300 ${isActive ? "bg-white/[0.06] border-white/20 shadow-xl" : ""}`}
@@ -302,12 +326,10 @@ const TestimonialCard = memo(function TestimonialCard({ testimonial }) {
     )
 })
 
-const PricingCard = memo(function PricingCard({ plan, index, isHighlighted }) {
+const PricingCard = memo(function PricingCard({ plan, index, isHighlighted, shouldAnimate = true }) {
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
+            {...getRevealMotion(shouldAnimate, index * 0.1)}
             whileHover={{ scale: 1.03 }}
             className={`relative bg-white/[0.03] backdrop-blur-xl border rounded-2xl p-6 transition-all duration-300 ${
                 isHighlighted ? "border-blue-500/50 bg-gradient-to-b from-blue-500/10 to-transparent" : "border-white/10 hover:bg-white/[0.06] hover:border-white/20"
@@ -376,6 +398,7 @@ const FreelancerSkeleton = () => (
 
 const Home = () => {
     const navigate = useNavigate()
+    const shouldAnimate = !shouldReduceHomepageMotion()
     const [searchQuery, setSearchQuery] = useState("")
     const [searchType, setSearchType] = useState("freelancers")
     const [freelancers, setFreelancers] = useState([])
@@ -495,13 +518,12 @@ const Home = () => {
             `}</style>
 
             <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-                <AnimatedBackground />
+                <AnimatedBackground isLowPower={!shouldAnimate} />
                 <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 w-full">
                     <div className="grid lg:grid-cols-2 gap-12 items-center">
                         <div className="space-y-8">
                             <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
+                                {...getIntroMotion(shouldAnimate)}
                                 className="inline-flex items-center gap-2 bg-white/[0.05] border border-white/10 rounded-full px-4 py-2"
                             >
                                 <span className="relative flex w-2 h-2">
@@ -512,9 +534,7 @@ const Home = () => {
                             </motion.div>
 
                             <motion.h1
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
+                                {...getIntroMotion(shouldAnimate, 0.1)}
                                 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight"
                             >
                                 Hire Top Freelancers.
@@ -523,18 +543,14 @@ const Home = () => {
                             </motion.h1>
 
                             <motion.p
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
+                                {...getIntroMotion(shouldAnimate, 0.2)}
                                 className="text-lg sm:text-xl text-white/50 max-w-lg"
                             >
                                 Connect with world-class freelancers. Secure payments. Real-time collaboration. Start your project today.
                             </motion.p>
 
                             <motion.form
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
+                                {...getIntroMotion(shouldAnimate, 0.3)}
                                 onSubmit={handleSearch}
                                 className="flex flex-col sm:flex-row gap-3 max-w-xl"
                             >
@@ -567,9 +583,7 @@ const Home = () => {
                             </motion.form>
 
                             <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.4 }}
+                                {...getIntroMotion(shouldAnimate, 0.4)}
                                 className="flex flex-wrap gap-3"
                             >
                                 <Link
@@ -586,13 +600,11 @@ const Home = () => {
                                 </Link>
                             </motion.div>
 
-                    <TrustBar stats={{}} />
+                    <TrustBar stats={{}} shouldAnimate={shouldAnimate} />
                         </div>
 
                         <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.3 }}
+                            {...getIntroMotion(shouldAnimate, 0.3)}
                             className="hidden lg:block"
                         >
                             <LiveActivityFeed />
@@ -604,9 +616,7 @@ const Home = () => {
             <section className="relative z-10 py-20 bg-[#0f172a]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
+                        {...getRevealMotion(shouldAnimate)}
                         className="text-center mb-12"
                     >
                         <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">Browse Top Categories</h2>
@@ -614,7 +624,7 @@ const Home = () => {
                     </motion.div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                         {categories.map((cat, i) => (
-                            <CategoryCard key={cat.label} category={cat} index={i} onClick={() => handleCategoryClick(cat)} />
+                            <CategoryCard key={cat.label} category={cat} index={i} onClick={() => handleCategoryClick(cat)} shouldAnimate={shouldAnimate} />
                         ))}
                     </div>
                 </div>
@@ -635,7 +645,9 @@ const Home = () => {
                         {loading ? (
                             [...Array(4)].map((_, i) => <FreelancerSkeleton key={i} />)
                         ) : freelancers.length > 0 ? (
-                            freelancers.slice(0, 8).map((freelancer, i) => <FreelancerCard key={freelancer._id} freelancer={freelancer} index={i} />)
+                            freelancers.slice(0, 8).map((freelancer, i) => (
+                                <FreelancerCard key={freelancer._id} freelancer={freelancer} index={i} shouldAnimate={shouldAnimate} />
+                            ))
                         ) : (
                             <div className="col-span-full text-center py-12">
                                 <p className="text-white/40">No freelancers found</p>
@@ -648,9 +660,7 @@ const Home = () => {
             <section className="relative z-10 py-20 bg-[#0f172a]">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
+                        {...getRevealMotion(shouldAnimate)}
                         className="text-center mb-12"
                     >
                         <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">How It Works</h2>
@@ -658,7 +668,7 @@ const Home = () => {
                     </motion.div>
                     <div className="grid md:grid-cols-3 gap-6">
                         {howItWorksSteps.map((step, i) => (
-                            <HowItWorksStep key={step.title} step={step} index={i} isActive={activeStep === i} />
+                            <HowItWorksStep key={step.title} step={step} index={i} isActive={activeStep === i} shouldAnimate={shouldAnimate} />
                         ))}
                     </div>
                     <div className="flex justify-center gap-2 mt-8">
@@ -676,9 +686,7 @@ const Home = () => {
             <section className="relative z-10 py-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
+                        {...getRevealMotion(shouldAnimate)}
                         className="text-center mb-12"
                     >
                         <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">Why Choose Co.Worker?</h2>
@@ -686,7 +694,7 @@ const Home = () => {
                     </motion.div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {features.map((feature, i) => (
-                            <FeatureCard key={feature.title} feature={feature} index={i} />
+                            <FeatureCard key={feature.title} feature={feature} index={i} shouldAnimate={shouldAnimate} />
                         ))}
                     </div>
                 </div>
@@ -695,9 +703,7 @@ const Home = () => {
             <section className="relative z-10 py-20 bg-[#0f172a]">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
+                        {...getRevealMotion(shouldAnimate)}
                         className="text-center mb-12"
                     >
                         <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">Simple, Transparent Pricing</h2>
@@ -705,7 +711,7 @@ const Home = () => {
                     </motion.div>
                     <div className="grid md:grid-cols-3 gap-6">
                         {pricingPlans.map((plan, i) => (
-                            <PricingCard key={plan.title} plan={plan} index={i} isHighlighted={i === 1} />
+                            <PricingCard key={plan.title} plan={plan} index={i} isHighlighted={i === 1} shouldAnimate={shouldAnimate} />
                         ))}
                     </div>
                 </div>
@@ -714,17 +720,15 @@ const Home = () => {
             <section className="relative z-10 py-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
+                        {...getRevealMotion(shouldAnimate)}
                         className="text-center mb-12"
                     >
                         <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">What Our Clients Say</h2>
                         <p className="text-white/50 text-lg">Join thousands of satisfied customers</p>
                     </motion.div>
                     <div className="grid md:grid-cols-3 gap-6">
-                        {testimonials.map((testimonial, i) => (
-                            <TestimonialCard key={testimonial.name} testimonial={testimonial} index={i} />
+                        {testimonials.map((testimonial) => (
+                            <TestimonialCard key={testimonial.name} testimonial={testimonial} shouldAnimate={shouldAnimate} />
                         ))}
                     </div>
                 </div>

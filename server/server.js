@@ -74,7 +74,7 @@ const apiLimiter = rateLimit({
     legacyHeaders: false,
 })
 
-const authLimiter = rateLimit({
+const authMutationLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 20,
     message: { error: "Too many auth attempts, please try again later." },
@@ -83,7 +83,8 @@ const authLimiter = rateLimit({
 })
 
 app.use("/api", apiLimiter)
-app.use("/api/auth", authLimiter)
+app.use("/api/auth/login", authMutationLimiter)
+app.use("/api/auth/register", authMutationLimiter)
 
 app.get("/", (req, res) => {
     res.send("Server is Running ...")

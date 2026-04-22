@@ -8,6 +8,19 @@ import { getProjects, getBids, updateBidStatus, resetUpdate } from "../features/
 import ListProject from "../components/ListProject"
 import BecomeFreelancerModal from "../components/Becomefreelancermodal"
 import RatingSummary from "../components/RatingSummary"
+import {
+    BadgeCheck,
+    BriefcaseBusiness,
+    Compass,
+    FolderOpen,
+    LayoutDashboard,
+    Mail,
+    MapPin,
+    PencilLine,
+    Plus,
+    Sparkles,
+    UserRound,
+} from "lucide-react"
 
 // ── Status maps ────────────────────────────────────────────
 const STATUS_COLORS = {
@@ -244,6 +257,98 @@ const ProjectModal = ({ project, onClose, onBidStatusChange }) => {
     )
 }
 
+const SURFACE = "rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_60px_-34px_rgba(15,23,42,0.22)]"
+
+const getSkillTags = (skills = "", fallback = []) => {
+    const list = typeof skills === "string"
+        ? skills.split(",").map((item) => item.trim()).filter(Boolean)
+        : []
+
+    return list.length ? list : fallback
+}
+
+const ProfileMetricCard = ({ icon, label, value, accent = "from-blue-500 to-cyan-500" }) => (
+    <div className="rounded-[24px] border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm">
+        <div className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br ${accent} text-white shadow-lg`}>
+            {icon}
+        </div>
+        <div className="mt-4 text-2xl font-black tracking-tight text-white">{value}</div>
+        <div className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/45">{label}</div>
+    </div>
+)
+
+const ProfileInfoCard = ({ icon, title, value, tone = "text-slate-900" }) => (
+    <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4">
+        <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm">
+                {icon}
+            </div>
+            <div className="min-w-0">
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{title}</div>
+                <div className={`mt-1 truncate text-sm font-semibold ${tone}`}>{value}</div>
+            </div>
+        </div>
+    </div>
+)
+
+const ProfileEmptyState = ({ icon, title, message, action }) => (
+    <div className={`${SURFACE} p-8 text-center sm:p-10`}>
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] bg-slate-100 text-slate-600">
+            {icon}
+        </div>
+        <h3 className="mt-5 text-xl font-black text-slate-900">{title}</h3>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">{message}</p>
+        {action}
+    </div>
+)
+
+const PostedProjectCard = ({ project, index, onView }) => (
+    <div
+        className={`${SURFACE} fade-up p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_24px_70px_-36px_rgba(14,116,144,0.28)]`}
+        style={{ animationDelay: `${index * 60}ms` }}
+    >
+        <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-600">
+                        {project.category || "General"}
+                    </span>
+                    <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${STATUS_COLORS[project.status] || "text-gray-600 bg-gray-100 border border-gray-200"}`}>
+                        {project.status}
+                    </span>
+                </div>
+                <h3 className="text-base font-black leading-snug text-slate-950 line-clamp-2">{project.title}</h3>
+            </div>
+
+            <button
+                onClick={() => onView(project)}
+                className="rounded-2xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+            >
+                View
+            </button>
+        </div>
+
+        {project.description && (
+            <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">{project.description}</p>
+        )}
+
+        <div className="mt-4 grid grid-cols-2 gap-3 rounded-[22px] border border-slate-200 bg-slate-50/70 p-4">
+            <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Budget</div>
+                <div className="mt-1 text-sm font-black text-emerald-600">
+                    ₹{project.budget ? Number(project.budget).toLocaleString('en-IN') : '—'}
+                </div>
+            </div>
+            <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Posted</div>
+                <div className="mt-1 text-sm font-semibold text-slate-700">
+                    {project.createdAt ? new Date(project.createdAt).toLocaleDateString('en-IN') : 'N/A'}
+                </div>
+            </div>
+        </div>
+    </div>
+)
+
 // ══════════════════════════════════════════════════════════
 const UserProfilePage = () => {
     const { user } = useSelector(state => state.auth)
@@ -264,6 +369,7 @@ const UserProfilePage = () => {
     const [editProfile, setEditProfile] = useState(false)
     const [activeTab, setActiveTab] = useState(isFreelancer ? "portfolio" : "bids")
     const [selectedProject, setSelectedProject] = useState(null)
+    const [composerOpen, setComposerOpen] = useState(false)
 
     const [formData, setFormData] = useState({ projectLink: "", projectImage: "", projectDescription: "" })
     const { projectLink, projectDescription, projectImage } = formData
@@ -322,6 +428,32 @@ const UserProfilePage = () => {
     if (freelancerLoading) return <LoaderGradient />
     if (!user) return <div className="min-h-screen flex items-center justify-center"><p>Please login first.</p></div>
 
+    const skillTags = getSkillTags(
+        freelancer?.profile?.skills,
+        inFreelancer ? ["React", "Tailwind CSS", "UI Systems"] : ["Blogging", "Startups", "Product"]
+    )
+
+    const metricItems = inFreelancer
+        ? [
+            { label: "Portfolio", value: freelancer?.previousWorks?.length ?? 0, icon: <FolderOpen size={16} />, accent: "from-blue-500 to-cyan-500" },
+            { label: "Reviews", value: "48", icon: <Sparkles size={16} />, accent: "from-violet-500 to-fuchsia-500" },
+            { label: "Clients", value: "21", icon: <BadgeCheck size={16} />, accent: "from-emerald-500 to-teal-500" },
+            { label: "Rating", value: "4.9 ★", icon: <Compass size={16} />, accent: "from-amber-500 to-orange-500" },
+        ]
+        : [
+            { label: "Projects", value: myProjects.length, icon: <BriefcaseBusiness size={16} />, accent: "from-blue-500 to-cyan-500" },
+            { label: "Following", value: "183", icon: <UserRound size={16} />, accent: "from-violet-500 to-fuchsia-500" },
+            { label: "Followers", value: "2.1K", icon: <BadgeCheck size={16} />, accent: "from-rose-500 to-orange-500" },
+            { label: "Blogs", value: "0", icon: <LayoutDashboard size={16} />, accent: "from-emerald-500 to-teal-500" },
+        ]
+
+    const infoCards = [
+        { title: "Role", value: inFreelancer ? "Freelancer profile preview" : "Regular user account", icon: <Sparkles size={16} /> },
+        { title: "Email", value: user?.email || "—", icon: <Mail size={16} />, tone: "text-slate-700" },
+        { title: "Location", value: user?.location || "India", icon: <MapPin size={16} />, tone: "text-slate-700" },
+        { title: "Member Since", value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : "Recently", icon: <BadgeCheck size={16} />, tone: "text-slate-700" },
+    ]
+
     return (
         <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <style>{`
@@ -348,187 +480,230 @@ const UserProfilePage = () => {
                 />
             )}
 
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-[#f5f7fb] text-slate-900">
 
-                {/* Demo switcher */}
                 {user?.isFreelancer || justBecameFreelancer ? (
-                    <div className="bg-zinc-900 text-white text-xs flex items-center justify-center gap-4 py-2.5 px-4">
-                        <span className="text-zinc-400">Preview mode — switch user type:</span>
-                        <button onClick={() => { setIsFreelancer(true); setActiveTab("portfolio") }}
-                            className={`px-3 py-1 rounded-full font-bold transition cursor-pointer border-none ${inFreelancer ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white" : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"}`}>
-                            Freelancer
-                        </button>
-                        <button onClick={() => { setIsFreelancer(false); setActiveTab("bids") }}
-                            className={`px-3 py-1 rounded-full font-bold transition cursor-pointer border-none ${!inFreelancer ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white" : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"}`}>
-                            Regular User
-                        </button>
-                    </div>
-                ) : (
-                    <div className="bg-zinc-900 text-white text-xs flex items-center justify-center gap-4 py-2.5 px-4">
-                        <span className="text-zinc-400">Preview mode:</span>
-                        <button className="px-3 py-1 rounded-full font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-none">Regular User</button>
-                    </div>
-                )}
-
-                {/* Profile Hero */}
-                <div className="relative">
-                    <div className="h-44 sm:h-56 bg-gradient-to-br from-indigo-500 to-purple-600 relative overflow-hidden">
-                        <div className="absolute inset-0" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=1200&q=60')", backgroundSize: "cover", backgroundPosition: "center", opacity: 0.18 }} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-60" />
-                    </div>
-                    <div className="max-w-5xl mx-auto px-4 sm:px-6">
-                        <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 sm:-mt-14 relative z-10 pb-6 border-b border-zinc-100">
-                            <div className="relative shrink-0">
-                                <img src={user?.profilePic || "https://i.pravatar.cc/150"}
-                                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl ring-4 ring-white shadow-xl object-cover" alt="avatar" />
-                                {inFreelancer && (
-                                    <span className="absolute -bottom-2 -right-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-xs font-black px-2 py-0.5 rounded-full shadow">✦ PRO</span>
-                                )}
-                            </div>
-                            <div className="flex-1 min-w-0 pb-1">
-                                <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                                    <h1 className="text-2xl font-black text-white leading-tight" style={{ fontFamily: "'Playfair Display',serif" }}>{user?.name}</h1>
-                                    {inFreelancer
-                                        ? <span className="text-xs font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-2.5 py-0.5 rounded-full">Freelancer ✦</span>
-                                        : <span className="text-xs font-bold bg-zinc-100 text-zinc-600 px-2.5 py-0.5 rounded-full border border-zinc-200">Member</span>
-                                    }
-                                </div>
-                                <p className="text-white text-sm mb-2">{user?.email} </p>
-                                <p className="text-zinc-400 text-xs">Id: {user?._id}</p>
-                                <div className="text-xs text-zinc-900 py-0.5 font-medium">{freelancer?.profile?.category}</div>
-                                {inFreelancer
-                                    ? <p className="text-xs text-zinc-900 py-0.5 font-medium">Experience: {freelancer?.profile?.experience}</p>
-                                    : <p className="text-zinc-900 text-sm max-w-lg">Tech enthusiast and blogger. I love discovering talented freelancers.</p>
-                                }
-                                <div className="flex flex-wrap gap-1.5 mt-2.5">
-                                    <div className="text-xs bg-zinc-100 text-zinc-900 px-2.5 py-0.5 rounded-full font-medium border border-zinc-200">{freelancer?.profile?.skills}</div>
-                                    {(inFreelancer ? ["React", "Tailwind CSS", "Figma", "Next.js", "UI/UX"] : ["Blogging", "Startups", "Product"]).map(tag => (
-                                        <span key={tag} className="text-xs bg-zinc-100 text-zinc-900 px-2.5 py-0.5 rounded-full font-medium border border-zinc-200">{tag}</span>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto sm:pb-1">
-
-
-                                <button onClick={() => setEditProfile(true)}
-                                    className="px-10 py-2 text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:opacity-90 transition cursor-pointer shadow border-none">
-                                    ✏️ Edit Profile
+                    <div className="border-b border-slate-200 bg-white/90 backdrop-blur-sm">
+                        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 px-4 py-3 text-xs sm:justify-between sm:px-6">
+                            <span className="font-semibold text-slate-500">Preview mode: switch between freelancer and regular user views.</span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        setIsFreelancer(true)
+                                        setActiveTab("portfolio")
+                                        setComposerOpen(false)
+                                    }}
+                                    className={`rounded-full px-4 py-2 font-bold transition ${inFreelancer ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                                >
+                                    Freelancer
                                 </button>
-                                {!inFreelancer && (
-                                    <button onClick={() => setShowBecomeFModal(true)}
-                                        className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:opacity-90 transition shadow cursor-pointer border-none">
-                                        ✦ Become Freelancer
-                                    </button>
-                                )}
-
+                                <button
+                                    onClick={() => {
+                                        setIsFreelancer(false)
+                                        setActiveTab("bids")
+                                        setComposerOpen(false)
+                                    }}
+                                    className={`rounded-full px-4 py-2 font-bold transition ${!inFreelancer ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                                >
+                                    Regular User
+                                </button>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                {/* Stats */}
-                <div className=" max-w-5xl mx-auto px-4 sm:px-6 py-5">
-
-
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 fade-up">
-                        {(inFreelancer
-                            ? [
-                                { label: "Projects", value: freelancer?.previousWorks?.length ?? 0, icon: "🗂" },
-                                { label: "Blogs", value: "48", icon: "📝" },
-                                { label: "Clients", value: "21", icon: "🤝" },
-                                { label: "Rating", value: "4.9 ★", icon: "⭐" },
-                            ]
-                            : [
-                                { label: "Projects", value: myProjects.length, icon: "📋" },
-                                { label: "Following", value: "183", icon: "👥" },
-                                { label: "Followers", value: "2.1K", icon: "❤️" },
-                                { label: "Blogs", value: "0", icon: "📝" },
-                            ]
-                        ).map((s, i) => (
-                            <div key={s.label} className="bg-white rounded-2xl border border-zinc-100 shadow-md p-4 text-center fade-up" style={{ animationDelay: `${i * 60}ms` }}>
-                                <p className="text-xl mb-1">{s.icon}</p>
-                                <p className="text-2xl font-black text-zinc-900">{s.value}</p>
-                                <p className="text-zinc-500 text-xs mt-0.5 font-medium">{s.label}</p>
-                            </div>
-                        ))}
+                ) : (
+                    <div className="border-b border-slate-200 bg-white/90 backdrop-blur-sm">
+                        <div className="mx-auto flex max-w-6xl items-center justify-center gap-3 px-4 py-3 text-xs sm:px-6">
+                            <span className="font-semibold text-slate-500">Preview mode:</span>
+                            <span className="rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2 font-bold text-white">Regular User</span>
+                        </div>
                     </div>
-                </div>
+                )}
 
-                {/* Tabs */}
-                <div className="max-w-5xl mx-auto px-4 sm:px-6">
-                    <div className="flex gap-1 border-b border-zinc-200 mb-6">
+                <section className="relative overflow-hidden bg-[#071429] pb-10 pt-6 sm:pt-8">
+                    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                        <div className="absolute -top-10 right-0 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
+                        <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
+                        <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.12) 1px,transparent 1px)", backgroundSize: "44px 44px" }} />
+                    </div>
+
+                    <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+                        <div className="rounded-[32px] border border-white/10 bg-white/[0.06] p-5 shadow-[0_24px_80px_-40px_rgba(8,145,178,0.4)] backdrop-blur-xl sm:p-8">
+                            <div className="grid gap-6 lg:grid-cols-[auto,minmax(0,1fr),auto] lg:items-end">
+                                <div className="relative mx-auto lg:mx-0">
+                                    <img
+                                        src={user?.profilePic || "https://i.pravatar.cc/150"}
+                                        className="h-24 w-24 rounded-[26px] object-cover ring-4 ring-white/20 shadow-2xl sm:h-28 sm:w-28"
+                                        alt="avatar"
+                                    />
+                                    <span className={`absolute -bottom-2 -right-2 rounded-full px-3 py-1 text-[11px] font-black shadow-lg ${inFreelancer ? "bg-white text-slate-900" : "bg-gradient-to-r from-blue-600 to-cyan-600 text-white"}`}>
+                                        {inFreelancer ? "✦ PRO" : "Member"}
+                                    </span>
+                                </div>
+
+                                <div className="min-w-0 text-center lg:text-left">
+                                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-200">
+                                        <Sparkles size={12} />
+                                        {inFreelancer ? "Freelancer preview" : "Regular user profile"}
+                                    </div>
+                                    <h1 className="mt-4 text-3xl font-black leading-tight text-white sm:text-4xl" style={{ fontFamily: "'Playfair Display',serif" }}>
+                                        {user?.name}
+                                    </h1>
+                                    <p className="mt-2 max-w-2xl text-sm leading-7 text-white/70 sm:text-base">
+                                        {inFreelancer
+                                            ? (freelancer?.profile?.description || "Showcase your work, highlight your skills, and make it easier for clients to trust your profile.")
+                                            : "Manage your posted projects, keep your profile clean, and only open the project composer when you actually need it."}
+                                    </p>
+                                    <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-white/65 lg:justify-start">
+                                        <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5">{user?.email}</span>
+                                        <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5">ID: {user?._id?.slice(-8)}</span>
+                                        {freelancer?.profile?.category && (
+                                            <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-cyan-200">
+                                                {freelancer.profile.category}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
+                                    <button
+                                        onClick={() => setEditProfile(true)}
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-100"
+                                    >
+                                        <PencilLine size={16} />
+                                        Edit Profile
+                                    </button>
+                                    {!inFreelancer && (
+                                        <button
+                                            onClick={() => setShowBecomeFModal(true)}
+                                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5"
+                                        >
+                                            <Sparkles size={16} />
+                                            Become Freelancer
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+                                {metricItems.map((item) => (
+                                    <ProfileMetricCard key={item.label} {...item} />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr),minmax(280px,0.8fr)]">
+                        <section className={`${SURFACE} p-5 sm:p-6`}>
+                            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                                <LayoutDashboard size={13} />
+                                Profile overview
+                            </div>
+                            <h2 className="mt-3 text-2xl font-black text-slate-950" style={{ fontFamily: "'Playfair Display',serif" }}>
+                                {inFreelancer ? "Your public-facing pitch" : "A cleaner regular user dashboard"}
+                            </h2>
+                            <p className="mt-3 text-sm leading-7 text-slate-600">
+                                {inFreelancer
+                                    ? "This preview shows how clients read your profile. Keep the message sharp, skills obvious, and past work easy to scan."
+                                    : "Your profile should show who you are, what you manage, and where to take action next without dumping the whole project form into the first screen."}
+                            </p>
+
+                            <div className="mt-5 flex flex-wrap gap-2.5">
+                                {skillTags.slice(0, 8).map((tag) => (
+                                    <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+                                        {tag}
+                                    </span>
+                                ))}
+                            </div>
+                        </section>
+
+                        <section className={`${SURFACE} p-5 sm:p-6`}>
+                            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                                <BadgeCheck size={13} />
+                                Account signals
+                            </div>
+                            <div className="mt-4 grid gap-3">
+                                {infoCards.map((item) => (
+                                    <ProfileInfoCard key={item.title} {...item} />
+                                ))}
+                            </div>
+                        </section>
+                    </div>
+
+                    <div className="mt-6 flex flex-wrap gap-2 rounded-[26px] border border-slate-200 bg-white p-2 shadow-[0_16px_50px_-34px_rgba(15,23,42,0.16)]">
                         {(inFreelancer
                             ? [{ id: "portfolio", label: "Portfolio" }, { id: "reviews", label: "Reviews" }]
                             : [{ id: "bids", label: "My Projects" }, { id: "saved", label: "Saved" }]
-                        ).map(tab => (
-                            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                                className={`px-5 py-3 text-sm font-bold transition-all border-b-2 -mb-px cursor-pointer border-none bg-transparent ${activeTab === tab.id ? "border-blue-500 text-blue-600" : "border-transparent text-zinc-500 hover:text-zinc-800"}`}>
+                        ).map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${activeTab === tab.id ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}
+                            >
                                 {tab.label}
                             </button>
                         ))}
                     </div>
 
-                    {/* Portfolio Tab */}
                     {inFreelancer && activeTab === "portfolio" && (
-                        <div className="space-y-6 pb-12">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-lg font-black text-zinc-900" style={{ fontFamily: "'Playfair Display',serif" }}>Previous Work</h2>
-                                    <p className="text-zinc-500 text-xs mt-0.5">{freelancer?.previousWorks?.length ?? 0} projects · publicly visible</p>
-                                </div>
-                                <button onClick={openAdd}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 cursor-pointer text-white font-bold text-sm rounded-xl hover:opacity-90 transition shadow-md border-none">
-                                    <span className="text-lg leading-none">＋</span> Add Project
-                                </button>
-                            </div>
-                            {!freelancer?.previousWorks?.length ? (
-                                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-zinc-200">
-                                    <p className="text-5xl mb-3">🗂</p>
-                                    <p className="text-zinc-500 font-semibold text-sm">No projects yet. Add your first one!</p>
-                                    <button onClick={openAdd} className="mt-4 px-5 py-2 bg-amber-400 text-zinc-900 font-bold text-sm rounded-xl hover:bg-amber-300 transition cursor-pointer border-none">+ Add Project</button>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                                    {freelancer.previousWorks.map((proj, i) => (
-                                        <div key={proj._id} className="group bg-white rounded-2xl border border-zinc-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden fade-up" style={{ animationDelay: `${i * 70}ms` }}>
-                                            <div className="relative h-44 overflow-hidden bg-zinc-100">
-                                                {proj.projectImage
-                                                    ? <img src={proj.projectImage} alt="Project" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                                    : <div className="w-full h-full flex items-center justify-center text-4xl text-zinc-300">🖼</div>
-                                                }
-                                                <div className="absolute inset-0 bg-zinc-900/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
-                                                    <button onClick={() => openEdit(proj)} className="cursor-pointer px-4 py-2 bg-white text-zinc-900 font-bold text-xs rounded-xl hover:bg-green-100 transition shadow border-none">✏️ Edit</button>
-                                                    <button onClick={() => { setDeleteTargetId(proj._id); setShowDeleteModal(true) }} className="cursor-pointer px-4 py-2 bg-rose-500 text-white font-bold text-xs rounded-xl hover:bg-rose-400 transition shadow border-none">🗑 Delete</button>
-                                                </div>
-                                            </div>
-                                            <div className="p-4">
-                                                <h3 className="font-bold text-zinc-700 text-sm leading-snug mb-1.5 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                                                    {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString('en-IN') : 'N/A'}
-                                                </h3>
-                                                <p className="text-zinc-500 text-xs leading-relaxed mb-3 line-clamp-3">{proj.projectDescription}</p>
-                                                {proj.projectLink && (
-                                                    <Link to={proj.projectLink} target="_blank" rel="noreferrer"
-                                                        className="inline-flex items-center justify-center gap-1.5 text-xs font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition">
-                                                        🔗 View Project ↗
-                                                    </Link>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <button onClick={openAdd} className="group flex flex-col items-center justify-center h-full min-h-[260px] bg-white rounded-2xl border-2 border-dashed border-zinc-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all duration-300 text-zinc-400 hover:text-blue-500 cursor-pointer border-none">
-                                        <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">＋</span>
-                                        <span className="text-sm font-bold">Add New Project</span>
+                        <div className="space-y-5 pb-12 pt-6">
+                            <section className={`${SURFACE} p-5 sm:p-6`}>
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Portfolio</div>
+                                        <h2 className="mt-2 text-2xl font-black text-slate-950" style={{ fontFamily: "'Playfair Display',serif" }}>Previous Work</h2>
+                                        <p className="mt-1 text-sm text-slate-500">{freelancer?.previousWorks?.length ?? 0} projects visible to clients</p>
+                                    </div>
+                                    <button
+                                        onClick={openAdd}
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5"
+                                    >
+                                        <Plus size={16} />
+                                        Add Project
                                     </button>
                                 </div>
-                            )}
+
+                                {!freelancer?.previousWorks?.length ? (
+                                    <div className="mt-5 rounded-[26px] border border-dashed border-slate-200 bg-slate-50/60 px-6 py-14 text-center">
+                                        <div className="text-5xl opacity-40">🗂</div>
+                                        <p className="mt-4 text-sm font-semibold text-slate-600">No projects yet. Add your first one.</p>
+                                    </div>
+                                ) : (
+                                    <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                                        {freelancer.previousWorks.map((proj) => (
+                                            <div key={proj._id} className="group overflow-hidden rounded-[26px] border border-slate-200 bg-slate-50/50 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                                                <div className="relative h-44 overflow-hidden bg-slate-100">
+                                                    {proj.projectImage
+                                                        ? <img src={proj.projectImage} alt="Project" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                                                        : <div className="flex h-full w-full items-center justify-center text-4xl text-slate-300">🖼</div>
+                                                    }
+                                                    <div className="absolute inset-0 flex items-center justify-center gap-3 bg-slate-950/70 opacity-0 transition duration-300 group-hover:opacity-100">
+                                                        <button onClick={() => openEdit(proj)} className="rounded-2xl bg-white px-4 py-2 text-xs font-bold text-slate-900 transition hover:bg-emerald-50">Edit</button>
+                                                        <button onClick={() => { setDeleteTargetId(proj._id); setShowDeleteModal(true) }} className="rounded-2xl bg-rose-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-rose-400">Delete</button>
+                                                    </div>
+                                                </div>
+                                                <div className="p-4">
+                                                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                                                        {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString('en-IN') : 'N/A'}
+                                                    </div>
+                                                    <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">{proj.projectDescription}</p>
+                                                    {proj.projectLink && (
+                                                        <Link to={proj.projectLink} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800">
+                                                            View Project ↗
+                                                        </Link>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </section>
                         </div>
                     )}
 
-                    {/* My Projects Tab */}
                     {!inFreelancer && activeTab === "bids" && (
-                        <div className="space-y-4 pb-12">
+                        <div className="space-y-5 pb-12 pt-6">
                             {selectedProject && (
                                 <ProjectModal
                                     project={selectedProject}
@@ -536,89 +711,124 @@ const UserProfilePage = () => {
                                     onBidStatusChange={() => dispatch(getProjects())}
                                 />
                             )}
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-lg font-black text-zinc-900" style={{ fontFamily: "'Playfair Display',serif" }}>My Posted Projects</h2>
-                                    <p className="text-zinc-500 text-xs mt-0.5">{myProjects.length} projects listed</p>
-                                </div>
-                                <Link to="/browse-projects">
-                                    <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm rounded-xl hover:shadow-lg transition shadow cursor-pointer border-none">
-                                        🔍 Browse Projects
-                                    </button>
-                                </Link>
-                            </div>
-                            {myProjects.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-zinc-200">
-                                    <p className="text-5xl mb-3">📋</p>
-                                    <p className="text-zinc-500 font-semibold text-sm">No projects posted yet.</p>
-                                </div>
-                            ) : (
-                                <div className="bg-white rounded-2xl border border-zinc-100 shadow-md overflow-hidden">
-                                    <div className="grid grid-cols-12 px-5 py-3 bg-zinc-50 border-b border-zinc-100 text-xs font-bold text-zinc-400 uppercase tracking-wide">
-                                        <div className="col-span-3">Title</div>
-                                        <div className="col-span-2">Category</div>
-                                        <div className="col-span-2 hidden sm:block">Client</div>
-                                        <div className="col-span-1 hidden sm:block">Budget</div>
-                                        <div className="col-span-2">Status</div>
-                                        <div className="col-span-1 text-center hidden sm:block">Date</div>
-                                        <div className="col-span-1 text-center">View</div>
 
+                            <section className={`${SURFACE} p-5 sm:p-6`}>
+                                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <div>
+                                        <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Project board</div>
+                                        <h2 className="mt-2 text-2xl font-black text-slate-950" style={{ fontFamily: "'Playfair Display',serif" }}>My Posted Projects</h2>
+                                        <p className="mt-1 text-sm text-slate-500">{myProjects.length} active entries in your board</p>
                                     </div>
-                                    {myProjects.map((bid, i) => (
-                                        <div key={bid._id}
-                                            className="grid grid-cols-12 px-5 py-4 items-center hover:bg-zinc-50 transition border-b border-zinc-100 last:border-0 fade-up"
-                                            style={{ animationDelay: `${i * 60}ms` }}>
-                                            <div className="col-span-3 min-w-0 pr-2"><p className="font-bold text-zinc-900 text-sm truncate">{bid.title}</p></div>
-                                            <div className="col-span-2 min-w-0 pr-2"><p className="text-xs text-zinc-600 font-medium truncate">{bid.category}</p></div>
-                                            <div className="col-span-2 hidden sm:block min-w-0 pr-2"><p className="text-xs text-zinc-600 font-medium truncate">{bid.user?.name}</p></div>
-                                            <div className="col-span-1 hidden sm:block"><p className="text-xs font-bold text-emerald-600 whitespace-nowrap">₹{bid.budget ? Number(bid.budget).toLocaleString('en-IN') : '—'}</p></div>
-                                            <div className="col-span-2">
-                                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_COLORS[bid.status] || "text-gray-600 bg-gray-100"}`}>{bid.status}</span>
-                                            </div>
-                                            <div className="col-span-1 hidden sm:block text-center text-xs text-zinc-400 whitespace-nowrap">
-                                                {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('en-IN') : 'N/A'}
-                                            </div>
-                                            <div className="col-span-1 flex justify-center">
-                                                <button onClick={() => setSelectedProject(bid)}
-                                                    className="px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-200 cursor-pointer">
-                                                    View
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
+
+                                    <div className="flex flex-col gap-2 sm:flex-row">
+                                        <Link to="/browse-projects">
+                                            <button className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                                                <Compass size={16} />
+                                                Browse Projects
+                                            </button>
+                                        </Link>
+                                        <button
+                                            onClick={() => setComposerOpen((value) => !value)}
+                                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5"
+                                        >
+                                            {composerOpen ? <LayoutDashboard size={16} /> : <Plus size={16} />}
+                                            {composerOpen ? "Hide Composer" : "Post a Project"}
+                                        </button>
+                                    </div>
                                 </div>
-                            )}
-                            <ListProject />
-                            {/* CTA — hidden after activation */}
+
+                                {myProjects.length === 0 ? (
+                                    <div className="mt-6 rounded-[26px] border border-dashed border-slate-200 bg-slate-50/60 px-6 py-14 text-center">
+                                        <div className="text-5xl opacity-40">📋</div>
+                                        <p className="mt-4 text-sm font-semibold text-slate-600">No projects posted yet.</p>
+                                        <p className="mt-1 text-sm text-slate-500">Open the composer and publish your first project when you are ready.</p>
+                                    </div>
+                                ) : (
+                                    <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                                        {myProjects.map((project, index) => (
+                                            <PostedProjectCard key={project._id} project={project} index={index} onView={setSelectedProject} />
+                                        ))}
+                                    </div>
+                                )}
+                            </section>
+
+                            <section className={`${SURFACE} overflow-hidden`}>
+                                <button
+                                    onClick={() => setComposerOpen((value) => !value)}
+                                    className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left sm:px-6"
+                                >
+                                    <div>
+                                        <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Project composer</div>
+                                        <h3 className="mt-2 text-xl font-black text-slate-950" style={{ fontFamily: "'Playfair Display',serif" }}>
+                                            Post your next project without cluttering the whole profile
+                                        </h3>
+                                        <p className="mt-1 text-sm text-slate-500">Open this only when you want to publish something new.</p>
+                                    </div>
+                                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
+                                        {composerOpen ? "−" : "+"}
+                                    </span>
+                                </button>
+
+                                {composerOpen && (
+                                    <div className="border-t border-slate-200 bg-slate-50/70 p-3 sm:p-5">
+                                        <ListProject />
+                                    </div>
+                                )}
+                            </section>
+
                             {!inFreelancer && (
-                                <div className="mt-6 bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-5 shadow-xl">
-                                    <div className="text-5xl">🚀</div>
-                                    <div className="flex-1 text-center sm:text-left">
-                                        <p className="text-white font-black text-lg" style={{ fontFamily: "'Playfair Display',serif" }}>Want to earn instead of hire?</p>
-                                        <p className="text-zinc-400 text-sm mt-1">Become a freelancer and showcase your work to hundreds of clients.</p>
+                                <section className="overflow-hidden rounded-[30px] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.5)] sm:p-8">
+                                    <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                                        <div className="text-5xl">🚀</div>
+                                        <div className="flex-1">
+                                            <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-white/40">Freelancer mode</div>
+                                            <h3 className="mt-2 text-2xl font-black text-white" style={{ fontFamily: "'Playfair Display',serif" }}>Want to earn instead of hire?</h3>
+                                            <p className="mt-2 text-sm leading-6 text-white/60">Switch roles, showcase past work, and let clients discover you without leaving this account.</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowBecomeFModal(true)}
+                                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-3 text-sm font-black text-white transition hover:-translate-y-0.5"
+                                        >
+                                            <Sparkles size={16} />
+                                            Become a Freelancer
+                                        </button>
                                     </div>
-                                    <button onClick={() => setShowBecomeFModal(true)}
-                                        className="shrink-0 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-black rounded-xl hover:shadow-lg transition whitespace-nowrap cursor-pointer border-none">
-                                        ✦ Become a Freelancer
-                                    </button>
-                                </div>
+                                </section>
                             )}
                         </div>
                     )}
 
-                    {/* Reviews Tab */}
                     {inFreelancer && activeTab === "reviews" && (
-                        <div className="bg-white rounded-2xl shadow-md p-7">
-                            <h2 className="text-2xl font-extrabold text-gray-900 mb-6" style={{ fontFamily: "'Playfair Display',serif" }}>
-                                ⭐ Client Reviews
-                            </h2>
-                            <RatingSummary
-                                userId={user?._id}
-                                currentUserId={user?._id}
-                                userType="freelancer"
-                                onRatingChange={() => {
-                                    // Optionally refetch user data
-                                }}
+                        <div className="pb-12 pt-6">
+                            <section className={`${SURFACE} p-6 sm:p-7`}>
+                                <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Reviews</div>
+                                <h2 className="mt-2 text-2xl font-black text-slate-950" style={{ fontFamily: "'Playfair Display',serif" }}>Client Reviews</h2>
+                                <div className="mt-6">
+                                    <RatingSummary
+                                        userId={user?._id}
+                                        currentUserId={user?._id}
+                                        userType="freelancer"
+                                        onRatingChange={() => { }}
+                                    />
+                                </div>
+                            </section>
+                        </div>
+                    )}
+
+                    {!inFreelancer && activeTab === "saved" && (
+                        <div className="pb-12 pt-6">
+                            <ProfileEmptyState
+                                icon={<FolderOpen className="h-7 w-7" />}
+                                title="No saved projects yet"
+                                message="Saved projects will appear here once you start bookmarking opportunities from the browse page."
+                                action={(
+                                    <Link to="/browse-projects">
+                                        <button className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800">
+                                            <Compass size={16} />
+                                            Explore Projects
+                                        </button>
+                                    </Link>
+                                )}
                             />
                         </div>
                     )}
