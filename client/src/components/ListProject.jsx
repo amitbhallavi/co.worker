@@ -144,7 +144,6 @@ const ListProject = () => {
     return (
         <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}>
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap');
                 @keyframes fadeUp      { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
                 @keyframes ping        { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2);opacity:0} }
                 @keyframes orbPulse    { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(1.15);opacity:.9} }

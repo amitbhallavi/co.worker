@@ -4,10 +4,10 @@ import store from "../features/store"
 import { updateCredits } from "../features/auth/authSlice"
 
 let socket = null
-const isDevelopment = import.meta.env.DEV
+const shouldLogSocket = import.meta.env.DEV && import.meta.env.VITE_DEBUG_SOCKET === "true"
 
 const logSocket = (...args) => {
-    if (isDevelopment) {
+    if (shouldLogSocket) {
         console.log(...args)
     }
 }

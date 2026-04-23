@@ -492,7 +492,6 @@ const RegularUser = () => {
     return (
         <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap');
                 ::-webkit-scrollbar{width:4px}
                 ::-webkit-scrollbar-thumb{background:#3B7FF5;border-radius:9px}
                 @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
@@ -507,7 +506,7 @@ const RegularUser = () => {
                     onSuccess={() => {
                         setShowBecomeFModal(false)
                         setJustBecameFreelancer(true)
-                        setTimeout(() => navigate('/profile'), 1500)
+                        navigate(user?._id ? `/profile/${user._id}` : '/auth/profile')
                     }}
                 />
             )}

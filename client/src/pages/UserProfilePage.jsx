@@ -268,7 +268,7 @@ const getSkillTags = (skills = "", fallback = []) => {
 }
 
 const ProfileMetricCard = ({ icon, label, value, accent = "from-blue-500 to-cyan-500" }) => (
-    <div className="rounded-[24px] border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm">
+    <div className="rounded-[24px] border border-white/10 bg-white/[0.08] p-4">
         <div className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br ${accent} text-white shadow-lg`}>
             {icon}
         </div>
@@ -457,7 +457,6 @@ const UserProfilePage = () => {
     return (
         <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap');
                 .line-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
                 .line-clamp-3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
                 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#3B7FF5;border-radius:9px}
@@ -483,7 +482,7 @@ const UserProfilePage = () => {
             <div className="min-h-screen bg-[#f5f7fb] text-slate-900">
 
                 {user?.isFreelancer || justBecameFreelancer ? (
-                    <div className="border-b border-slate-200 bg-white/90 backdrop-blur-sm">
+                    <div className="border-b border-slate-200 bg-white/95">
                         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-3 px-4 py-3 text-xs sm:justify-between sm:px-6">
                             <span className="font-semibold text-slate-500">Preview mode: switch between freelancer and regular user views.</span>
                             <div className="flex items-center gap-2">
@@ -511,7 +510,7 @@ const UserProfilePage = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="border-b border-slate-200 bg-white/90 backdrop-blur-sm">
+                    <div className="border-b border-slate-200 bg-white/95">
                         <div className="mx-auto flex max-w-6xl items-center justify-center gap-3 px-4 py-3 text-xs sm:px-6">
                             <span className="font-semibold text-slate-500">Preview mode:</span>
                             <span className="rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2 font-bold text-white">Regular User</span>
@@ -521,13 +520,19 @@ const UserProfilePage = () => {
 
                 <section className="relative overflow-hidden bg-[#071429] pb-10 pt-6 sm:pt-8">
                     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                        <div className="absolute -top-10 right-0 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
-                        <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
+                        <div
+                            className="absolute -top-10 right-0 h-72 w-72 opacity-70"
+                            style={{ background: "radial-gradient(circle, rgba(6,182,212,0.18) 0%, transparent 70%)" }}
+                        />
+                        <div
+                            className="absolute bottom-0 left-0 h-64 w-64 opacity-60"
+                            style={{ background: "radial-gradient(circle, rgba(139,92,246,0.16) 0%, transparent 70%)" }}
+                        />
                         <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.12) 1px,transparent 1px)", backgroundSize: "44px 44px" }} />
                     </div>
 
                     <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-                        <div className="rounded-[32px] border border-white/10 bg-white/[0.06] p-5 shadow-[0_24px_80px_-40px_rgba(8,145,178,0.4)] backdrop-blur-xl sm:p-8">
+                        <div className="rounded-[32px] border border-white/10 bg-white/[0.08] p-5 shadow-[0_24px_80px_-40px_rgba(8,145,178,0.4)] sm:p-8">
                             <div className="grid gap-6 lg:grid-cols-[auto,minmax(0,1fr),auto] lg:items-end">
                                 <div className="relative mx-auto lg:mx-0">
                                     <img

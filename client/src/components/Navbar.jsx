@@ -4,10 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { logoutUser, refreshUser } from "../features/auth/authSlice"
 import { getUnreadCount } from "../features/ChatsAndMessages/chatSlice"
-import { motion, AnimatePresence } from "framer-motion"
 import CoworkerIcon from "./CoworkerIcon"
-
-const MotionPanel = motion.div
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -27,6 +24,13 @@ const NAV_LINKS = [
     { label: "Pricing", href: "/pricing" },
 ]
 
+const MOBILE_NAV_LINKS = [
+    { label: "Find Work", href: "/find/work", icon: "↗", sub: "Browse active freelancer jobs" },
+    { label: "How It Works", href: "/how-it-works", icon: "◎", sub: "See the workflow before you start" },
+    { label: "Pricing", href: "/pricing", icon: "₹", sub: "Compare free, pro, and elite plans" },
+    { label: "Browse Projects", href: "/browse-projects", icon: "▣", sub: "Jump into open marketplace projects" },
+]
+
 // ─────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────
@@ -39,9 +43,35 @@ const useClickOutside = (ref, handler) => {
             if (ref.current && !ref.current.contains(e.target)) handler()
         }
         document.addEventListener("mousedown", listener)
-        return () => document.removeEventListener("mousedown", listener)
+        document.addEventListener("touchstart", listener, { passive: true })
+        return () => {
+            document.removeEventListener("mousedown", listener)
+            document.removeEventListener("touchstart", listener)
+        }
     }, [ref, handler])
 }
+
+const getDashboardHref = (user) => (
+    user?.isAdmin
+        ? "/admin/dashboard"
+        : user?.isFreelancer
+            ? "/auth/profile"
+            : "/regularUser"
+)
+
+const getProfileHref = (user) => (
+    user?.isFreelancer && user?._id
+        ? `/profile/${user._id}`
+        : getDashboardHref(user)
+)
+
+const getRoleLabel = (user) => (
+    user?.isAdmin
+        ? "Admin access"
+        : user?.isFreelancer
+            ? "Freelancer mode"
+            : "Client account"
+)
 
 // ─────────────────────────────────────────────────────────────
 // Logo
@@ -54,13 +84,13 @@ const Logo = () => (
                 <CoworkerIcon size={30} />
             </div>
         </div>
-        <div className="hidden sm:flex flex-col leading-none">
-            <span className="auth-serif text-[18px] font-semibold tracking-[-0.04em] text-slate-900">
+        <div className="flex flex-col leading-none">
+            <span className="auth-serif text-[17px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[18px]">
                 <span className="text-slate-900">Co</span>
                 <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">.</span>
                 <span className="font-medium text-slate-700">worker</span>
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700/70">
+            <span className="hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700/70 sm:block">
                 Secure freelance workspace
             </span>
         </div>
@@ -109,7 +139,7 @@ const IconBtn = ({ to, onClick, children, badge, className = "", ariaLabel }) =>
         </Link>
     )
     return (
-        <button onClick={onClick} aria-label={ariaLabel} className={base}>
+        <button type="button" onClick={onClick} aria-label={ariaLabel} className={base}>
             {children}
             {badge > 0 && (
                 <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
@@ -134,13 +164,7 @@ const TalentDropdown = ({ onClose }) => {
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.97 }}
-            transition={{ duration: 0.18, ease: [0.34, 1.26, 0.64, 1] }}
-            className="absolute top-[calc(100%+14px)] left-1/2 -translate-x-1/2 w-[560px] max-w-[96vw] z-50 drop-shadow-2xl"
-        >
+        <div className="absolute top-[calc(100%+14px)] left-1/2 z-50 w-[560px] max-w-[96vw] -translate-x-1/2 drop-shadow-2xl">
             {/* Arrow tip */}
             <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-white border-l border-t border-gray-100 rounded-sm z-10" />
 
@@ -219,7 +243,7 @@ const TalentDropdown = ({ onClose }) => {
                     </div>
                 </div>
             </div>
-        </motion.div>
+        </div>
     )
 }
 
@@ -231,21 +255,22 @@ const ProfileDropdown = ({ user, onLogout, unreadTotal }) => {
     const ref = useRef(null)
     useClickOutside(ref, () => setOpen(false))
 
-    const dashboardHref = user?.isAdmin
-        ? "/admin/dashboard"
-        : user?.isFreelancer
-            ? "/auth/profile"
-            : "/regularUser"
+    const dashboardHref = getDashboardHref(user)
+    const profileHref = getProfileHref(user)
 
     const menuItems = [
         { icon: "⚡", label: "Dashboard", href: dashboardHref },
-        { icon: "👤", label: "Profile", href: "/auth/profile" },
         { icon: "🔍", label: "Find Work", href: "/find/work" },
     ]
+
+    if (profileHref !== dashboardHref) {
+        menuItems.splice(1, 0, { icon: "👤", label: "Profile", href: profileHref })
+    }
 
     return (
         <div ref={ref} className="relative">
             <button
+                type="button"
                 onClick={() => setOpen(v => !v)}
                 aria-label="User menu"
                 aria-expanded={open}
@@ -264,71 +289,61 @@ const ProfileDropdown = ({ user, onLogout, unreadTotal }) => {
                 </svg>
             </button>
 
-            <AnimatePresence>
-                {open && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                        transition={{ duration: 0.16 }}
-                        className="absolute right-0 top-[calc(100%+10px)] w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50"
-                    >
-                        {/* User header */}
-                        <div className="px-4 py-3.5 bg-gradient-to-br from-blue-50 to-cyan-50 border-b border-gray-100">
-                            <div className="flex items-center gap-3">
-                                <Avatar user={user} size="md" />
-                                <div className="min-w-0">
-                                    <p className="text-sm font-bold text-gray-900 truncate">{user?.name}</p>
-                                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                                </div>
+            {open && (
+                <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-60 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+                    {/* User header */}
+                    <div className="border-b border-gray-100 bg-gradient-to-br from-blue-50 to-cyan-50 px-4 py-3.5">
+                        <div className="flex items-center gap-3">
+                            <Avatar user={user} size="md" />
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-bold text-gray-900">{user?.name}</p>
+                                <p className="truncate text-xs text-gray-500">{user?.email}</p>
                             </div>
-                            {(user?.isAdmin || user?.isFreelancer) && (
-                                <span className="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                                    {user?.isAdmin ? "Admin" : "Freelancer"}
+                        </div>
+                        <span className="mt-2 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                            {getRoleLabel(user)}
+                        </span>
+                    </div>
+
+                    {/* Credits pill */}
+                    {user?.credits !== undefined && (
+                        <div className="mx-3 mt-3 flex items-center justify-between rounded-xl border border-amber-100 bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-2">
+                            <span className="text-xs font-medium text-gray-600">Credits</span>
+                            <span className="text-sm font-black text-amber-600">⚡ {user.credits}</span>
+                        </div>
+                    )}
+
+                    {/* Menu items */}
+                    <div className="px-1.5 py-2">
+                        {menuItems.map(item => (
+                            <Link key={item.label} to={item.href} onClick={() => setOpen(false)}
+                                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700">
+                                <span className="text-base">{item.icon}</span>
+                                <span className="font-medium">{item.label}</span>
+                            </Link>
+                        ))}
+
+                        {/* Messages with badge */}
+                        <Link to="/chat" onClick={() => setOpen(false)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700">
+                            <span className="text-base">💬</span>
+                            <span className="font-medium">Messages</span>
+                            {unreadTotal > 0 && (
+                                <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                                    {unreadTotal > 9 ? "9+" : unreadTotal}
                                 </span>
                             )}
-                        </div>
+                        </Link>
+                    </div>
 
-                        {/* Credits pill */}
-                        {user?.credits !== undefined && (
-                            <div className="mx-3 mt-3 px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-100 flex items-center justify-between">
-                                <span className="text-xs text-gray-600 font-medium">Credits</span>
-                                <span className="text-sm font-black text-amber-600">⚡ {user.credits}</span>
-                            </div>
-                        )}
-
-                        {/* Menu items */}
-                        <div className="py-2 px-1.5">
-                            {menuItems.map(item => (
-                                <Link key={item.label} to={item.href} onClick={() => setOpen(false)}
-                                    className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-colors">
-                                    <span className="text-base">{item.icon}</span>
-                                    <span className="font-medium">{item.label}</span>
-                                </Link>
-                            ))}
-
-                            {/* Messages with badge */}
-                            <Link to="/chat" onClick={() => setOpen(false)}
-                                className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-colors">
-                                <span className="text-base">💬</span>
-                                <span className="font-medium">Messages</span>
-                                {unreadTotal > 0 && (
-                                    <span className="ml-auto min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1.5">
-                                        {unreadTotal > 9 ? "9+" : unreadTotal}
-                                    </span>
-                                )}
-                            </Link>
-                        </div>
-
-                        <div className="border-t border-gray-100 p-2">
-                            <button onClick={() => { onLogout(); setOpen(false) }}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors font-semibold">
-                                <span>🚪</span> Log Out
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    <div className="border-t border-gray-100 p-2">
+                        <button type="button" onClick={() => { onLogout(); setOpen(false) }}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50">
+                            <span>🚪</span> Log Out
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -349,6 +364,7 @@ const NavLinks = ({ isActive, talentOpen, onTalentToggle }) => (
         ))}
 
         <button
+            type="button"
             onClick={onTalentToggle}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${talentOpen ? "bg-blue-50 text-blue-700 font-semibold" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
@@ -368,12 +384,14 @@ const NavLinks = ({ isActive, talentOpen, onTalentToggle }) => (
 const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
     const [talentOpen, setTalentOpen] = useState(false)
     const location = useLocation()
+    const previousPathname = useRef(location.pathname)
 
     // Close on route change
     useEffect(() => {
-        if (open) {
+        if (open && previousPathname.current !== location.pathname) {
             onClose()
         }
+        previousPathname.current = location.pathname
     }, [location.pathname, open, onClose])
 
     // Lock body scroll when open
@@ -382,195 +400,291 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
         return () => { document.body.style.overflow = "" }
     }, [open])
 
-    const dashboardHref = user?.isAdmin
-        ? "/admin/dashboard"
-        : user?.isFreelancer
-            ? "/auth/profile"
-            : "/regularUser"
+    useEffect(() => {
+        if (!open) {
+            setTalentOpen(false)
+            return
+        }
+
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                onClose()
+            }
+        }
+
+        document.addEventListener("keydown", handleKeyDown)
+        return () => document.removeEventListener("keydown", handleKeyDown)
+    }, [open, onClose])
+
+    if (!open) {
+        return null
+    }
+
+    const dashboardHref = getDashboardHref(user)
+    const profileHref = getProfileHref(user)
+    const showSeparateProfileLink = Boolean(user && profileHref !== dashboardHref)
 
     return (
-        <AnimatePresence>
-            {open && (
-                <>
-                    {/* Backdrop */}
-                    <MotionPanel
-                        key="backdrop"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70]"
-                        onClick={onClose}
-                        aria-hidden="true"
-                    />
+        <>
+            <div
+                className="fixed inset-0 z-[70] bg-slate-950/35"
+                onClick={onClose}
+                aria-hidden="true"
+            />
 
-                    {/* Drawer */}
-                    <motion.div
-                        key="drawer"
-                        initial={{ x: "100%" }}
-                        animate={{ x: 0 }}
-                        exit={{ x: "100%" }}
-                        transition={{ type: "spring", damping: 28, stiffness: 300 }}
-                        className="fixed top-0 right-0 h-full w-[310px] max-w-[88vw] bg-white z-[80] shadow-2xl flex flex-col"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-label="Navigation menu"
-                    >
-                        {/* Drawer header */}
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
-                            <Logo />
-                            <button
-                                onClick={onClose}
-                                aria-label="Close menu"
-                                className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+            <div
+                className="fixed inset-y-0 right-0 z-[80] w-full max-w-sm"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Navigation menu"
+            >
+                <div className="relative flex h-full flex-col overflow-hidden border-l border-slate-200/80 bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_58%,#eef6ff_100%)] shadow-[0_35px_100px_-40px_rgba(15,23,42,0.48)]">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-44 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.16),transparent_58%)]" />
+
+                    <div className="relative flex items-center justify-between border-b border-slate-200/80 px-4 py-4">
+                        <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">Navigation</p>
+                            <p className="mt-1 text-sm text-slate-500">Move faster on mobile</p>
                         </div>
 
-                        {/* User card */}
-                        {user && (
-                            <div className="mx-4 mt-4 p-3.5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl flex items-center gap-3 flex-shrink-0">
-                                {user?.profilePic ? (
-                                    <img src={user.profilePic} alt={user.name}
-                                        className="w-11 h-11 rounded-xl object-cover ring-2 ring-white/40 flex-shrink-0" />
-                                ) : (
-                                    <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                                        {getInitials(user?.name)}
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            aria-label="Close menu"
+                            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+                        >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div className="relative flex-1 overflow-y-auto px-4 pb-6 pt-4">
+                        {user ? (
+                            <div className="rounded-[28px] bg-slate-950 p-4 text-white shadow-[0_24px_60px_-30px_rgba(15,23,42,0.7)]">
+                                <div className="flex items-start gap-3">
+                                    {user?.profilePic ? (
+                                        <img
+                                            src={user.profilePic}
+                                            alt={user.name}
+                                            className="h-12 w-12 rounded-2xl object-cover ring-2 ring-white/15"
+                                        />
+                                    ) : (
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-sm font-bold text-white">
+                                            {getInitials(user?.name)}
+                                        </div>
+                                    )}
+
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-base font-semibold">{user?.name}</p>
+                                        <p className="truncate text-xs text-slate-300">{user?.email}</p>
+                                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+                                            <span className="rounded-full bg-white/10 px-2.5 py-1 text-slate-100">
+                                                {getRoleLabel(user)}
+                                            </span>
+                                            {user?.credits !== undefined && (
+                                                <span className="rounded-full bg-amber-400/15 px-2.5 py-1 text-amber-200">
+                                                    ⚡ {user.credits} credits
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-                                )}
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-white font-bold text-sm truncate">{user?.name}</p>
-                                    <p className="text-blue-100 text-xs truncate">{user?.email}</p>
                                 </div>
-                                {user?.credits !== undefined && (
-                                    <div className="flex-shrink-0 text-xs font-black text-white bg-white/20 px-2.5 py-1.5 rounded-xl">
-                                        ⚡{user.credits}
-                                    </div>
-                                )}
+
+                                <div className="mt-4 grid grid-cols-2 gap-2">
+                                    <Link
+                                        to={dashboardHref}
+                                        onClick={onClose}
+                                        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                                    >
+                                        Dashboard
+                                    </Link>
+                                    <Link
+                                        to={showSeparateProfileLink ? profileHref : "/chat"}
+                                        onClick={onClose}
+                                        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                                    >
+                                        {showSeparateProfileLink
+                                            ? "Profile"
+                                            : `Messages ${unreadTotal > 0 ? `(${unreadTotal > 9 ? "9+" : unreadTotal})` : ""}`}
+                                    </Link>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="rounded-[28px] border border-sky-100 bg-white/90 p-4 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.3)]">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">Freelance command center</p>
+                                <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+                                    Hire faster or start earning.
+                                </h2>
+                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    Projects, verified talent, secure payouts, and one clean mobile navigation that does not get in your way.
+                                </p>
                             </div>
                         )}
 
-                        {/* Nav items */}
-                        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-                            {user && (
-                                <Link to={dashboardHref} onClick={onClose}
-                                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors">
-                                    <span className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">⚡</span>
-                                    Dashboard
-                                </Link>
-                            )}
+                        <div className="mt-5 space-y-5">
+                            <section>
+                                <div className="mb-3 flex items-center justify-between">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Main routes</p>
+                                    <span className="text-xs text-slate-400">Fast access</span>
+                                </div>
 
-                            {NAV_LINKS.map(link => (
-                                <Link key={link.href} to={link.href} onClick={onClose}
-                                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                                    <span className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center text-sm">
-                                        {link.label === "Find Work" ? "🔍" : link.label === "How It Works" ? "💡" : "💰"}
-                                    </span>
-                                    {link.label}
-                                </Link>
-                            ))}
-
-                            {/* Messages */}
-                            <Link to="/chat" onClick={onClose}
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                                <span className="relative w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center text-sm">
-                                    💬
-                                    {unreadTotal > 0 && (
-                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                                            {unreadTotal > 9 ? "9+" : unreadTotal}
-                                        </span>
+                                <div className="space-y-2">
+                                    {user && (
+                                        <Link
+                                            to={dashboardHref}
+                                            onClick={onClose}
+                                            className="flex items-center gap-3 rounded-[24px] border border-sky-100 bg-sky-50/80 px-4 py-3.5 transition-colors hover:bg-sky-100/80"
+                                        >
+                                            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-sm font-bold text-sky-700 shadow-sm">
+                                                ⚡
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-semibold text-slate-900">Dashboard</p>
+                                                <p className="truncate text-xs text-slate-500">Open your workspace overview</p>
+                                            </div>
+                                        </Link>
                                     )}
-                                </span>
-                                Messages
-                                {unreadTotal > 0 && (
-                                    <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-                                        {unreadTotal > 9 ? "9+" : unreadTotal}
-                                    </span>
-                                )}
-                            </Link>
 
-                            {/* Find Talent expandable */}
-                            <div>
+                                    {MOBILE_NAV_LINKS.map((link) => (
+                                        <Link
+                                            key={link.href}
+                                            to={link.href}
+                                            onClick={onClose}
+                                            className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white px-4 py-3.5 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)] transition-colors hover:border-sky-200 hover:bg-sky-50/60"
+                                        >
+                                            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white">
+                                                {link.icon}
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-semibold text-slate-900">{link.label}</p>
+                                                <p className="truncate text-xs text-slate-500">{link.sub}</p>
+                                            </div>
+                                        </Link>
+                                    ))}
+
+                                    {user && (
+                                        <Link
+                                            to="/chat"
+                                            onClick={onClose}
+                                            className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white px-4 py-3.5 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)] transition-colors hover:border-sky-200 hover:bg-sky-50/60"
+                                        >
+                                            <span className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white">
+                                                ✉
+                                                {unreadTotal > 0 && (
+                                                    <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-red-500 px-1 text-[10px] font-bold leading-[18px] text-white">
+                                                        {unreadTotal > 9 ? "9+" : unreadTotal}
+                                                    </span>
+                                                )}
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-semibold text-slate-900">Messages</p>
+                                                <p className="truncate text-xs text-slate-500">Open chat without hunting through the UI</p>
+                                            </div>
+                                        </Link>
+                                    )}
+                                </div>
+                            </section>
+
+                            <section className="rounded-[28px] border border-slate-200/80 bg-white/80 p-3 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.35)]">
                                 <button
+                                    type="button"
                                     onClick={() => setTalentOpen(v => !v)}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors"
+                                    className="flex w-full items-center gap-3 rounded-[22px] px-3 py-3 text-left transition-colors hover:bg-slate-50"
                                 >
-                                    <span className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center text-sm">💼</span>
-                                    Find Talent
-                                    <svg className={`ml-auto w-4 h-4 text-gray-400 transition-transform duration-200 ${talentOpen ? "rotate-180" : ""}`}
-                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white">
+                                        💼
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-semibold text-slate-900">Find talent</p>
+                                        <p className="truncate text-xs text-slate-500">Open specialist categories</p>
+                                    </div>
+                                    <svg
+                                        className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${talentOpen ? "rotate-180" : ""}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </button>
 
-                                <AnimatePresence>
-                                    {talentOpen && (
-                                        <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: "auto", opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            transition={{ duration: 0.22 }}
-                                            className="overflow-hidden pl-4 mt-0.5"
-                                        >
-                                            <div className="space-y-0.5 pb-1">
-                                                {TALENT_CATEGORIES.map(item => (
-                                                    <Link key={item.label} to={item.href} onClick={onClose}
-                                                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                                                        <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${item.color} flex items-center justify-center text-xs flex-shrink-0`}>
-                                                            {item.icon}
-                                                        </div>
-                                                        <span className="font-medium">{item.label}</span>
-                                                        {item.badge && (
-                                                            <span className="ml-auto text-[10px] font-bold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">
-                                                                {item.badge}
-                                                            </span>
-                                                        )}
-                                                    </Link>
-                                                ))}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
+                                {talentOpen && (
+                                    <div className="grid grid-cols-2 gap-2 px-1 pb-1 pt-2">
+                                        {TALENT_CATEGORIES.map(item => (
+                                            <Link
+                                                key={item.label}
+                                                to={item.href}
+                                                onClick={onClose}
+                                                className="rounded-[20px] border border-slate-200 bg-slate-50/80 p-3 transition-colors hover:border-sky-200 hover:bg-sky-50"
+                                            >
+                                                <div className={`flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br ${item.color} text-sm shadow-sm`}>
+                                                    {item.icon}
+                                                </div>
+                                                <p className="mt-3 text-sm font-semibold text-slate-900">{item.label}</p>
+                                                <p className="mt-1 text-[11px] leading-5 text-slate-500">{item.sub}</p>
+                                                {item.badge && (
+                                                    <span className="mt-2 inline-flex rounded-full bg-orange-100 px-2 py-1 text-[10px] font-bold text-orange-600">
+                                                        {item.badge}
+                                                    </span>
+                                                )}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </section>
 
-                            {user?.isFreelancer && (
-                                <Link to="/auth/profile" onClick={onClose}
-                                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                                    <span className="w-7 h-7 bg-violet-50 rounded-lg flex items-center justify-center text-sm">👤</span>
-                                    My Profile
-                                </Link>
-                            )}
-                        </nav>
-
-                        {/* Drawer footer */}
-                        <div className="p-4 border-t border-gray-100 flex-shrink-0 space-y-2">
-                            {user ? (
-                                <button onClick={() => { onLogout(); onClose() }}
-                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors border border-red-100">
-                                    <span>🚪</span> Log Out
-                                </button>
-                            ) : (
-                                <>
-                                    <Link to="/register" onClick={onClose} className="block">
-                                        <button className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-blue-200 transition-all hover:-translate-y-0.5">
-                                            Sign Up — It's Free ✦
-                                        </button>
+                            {showSeparateProfileLink && (
+                                <section className="rounded-[28px] border border-slate-200/80 bg-white/80 p-3 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.35)]">
+                                    <Link
+                                        to={profileHref}
+                                        onClick={onClose}
+                                        className="flex items-center gap-3 rounded-[22px] px-3 py-3 transition-colors hover:bg-slate-50"
+                                    >
+                                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-sm text-violet-600">
+                                            👤
+                                        </span>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-900">My profile</p>
+                                            <p className="text-xs text-slate-500">Open your public freelancer profile</p>
+                                        </div>
                                     </Link>
-                                    <Link to="/login" onClick={onClose} className="block">
-                                        <button className="w-full py-3 bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-100 transition-colors">
-                                            Log In
-                                        </button>
-                                    </Link>
-                                </>
+                                </section>
                             )}
                         </div>
-                    </motion.div>
-                </>
-            )}
-        </AnimatePresence>
+                    </div>
+
+                    <div className="border-t border-slate-200/80 bg-white/85 p-4">
+                        {user ? (
+                            <button
+                                type="button"
+                                onClick={() => { onLogout(); onClose() }}
+                                className="w-full rounded-[22px] border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100"
+                            >
+                                Log Out
+                            </button>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-2">
+                                <Link
+                                    to="/login"
+                                    onClick={onClose}
+                                    className="w-full rounded-[22px] border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                                >
+                                    Log In
+                                </Link>
+                                <Link
+                                    to="/register"
+                                    onClick={onClose}
+                                    className="w-full rounded-[22px] bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_18px_36px_-22px_rgba(14,116,144,0.62)] transition-transform active:scale-[0.99]"
+                                >
+                                    Sign Up
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </>
     )
 }
 
@@ -628,8 +742,8 @@ const Navbar = () => {
     return (
         <>
             <header className={`sticky top-0 z-40 w-full transition-all duration-300 ${scrolled
-                    ? "bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-[0_2px_20px_rgba(0,0,0,0.06)]"
-                    : "bg-white/90 backdrop-blur-sm border-b border-gray-100"
+                    ? "bg-white/95 border-b border-gray-200 shadow-[0_2px_20px_rgba(0,0,0,0.06)]"
+                    : "bg-white/95 border-b border-gray-100"
                 }`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-14 sm:h-16">
@@ -644,9 +758,7 @@ const Navbar = () => {
                                 talentOpen={talentOpen}
                                 onTalentToggle={() => setTalentOpen(v => !v)}
                             />
-                            <AnimatePresence>
-                                {talentOpen && <TalentDropdown onClose={() => setTalentOpen(false)} />}
-                            </AnimatePresence>
+                            {talentOpen && <TalentDropdown onClose={() => setTalentOpen(false)} />}
                         </div>
 
                         {/* ── RIGHT: Actions ─────────────── */}
@@ -655,14 +767,14 @@ const Navbar = () => {
                                 <>
                                     {/* Credits pill — hidden on xs */}
                                     {user.credits !== undefined && (
-                                        <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-xl">
+                                        <div className="hidden items-center gap-1 rounded-xl border border-amber-100 bg-amber-50 px-3 py-1.5 sm:flex">
                                             <span className="text-amber-500 text-xs">⚡</span>
                                             <span className="text-xs font-bold text-amber-700">{user.credits}</span>
                                         </div>
                                     )}
 
                                     {/* Messages icon — hidden on mobile (visible sm+) */}
-                                    <IconBtn to="/chat" badge={unreadTotal} ariaLabel="Messages" className="hidden sm:flex">
+                                    <IconBtn to="/chat" badge={unreadTotal} ariaLabel="Messages" className="hidden md:flex">
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -670,36 +782,48 @@ const Navbar = () => {
                                     </IconBtn>
 
                                     {/* Profile dropdown */}
-                                    <ProfileDropdown user={user} onLogout={handleLogout} unreadTotal={unreadTotal} />
+                                    <div className="hidden md:block">
+                                        <ProfileDropdown user={user} onLogout={handleLogout} unreadTotal={unreadTotal} />
+                                    </div>
                                 </>
                             ) : (
                                 <>
-                                    <Link to="/login" className="hidden sm:block">
-                                        <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all">
-                                            Log In
-                                        </button>
+                                    <Link
+                                        to="/login"
+                                        className="hidden rounded-xl px-4 py-2 text-sm font-medium text-gray-700 transition-all hover:bg-blue-50 hover:text-blue-700 md:block"
+                                    >
+                                        Log In
                                     </Link>
-                                    <Link to="/register">
-                                        <button className="flex items-center gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-xs sm:text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-blue-200 hover:-translate-y-0.5 transition-all">
-                                            Sign Up
-                                            <span className="hidden sm:inline text-blue-200">✦</span>
-                                        </button>
+                                    <Link
+                                        to="/register"
+                                        className="hidden items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-3.5 py-2 text-xs font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-200 sm:px-5 sm:py-2.5 sm:text-sm md:flex"
+                                    >
+                                        Sign Up
+                                        <span className="hidden sm:inline text-blue-200">✦</span>
                                     </Link>
                                 </>
                             )}
 
                             {/* ── Hamburger ─────────────── */}
                             <button
-                                onClick={() => setMobileOpen(true)}
-                                aria-label="Open navigation menu"
-                                className="md:hidden relative w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                                type="button"
+                                onClick={() => setMobileOpen(v => !v)}
+                                aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+                                aria-expanded={mobileOpen}
+                                className={`relative flex h-10 w-10 items-center justify-center rounded-2xl border transition-colors md:hidden ${
+                                    mobileOpen
+                                        ? "border-sky-200 bg-sky-50 text-sky-700"
+                                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                }`}
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                </svg>
+                                <span className="relative h-4 w-4">
+                                    <span className={`absolute left-0 top-0 h-0.5 w-4 rounded-full bg-current transition-all duration-200 ${mobileOpen ? "top-[7px] rotate-45" : ""}`} />
+                                    <span className={`absolute left-0 top-[7px] h-0.5 w-4 rounded-full bg-current transition-all duration-200 ${mobileOpen ? "opacity-0" : ""}`} />
+                                    <span className={`absolute left-0 top-[14px] h-0.5 w-4 rounded-full bg-current transition-all duration-200 ${mobileOpen ? "top-[7px] -rotate-45" : ""}`} />
+                                </span>
                                 {/* Unread dot on hamburger */}
                                 {unreadTotal > 0 && (
-                                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border border-white bg-red-500" />
                                 )}
                             </button>
                         </div>

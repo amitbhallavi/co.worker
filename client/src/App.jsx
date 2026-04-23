@@ -7,11 +7,11 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { disconnect, initSocket, subscribeToRatingEvents } from './utils/socketManager'
 import { fetchUserPlan } from './features/subscription/planSlice'
 import { addRatingSocket, updateRatingSocket, deleteRatingSocket } from './features/rating/ratingSlice'
+import Login from './pages/Login'
+import Register from './pages/Register'
 
 const HIDE_NAVBAR_ROUTES = new Set(['/login', '/register'])
 const Home = lazy(() => import('./pages/Home'))
-const Login = lazy(() => import('./pages/Login'))
-const Register = lazy(() => import('./pages/Register'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard.jsx'))
 const Talent = lazy(() => import('./pages/Talent'))
 const FreelancerProfile = lazy(() => import('./pages/FreelancerProfile'))

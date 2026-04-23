@@ -606,7 +606,6 @@ const FreelancerProfile = () => {
     return (
         <div className="min-h-screen bg-[#020617]" style={{ fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif" }}>
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap');
                 * { box-sizing: border-box }
                 .line-clamp-2 { display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden }
                 .line-clamp-3 { display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden }
