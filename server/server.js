@@ -54,10 +54,24 @@ connectDB()
 
 app.use(
     cors({
-        origin: process.env.CLIENT_URL,
+        origin: function (origin, callback) {
+            const allowedOrigins = [
+                'http://localhost:5173',
+                'https://co-worker-pro.vercel.app',
+                'https://coworkers.live',
+                'https://www.coworkers.live',
+            ]
+            // Allow requests with no origin (mobile apps, Postman)
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true)
+            } else {
+                callback(new Error('Not allowed by CORS'))
+            }
+        },
         credentials: true,
     })
 )
+
 
 scheduleJob("0 * * * *", "Running escrow release check...", () => PaymentController.runEscrowReleaseCron())
 scheduleJob("0 */6 * * *", "Running subscription renewal check...", renewSubscriptionsJob)
