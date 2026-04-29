@@ -1,9 +1,16 @@
 import { useState, useEffect, useCallback, memo } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux"
 import { motion, AnimatePresence } from "framer-motion"
+import { toast } from "react-toastify"
+import { CreditCard } from "lucide-react"
 import axios from "axios"
+import SubscriptionCheckout from "../components/SubscriptionCheckout"
+import { activateClientPlan } from "../features/client/clientSlice"
+import { PLANS as SUBSCRIPTION_PLANS } from "../config/planFeatures"
 
 const MotionPanel = motion.div
+const HOME_PENDING_CHECKOUT_KEY = "coworker.homePendingCheckout"
 
 const shouldReduceHomepageMotion = () => {
     if (typeof window === "undefined") {
@@ -326,12 +333,61 @@ const TestimonialCard = memo(function TestimonialCard({ testimonial, shouldAnima
     )
 })
 
-const PricingCard = memo(function PricingCard({ plan, index, isHighlighted, shouldAnimate = true }) {
+const HOME_PRICING_PLANS = [
+    {
+        planId: "client",
+        icon: "C",
+        title: "Client",
+        subtitle: "For clients hiring freelancers",
+        monthlyPrice: 0,
+        yearlyPrice: 0,
+        gradient: "from-slate-500 to-gray-500",
+        features: ["Post unlimited projects", "Browse all freelancers", "Real-time chat", "Secure escrow payments", "24/7 support"],
+        cta: "Get Started",
+        highlighted: false,
+        requiresPayment: false,
+    },
+    {
+        planId: "pro",
+        icon: "P",
+        title: "Pro",
+        subtitle: "For serious freelancers",
+        monthlyPrice: SUBSCRIPTION_PLANS.pro.monthlyPrice,
+        yearlyPrice: SUBSCRIPTION_PLANS.pro.yearlyPrice,
+        yearlyDiscount: SUBSCRIPTION_PLANS.pro.yearlyDiscount,
+        gradient: "from-blue-500 to-cyan-500",
+        features: ["50 bids per month", "Priority search placement", "Featured profile listing", "Priority support", "Pro badge on profile"],
+        cta: "Upgrade to Pro",
+        highlighted: true,
+        requiresPayment: true,
+    },
+    {
+        planId: "elite",
+        icon: "E",
+        title: "Elite",
+        subtitle: "For top freelancers",
+        monthlyPrice: SUBSCRIPTION_PLANS.elite.monthlyPrice,
+        yearlyPrice: SUBSCRIPTION_PLANS.elite.yearlyPrice,
+        yearlyDiscount: SUBSCRIPTION_PLANS.elite.yearlyDiscount,
+        gradient: "from-amber-500 to-orange-500",
+        features: ["Unlimited bids", "Top of search results", "Homepage showcase", "Dedicated account manager", "Elite badge on profile"],
+        cta: "Go Elite",
+        highlighted: false,
+        requiresPayment: true,
+    },
+]
+
+const PricingCard = memo(function PricingCard({ plan, billing, index, onSelect, shouldAnimate = true }) {
+    const isYearly = billing === "yearly"
+    const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice
+    const period = isYearly ? "/year" : "/month"
+    const isHighlighted = plan.highlighted
+
     return (
         <motion.div
             {...getRevealMotion(shouldAnimate, index * 0.1)}
             whileHover={{ scale: 1.03 }}
-            className={`relative bg-white/[0.03] backdrop-blur-xl border rounded-2xl p-6 transition-all duration-300 ${
+            className={`relative flex flex-col bg-white/[0.03] backdrop-blur-xl border rounded-2xl p-6 transition-all duration-300 ${
                 isHighlighted ? "border-blue-500/50 bg-gradient-to-b from-blue-500/10 to-transparent" : "border-white/10 hover:bg-white/[0.06] hover:border-white/20"
             }`}
         >
@@ -346,10 +402,19 @@ const PricingCard = memo(function PricingCard({ plan, index, isHighlighted, shou
             <h3 className="text-lg font-bold text-white text-center mb-1">{plan.title}</h3>
             <p className="text-xs text-white/40 text-center mb-4">{plan.subtitle}</p>
             <div className="text-center mb-4">
-                <span className="text-3xl font-extrabold text-white">{plan.price}</span>
-                {plan.period && <span className="text-sm text-white/40 ml-1">{plan.period}</span>}
+                {price === 0 ? (
+                    <span className="text-3xl font-extrabold text-white">FREE</span>
+                ) : (
+                    <>
+                        <span className="text-3xl font-extrabold text-white">₹{price.toLocaleString("en-IN")}</span>
+                        <span className="text-sm text-white/40 ml-1">{period}</span>
+                    </>
+                )}
+                {isYearly && plan.yearlyDiscount && (
+                    <div className="mt-2 text-[11px] font-bold text-emerald-300">{plan.yearlyDiscount}</div>
+                )}
             </div>
-            <ul className="space-y-2 mb-6">
+            <ul className="space-y-2 mb-6 flex-1">
                 {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm text-white/60">
                         <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -359,16 +424,18 @@ const PricingCard = memo(function PricingCard({ plan, index, isHighlighted, shou
                     </li>
                 ))}
             </ul>
-            <Link
-                to="/register"
-                className={`block text-center py-2.5 rounded-xl font-bold text-sm transition-all duration-200 ${
+            <button
+                type="button"
+                onClick={() => onSelect(plan)}
+                className={`flex w-full items-center justify-center gap-2 border py-2.5 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer ${
                     isHighlighted
-                        ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-blue-500/30"
+                        ? "border-transparent bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-blue-500/30"
                         : "bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:border-white/20"
                 }`}
             >
+                {plan.requiresPayment && <CreditCard size={16} />}
                 {plan.cta}
-            </Link>
+            </button>
         </motion.div>
     )
 })
@@ -398,12 +465,18 @@ const FreelancerSkeleton = () => (
 
 const Home = () => {
     const navigate = useNavigate()
+    const dispatch = useDispatch()
+    const { user } = useSelector((state) => state.auth)
     const shouldAnimate = !shouldReduceHomepageMotion()
     const [searchQuery, setSearchQuery] = useState("")
     const [searchType, setSearchType] = useState("freelancers")
     const [freelancers, setFreelancers] = useState([])
     const [loading, setLoading] = useState(true)
     const [activeStep, setActiveStep] = useState(0)
+    const [pricingBilling, setPricingBilling] = useState("monthly")
+    const [showCheckout, setShowCheckout] = useState(false)
+    const [checkoutPlan, setCheckoutPlan] = useState(null)
+    const [checkoutPlanType, setCheckoutPlanType] = useState("monthly")
 
     const categories = [
         { key: "web", label: "Web Dev", icon: "W", count: "5,200+" },
@@ -433,39 +506,6 @@ const Home = () => {
         { name: "Emily Rodriguez", role: "Business Owner", text: "Best investment for my business. Got a professional mobile app developed at a fraction of traditional costs.", gradient: "from-orange-500 to-amber-500" },
     ]
 
-    const pricingPlans = [
-        {
-            icon: "C",
-            title: "Client",
-            subtitle: "For clients hiring freelancers",
-            price: "FREE",
-            period: "",
-            gradient: "from-slate-500 to-gray-500",
-            features: ["Post unlimited projects", "Browse all freelancers", "Real-time chat", "Secure escrow payments", "24/7 support"],
-            cta: "Get Started",
-        },
-        {
-            icon: "F",
-            title: "Starter",
-            subtitle: "For new freelancers",
-            price: "Rs.299",
-            period: "/month",
-            gradient: "from-blue-500 to-cyan-500",
-            features: ["5 project proposals/month", "Featured profile", "Priority support", "Basic analytics", "Email notifications"],
-            cta: "Start Freelancing",
-        },
-        {
-            icon: "P",
-            title: "Pro",
-            subtitle: "For serious freelancers",
-            price: "Rs.499",
-            period: "/month",
-            gradient: "from-violet-500 to-purple-500",
-            features: ["Unlimited proposals", "Top placement in search", "Advanced analytics", "Dedicated support", "Skill certifications"],
-            cta: "Go Pro",
-        },
-    ]
-
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -488,6 +528,76 @@ const Home = () => {
         }, 3000)
         return () => clearInterval(interval)
     }, [howItWorksSteps.length])
+
+    const activateHomeClientPlan = useCallback(async () => {
+        if (!user?.token) {
+            sessionStorage.setItem(HOME_PENDING_CHECKOUT_KEY, JSON.stringify({ planId: "client" }))
+            navigate("/register")
+            return
+        }
+
+        try {
+            await dispatch(activateClientPlan()).unwrap()
+            toast.success("Free client plan activated. You can start hiring now.")
+            navigate("/browse-projects")
+        } catch (error) {
+            toast.error(error || "Failed to activate client plan")
+        }
+    }, [dispatch, navigate, user?.token])
+
+    const openPlanCheckout = useCallback((planId, planType) => {
+        setCheckoutPlan(planId)
+        setCheckoutPlanType(planType)
+        setShowCheckout(true)
+    }, [])
+
+    const handlePricingPlanSelect = useCallback(
+        (plan) => {
+            if (plan.planId === "client") {
+                activateHomeClientPlan()
+                return
+            }
+
+            if (!user?.token) {
+                sessionStorage.setItem(
+                    HOME_PENDING_CHECKOUT_KEY,
+                    JSON.stringify({ planId: plan.planId, planType: pricingBilling })
+                )
+                toast.info("Login or create an account first. Checkout will open after that.")
+                navigate("/login")
+                return
+            }
+
+            openPlanCheckout(plan.planId, pricingBilling)
+        },
+        [activateHomeClientPlan, navigate, openPlanCheckout, pricingBilling, user?.token]
+    )
+
+    useEffect(() => {
+        if (!user?.token) return
+
+        const rawPendingCheckout = sessionStorage.getItem(HOME_PENDING_CHECKOUT_KEY)
+        if (!rawPendingCheckout) return
+
+        sessionStorage.removeItem(HOME_PENDING_CHECKOUT_KEY)
+
+        try {
+            const pendingCheckout = JSON.parse(rawPendingCheckout)
+            if (pendingCheckout?.planId === "client") {
+                activateHomeClientPlan()
+                return
+            }
+
+            if (pendingCheckout?.planId === "pro" || pendingCheckout?.planId === "elite") {
+                openPlanCheckout(
+                    pendingCheckout.planId,
+                    pendingCheckout.planType === "yearly" ? "yearly" : "monthly"
+                )
+            }
+        } catch {
+            sessionStorage.removeItem(HOME_PENDING_CHECKOUT_KEY)
+        }
+    }, [activateHomeClientPlan, openPlanCheckout, user?.token])
 
     const handleSearch = useCallback(
         (e) => {
@@ -704,14 +814,49 @@ const Home = () => {
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
                         {...getRevealMotion(shouldAnimate)}
-                        className="text-center mb-12"
+                        className="text-center mb-8"
                     >
                         <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">Simple, Transparent Pricing</h2>
                         <p className="text-white/50 text-lg">Start free. Scale as you grow.</p>
                     </motion.div>
+                    <div className="mb-10 flex justify-center">
+                        <div className="inline-flex rounded-2xl border border-white/10 bg-white/[0.04] p-1">
+                            {[
+                                { key: "monthly", label: "Monthly" },
+                                { key: "yearly", label: "Yearly", badge: "Under ₹500" },
+                            ].map((option) => (
+                                <button
+                                    key={option.key}
+                                    type="button"
+                                    onClick={() => setPricingBilling(option.key)}
+                                    className={`flex items-center gap-2 rounded-xl border-none px-5 py-2.5 text-sm font-bold transition-all cursor-pointer ${
+                                        pricingBilling === option.key
+                                            ? "bg-white text-slate-950 shadow-lg"
+                                            : "bg-transparent text-white/55 hover:text-white"
+                                    }`}
+                                >
+                                    {option.label}
+                                    {option.badge && (
+                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                                            pricingBilling === option.key ? "bg-emerald-100 text-emerald-700" : "bg-white/10 text-white/45"
+                                        }`}>
+                                            {option.badge}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <div className="grid md:grid-cols-3 gap-6">
-                        {pricingPlans.map((plan, i) => (
-                            <PricingCard key={plan.title} plan={plan} index={i} isHighlighted={i === 1} shouldAnimate={shouldAnimate} />
+                        {HOME_PRICING_PLANS.map((plan, i) => (
+                            <PricingCard
+                                key={plan.title}
+                                plan={plan}
+                                billing={pricingBilling}
+                                index={i}
+                                onSelect={handlePricingPlanSelect}
+                                shouldAnimate={shouldAnimate}
+                            />
                         ))}
                     </div>
                 </div>
@@ -800,6 +945,13 @@ const Home = () => {
                     </div>
                 </div>
             </footer>
+
+            <SubscriptionCheckout
+                isOpen={showCheckout}
+                onClose={() => setShowCheckout(false)}
+                planId={checkoutPlan}
+                planType={checkoutPlanType}
+            />
         </div>
     )
 }

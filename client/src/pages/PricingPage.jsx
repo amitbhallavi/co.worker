@@ -6,6 +6,7 @@ import { activateClientPlan } from '../features/client/clientSlice'
 import { fetchUserPlan } from '../features/subscription/planSlice'
 import { getSocket } from '../utils/socketManager'
 import SubscriptionCheckout from '../components/SubscriptionCheckout'
+import { PLANS as SUBSCRIPTION_PLANS } from '../config/planFeatures'
 
 // ── Intersection Observer Hook ─────────────────────────────
 const useInView = (threshold = 0.15) => {
@@ -178,7 +179,10 @@ const FREELANCER_PLANS = [
     name: 'Pro',
     badge: '⭐ Best Value',
     icon: '⚡',
-    price: { monthly: 199, yearly: 159 },
+    price: {
+      monthly: SUBSCRIPTION_PLANS.pro.monthlyPrice,
+      yearly: SUBSCRIPTION_PLANS.pro.yearlyPrice,
+    },
     desc: 'For serious freelancers who want more clients and more earnings.',
     color: 'from-blue-500 to-cyan-500',
     lightColor: 'bg-blue-50',
@@ -197,13 +201,16 @@ const FREELANCER_PLANS = [
       { text: 'Pro badge on profile', detail: 'Builds trust', included: true },
     ],
     cta: 'Upgrade to Pro',
-    savings: 'Save 33%',
+    savings: SUBSCRIPTION_PLANS.pro.yearlyDiscount,
   },
   {
     name: 'Elite',
     badge: '👑 Top Tier',
     icon: '👑',
-    price: { monthly: 399, yearly: 319 },
+    price: {
+      monthly: SUBSCRIPTION_PLANS.elite.monthlyPrice,
+      yearly: SUBSCRIPTION_PLANS.elite.yearlyPrice,
+    },
     desc: 'Maximum visibility and unlimited opportunities. Top-tier talent gets top-tier results.',
     color: 'from-amber-500 to-orange-500',
     lightColor: 'bg-amber-50',
@@ -222,7 +229,7 @@ const FREELANCER_PLANS = [
       { text: 'Elite badge', detail: 'Premium credibility', included: true },
     ],
     cta: 'Go Elite',
-    savings: 'Save 33%',
+    savings: SUBSCRIPTION_PLANS.elite.yearlyDiscount,
   },
 ]
 
@@ -297,7 +304,8 @@ const PlanCard = ({ plan, billing, onCTA, index }) => {
   const [ref, inView] = useInView(0.1)
   const [hovered, setHovered] = useState(false)
   const isPopular = !!plan.popular
-  const price = billing === 'yearly' ? plan.price.yearly : plan.price.monthly
+  const isYearly = billing === 'yearly'
+  const price = isYearly ? plan.price.yearly : plan.price.monthly
 
   return (
     <div
@@ -360,13 +368,15 @@ const PlanCard = ({ plan, billing, onCTA, index }) => {
               <span className="text-4xl sm:text-5xl font-extrabold text-gray-900">
                 {price.toLocaleString('en-IN')}
               </span>
-              <span className="text-sm text-gray-400 mb-2 font-medium">/mo</span>
+              <span className="text-sm text-gray-400 mb-2 font-medium">
+                {isYearly ? '/year' : '/mo'}
+              </span>
             </>
           )}
         </div>
-        {billing === 'yearly' && price > 0 && (
+        {isYearly && price > 0 && (
           <p className={`text-xs font-semibold ${plan.textColor}`}>
-            ₹{(price * 12).toLocaleString('en-IN')}/year · Billed annually
+            Billed annually
           </p>
         )}
       </div>
@@ -789,7 +799,7 @@ const PricingPage = () => {
               <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-1 flex gap-1 shadow-lg">
                 {[
                   { key: 'monthly', label: 'Monthly' },
-                  { key: 'yearly', label: 'Yearly', badge: 'Save 33%' },
+                  { key: 'yearly', label: 'Yearly', badge: 'Under ₹500' },
                 ].map(b => (
                   <button
                     key={b.key}
