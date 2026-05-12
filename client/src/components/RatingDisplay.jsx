@@ -42,7 +42,7 @@ const RatingDisplay = ({
             ))}
             {hasHalf && <span className="text-yellow-400">⭐</span>}
             {Array.from({ length: emptyStars }).map((_, i) => (
-                <span key={`empty-${i}`} className="text-gray-300">
+                <span key={`empty-${i}`} className="text-gray-300 dark:text-white/20">
                     ⭐
                 </span>
             ))}
@@ -58,20 +58,20 @@ const RatingDisplay = ({
 
                 {/* Average Rating */}
                 <div className="flex items-baseline gap-2">
-                    <span className={`font-bold text-gray-900 ${config.rating}`}>
+                    <span className={`font-bold text-slate-950 dark:text-white ${config.rating}`}>
                         {averageRating.toFixed(1)}
                     </span>
-                    <span className="text-gray-500 text-sm">/5</span>
+                    <span className="text-sm text-slate-500 dark:text-white/55">/5</span>
                 </div>
 
                 {/* Review Count */}
-                <p className={`text-gray-600 ${config.count}`}>
+                <p className={`text-slate-600 dark:text-white/55 ${config.count}`}>
                     ({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})
                 </p>
 
                 {/* Verified Badge */}
                 {verifiedReviews > 0 && (
-                    <p className="text-xs text-green-600 font-semibold bg-green-50 px-3 py-1 rounded-full">
+                    <p className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-300/20 dark:bg-emerald-400/10 dark:text-emerald-200">
                         ✓ {verifiedReviews} verified {verifiedReviews === 1 ? 'review' : 'reviews'}
                     </p>
                 )}
@@ -80,7 +80,7 @@ const RatingDisplay = ({
                 {showWriteButton && onWriteReview && (
                     <button
                         onClick={onWriteReview}
-                        className="mt-4 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 hover:shadow-lg active:scale-95"
+                        className="mt-4 rounded-xl border-none bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-2.5 font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/25 active:translate-y-0"
                     >
                         ✍️ Write a Review
                     </button>
@@ -89,23 +89,23 @@ const RatingDisplay = ({
 
             {/* Rating Breakdown (if provided) */}
             {breakdown && (
-                <div className="space-y-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm font-bold text-gray-700 mb-3">Rating Breakdown</p>
+                <div className="space-y-2 rounded-2xl border border-slate-200 bg-white/80 p-4 dark:border-white/10 dark:bg-white/[0.05]">
+                    <p className="mb-3 text-sm font-bold text-slate-800 dark:text-white">Rating Breakdown</p>
                     {[5, 4, 3, 2, 1].map((star) => {
                         const count = breakdown[star] || 0
                         const percent = totalReviews > 0 ? (count / totalReviews) * 100 : 0
                         return (
                             <div key={star} className="flex items-center gap-3">
-                                <span className="text-sm font-semibold text-gray-700 w-12">
+                                <span className="w-12 text-sm font-semibold text-slate-700 dark:text-white/75">
                                     {star}★
                                 </span>
-                                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                <div className="h-2 flex-1 rounded-full bg-slate-200 dark:bg-white/10">
                                     <div
                                         className="bg-yellow-400 h-2 rounded-full transition-all"
                                         style={{ width: `${percent}%` }}
                                     />
                                 </div>
-                                <span className="text-xs text-gray-600 w-12 text-right">
+                                <span className="w-12 text-right text-xs text-slate-600 dark:text-white/55">
                                     {count}
                                 </span>
                             </div>

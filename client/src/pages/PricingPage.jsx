@@ -57,8 +57,8 @@ const SocialCounter = ({ inView }) => {
         { value: `${rating.toFixed(1)}★`, label: 'Average Rating' },
       ].map((item, i) => (
         <div key={i} className="text-center">
-          <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">{inView ? item.value : '0'}</div>
-          <div className="text-xs sm:text-sm text-gray-500 mt-1">{item.label}</div>
+          <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">{inView ? item.value : '0'}</div>
+          <div className="text-xs sm:text-sm text-gray-500 dark:text-white/45 mt-1">{item.label}</div>
         </div>
       ))}
     </div>
@@ -316,8 +316,8 @@ const PlanCard = ({ plan, billing, onCTA, index }) => {
         relative flex flex-col rounded-2xl p-6 sm:p-7 transition-all duration-500
         ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
         ${isPopular
-          ? `bg-gradient-to-br from-white to-slate-50 border-2 ${plan.borderColor} shadow-2xl shadow-blue-500/10 ${hovered ? 'scale-[1.03]' : 'scale-[1.01]'}`
-          : `bg-white border border-gray-200 ${hovered ? 'shadow-xl -translate-y-1 border-gray-300' : 'shadow-sm'}`
+          ? `bg-gradient-to-br from-white to-slate-50 border-2 ${plan.borderColor} shadow-2xl shadow-blue-500/10 dark:from-white/[0.10] dark:to-white/[0.04] dark:border-blue-400/60 dark:shadow-none ${hovered ? 'scale-[1.03]' : 'scale-[1.01]'}`
+          : `bg-white border border-gray-200 dark:bg-white/[0.04] dark:border-white/10 dark:shadow-none ${hovered ? 'shadow-xl -translate-y-1 border-gray-300 dark:border-white/20' : 'shadow-sm'}`
         }
       `}
       style={{ transitionDelay: `${index * 100}ms` }}
@@ -352,23 +352,23 @@ const PlanCard = ({ plan, billing, onCTA, index }) => {
           )}
         </div>
 
-        <h3 className="text-lg font-extrabold text-gray-900 mb-1">{plan.name}</h3>
-        <p className="text-xs text-gray-500 leading-relaxed">{plan.desc}</p>
+        <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-1">{plan.name}</h3>
+        <p className="text-xs text-gray-500 dark:text-white/50 leading-relaxed">{plan.desc}</p>
 
         {/* Price */}
         <div className="flex items-end gap-1.5 mt-4 mb-1">
           {price === 0 ? (
             <>
-              <span className="text-4xl sm:text-5xl font-extrabold text-gray-900">FREE</span>
-              <span className="text-sm text-gray-400 mb-2 font-medium">forever</span>
+              <span className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white">FREE</span>
+              <span className="text-sm text-gray-400 dark:text-white/35 mb-2 font-medium">forever</span>
             </>
           ) : (
             <>
-              <span className="text-sm text-gray-400 mb-2 font-medium">₹</span>
-              <span className="text-4xl sm:text-5xl font-extrabold text-gray-900">
+              <span className="text-sm text-gray-400 dark:text-white/35 mb-2 font-medium">₹</span>
+              <span className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white">
                 {price.toLocaleString('en-IN')}
               </span>
-              <span className="text-sm text-gray-400 mb-2 font-medium">
+              <span className="text-sm text-gray-400 dark:text-white/35 mb-2 font-medium">
                 {isYearly ? '/year' : '/mo'}
               </span>
             </>
@@ -382,7 +382,7 @@ const PlanCard = ({ plan, billing, onCTA, index }) => {
       </div>
 
       {/* Divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-5" />
+      <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-white/10 mb-5" />
 
       {/* Features */}
       <ul className="space-y-3 mb-7 flex-1">
@@ -398,11 +398,11 @@ const PlanCard = ({ plan, billing, onCTA, index }) => {
               {f.included ? '✓' : '✕'}
             </span>
             <div className="flex-1 min-w-0">
-              <span className={`text-sm ${f.included ? 'text-gray-700 font-medium' : 'text-gray-300'}`}>
+              <span className={`text-sm ${f.included ? 'text-gray-700 dark:text-white/72 font-medium' : 'text-gray-300 dark:text-white/25'}`}>
                 {f.text}
               </span>
               {f.detail && f.included && (
-                <span className="text-xs text-gray-400 block">{f.detail}</span>
+                <span className="text-xs text-gray-400 dark:text-white/35 block">{f.detail}</span>
               )}
             </div>
           </li>
@@ -431,12 +431,12 @@ const ComparisonTable = () => {
   const [ref, inView] = useInView(0.1)
 
   return (
-    <div ref={ref} className={`bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm transition-all duration-700 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+    <div ref={ref} className={`bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm transition-all duration-700 dark:bg-white/[0.04] dark:border-white/10 dark:shadow-none ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[600px]">
           <thead>
-            <tr className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200">
-              <th className="text-left px-6 py-4 text-sm font-bold text-gray-700">Features</th>
+            <tr className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200 dark:from-white/[0.06] dark:to-white/[0.03] dark:border-white/10">
+              <th className="text-left px-6 py-4 text-sm font-bold text-gray-700 dark:text-white/70">Features</th>
               {['Free', 'Pro', 'Elite'].map((plan, i) => (
                 <th key={plan} className="text-center px-4 py-4">
                   <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold
@@ -450,8 +450,8 @@ const ComparisonTable = () => {
           </thead>
           <tbody>
             {COMPARISON_FEATURES.map((row, i) => (
-              <tr key={i} className={`border-b border-gray-100 hover:bg-slate-50/50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
-                <td className="px-6 py-3.5 text-sm font-medium text-gray-700">{row.label}</td>
+              <tr key={i} className={`border-b border-gray-100 hover:bg-slate-50/50 transition-colors dark:border-white/10 dark:hover:bg-white/[0.04] ${i % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/30 dark:bg-white/[0.02]'}`}>
+                <td className="px-6 py-3.5 text-sm font-medium text-gray-700 dark:text-white/65">{row.label}</td>
                 {[row.free, row.pro, row.elite].map((val, j) => (
                   <td key={j} className="text-center px-4 py-3.5">
                     {typeof val === 'boolean' ? (
@@ -487,6 +487,7 @@ const TestimonialCard = ({ t, index }) => {
       ref={ref}
       className={`
         bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-500
+        dark:bg-white/[0.04] dark:border-white/10 dark:shadow-none dark:hover:border-white/20
         ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
       `}
       style={{ transitionDelay: `${index * 120}ms` }}
@@ -499,7 +500,7 @@ const TestimonialCard = ({ t, index }) => {
       </div>
 
       {/* Quote */}
-      <p className="text-sm text-gray-700 leading-relaxed mb-4 italic">"{t.text}"</p>
+      <p className="text-sm text-gray-700 dark:text-white/65 leading-relaxed mb-4 italic">"{t.text}"</p>
 
       {/* Author */}
       <div className="flex items-center gap-3">
@@ -507,8 +508,8 @@ const TestimonialCard = ({ t, index }) => {
           {t.avatar}
         </div>
         <div>
-          <div className="text-sm font-bold text-gray-900">{t.name}</div>
-          <div className="text-xs text-gray-500">{t.role}</div>
+          <div className="text-sm font-bold text-gray-900 dark:text-white">{t.name}</div>
+          <div className="text-xs text-gray-500 dark:text-white/45">{t.role}</div>
         </div>
         {t.plan !== 'Free' && (
           <span className={`ml-auto text-[10px] font-bold px-2 py-1 rounded-full
@@ -533,7 +534,7 @@ const FAQItem = ({ faq, index, isOpen, onToggle }) => {
       ref={ref}
       className={`
         border rounded-xl overflow-hidden transition-all duration-300
-        ${isOpen ? 'border-blue-200 shadow-md bg-gradient-to-br from-white to-blue-50/30' : 'border-gray-200 hover:border-gray-300 bg-white'}
+        ${isOpen ? 'border-blue-200 shadow-md bg-gradient-to-br from-white to-blue-50/30 dark:border-blue-400/35 dark:from-blue-500/10 dark:to-white/[0.04]' : 'border-gray-200 hover:border-gray-300 bg-white dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20'}
         ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
       `}
       style={{ transitionDelay: `${index * 60}ms` }}
@@ -542,18 +543,18 @@ const FAQItem = ({ faq, index, isOpen, onToggle }) => {
         onClick={onToggle}
         className="w-full flex items-center justify-between px-6 py-4 text-left cursor-pointer bg-transparent border-none"
       >
-        <span className="text-sm sm:text-base font-semibold text-gray-800 pr-4 leading-snug">{faq.q}</span>
+        <span className="text-sm sm:text-base font-semibold text-gray-800 dark:text-white pr-4 leading-snug">{faq.q}</span>
         <span className={`
           flex-shrink-0 w-7 h-7 rounded-full border-[1.5px] flex items-center justify-center text-sm font-bold transition-all duration-300
-          ${isOpen ? 'bg-blue-500 border-blue-500 text-white rotate-45' : 'border-gray-300 text-gray-500 bg-white'}
+          ${isOpen ? 'bg-blue-500 border-blue-500 text-white rotate-45' : 'border-gray-300 text-gray-500 bg-white dark:border-white/20 dark:text-white/60 dark:bg-white/[0.05]'}
         `}>
           +
         </span>
       </button>
       {isOpen && (
         <div className="px-6 pb-5">
-          <div className="h-px bg-gradient-to-r from-blue-100 via-cyan-100 to-transparent mb-4" />
-          <p className="text-sm text-gray-600 leading-relaxed">{faq.a}</p>
+          <div className="h-px bg-gradient-to-r from-blue-100 via-cyan-100 to-transparent dark:from-white/10 dark:via-white/5 mb-4" />
+          <p className="text-sm text-gray-600 dark:text-white/60 leading-relaxed">{faq.a}</p>
         </div>
       )}
     </div>
@@ -571,14 +572,15 @@ const TrustBadge = ({ item, index }) => {
       ref={ref}
       className={`
         flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-400
+        dark:bg-white/[0.04] dark:border-white/10 dark:shadow-none dark:hover:border-white/20
         ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
       `}
       style={{ transitionDelay: `${index * 80}ms` }}
     >
       <span className="text-2xl">{item.icon}</span>
       <div>
-        <div className="text-sm font-bold text-gray-800">{item.title}</div>
-        <div className="text-xs text-gray-400 leading-relaxed">{item.desc}</div>
+        <div className="text-sm font-bold text-gray-800 dark:text-white">{item.title}</div>
+        <div className="text-xs text-gray-400 dark:text-white/40 leading-relaxed">{item.desc}</div>
       </div>
     </div>
   )
@@ -687,7 +689,7 @@ const PricingPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-[#020617] dark:text-white" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <style>{`
         @keyframes fadeUp   { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
         @keyframes ping2    { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.2);opacity:0} }
@@ -702,7 +704,7 @@ const PricingPage = () => {
       `}</style>
 
       {/* ══ HERO ══════════════════════════════════════════════ */}
-      <div className="relative bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 overflow-hidden">
+      <div className="relative bg-[linear-gradient(180deg,#f8fafc_0%,#eef6ff_100%)] overflow-hidden dark:bg-gradient-to-br dark:from-slate-900 dark:via-blue-950 dark:to-slate-900">
         {/* Background orbs */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute w-[600px] h-[600px] rounded-full -top-60 -right-40 opacity-30"
@@ -716,21 +718,22 @@ const PricingPage = () => {
 
           {/* Live badge */}
           <div className={`
-            inline-flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full px-5 py-2 mb-8 shadow-lg transition-all duration-700
+            inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-5 py-2 mb-8 shadow-sm transition-all duration-700
+            dark:bg-white/5 dark:backdrop-blur-md dark:border-white/10 dark:shadow-lg
             ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
             <span className="relative flex w-2.5 h-2.5 flex-shrink-0">
               <span className="absolute inset-0 rounded-full bg-emerald-400" style={{ animation: 'ping2 2s ease infinite' }} />
               <span className="relative rounded-full bg-emerald-400 w-2.5 h-2.5" />
             </span>
-            <span className="text-xs sm:text-sm text-white/80 font-semibold">
+            <span className="text-xs sm:text-sm text-slate-600 dark:text-white/80 font-semibold">
               {tab === 'client' ? '💰 100% Free for Clients — No hidden fees' : '⚡ Upgrade Your Freelance Career'}
             </span>
           </div>
 
           {/* Headline */}
           <h1 className={`
-            text-4xl sm:text-6xl font-extrabold text-white leading-tight mb-5 transition-all duration-700 delay-100
+            text-4xl sm:text-6xl font-extrabold text-slate-950 dark:text-white leading-tight mb-5 transition-all duration-700 delay-100
             ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
             {tab === 'client' ? (
@@ -754,7 +757,7 @@ const PricingPage = () => {
 
           {/* Subheadline */}
           <p className={`
-            text-base sm:text-lg text-white/60 max-w-xl mx-auto mb-8 leading-relaxed transition-all duration-700 delay-200
+            text-base sm:text-lg text-slate-600 dark:text-white/60 max-w-xl mx-auto mb-8 leading-relaxed transition-all duration-700 delay-200
             ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
             {tab === 'client'
@@ -768,7 +771,7 @@ const PricingPage = () => {
             flex justify-center mb-8 transition-all duration-700 delay-300
             ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-1 flex gap-1 shadow-xl">
+            <div className="bg-white border border-slate-200 rounded-2xl p-1 flex gap-1 shadow-xl dark:bg-white/5 dark:backdrop-blur-sm dark:border-white/10">
               {[
                 { key: 'client', label: '👔 Hire Talent', sub: '100% Free' },
                 { key: 'freelancer', label: '💻 Work as Freelancer', sub: 'Upgrade plans' },
@@ -780,11 +783,11 @@ const PricingPage = () => {
                     px-6 sm:px-8 py-3 rounded-xl font-semibold text-sm transition-all duration-200 cursor-pointer border-none flex flex-col items-center gap-0.5 min-w-[160px]
                     ${tab === t.key
                       ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/30'
-                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                      : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50 dark:text-white/60 dark:hover:text-white dark:hover:bg-white/5'
                     }
                   `}>
                   <span>{t.label}</span>
-                  <span className={`text-[10px] font-medium ${tab === t.key ? 'text-blue-100' : 'text-white/40'}`}>{t.sub}</span>
+                  <span className={`text-[10px] font-medium ${tab === t.key ? 'text-blue-100' : 'text-slate-400 dark:text-white/40'}`}>{t.sub}</span>
                 </button>
               ))}
             </div>
@@ -796,7 +799,7 @@ const PricingPage = () => {
               flex justify-center mb-4 transition-all duration-700 delay-300
               ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
             `}>
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-1 flex gap-1 shadow-lg">
+              <div className="bg-white border border-slate-200 rounded-xl p-1 flex gap-1 shadow-lg dark:bg-white/5 dark:backdrop-blur-sm dark:border-white/10">
                 {[
                   { key: 'monthly', label: 'Monthly' },
                   { key: 'yearly', label: 'Yearly', badge: 'Under ₹500' },
@@ -807,8 +810,8 @@ const PricingPage = () => {
                     className={`
                       px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer border-none flex items-center gap-2
                       ${billing === b.key
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-white/60 hover:text-white'
+                        ? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-gray-900'
+                        : 'text-slate-600 hover:text-slate-950 dark:text-white/60 dark:hover:text-white'
                       }
                     `}>
                     {b.label}
@@ -818,7 +821,7 @@ const PricingPage = () => {
                       </span>
                     )}
                     {b.badge && billing === 'monthly' && (
-                      <span className="text-[10px] font-medium text-gray-400">{b.badge}</span>
+                      <span className="text-[10px] font-medium text-gray-400 dark:text-white/40">{b.badge}</span>
                     )}
                   </button>
                 ))}
@@ -833,7 +836,7 @@ const PricingPage = () => {
               ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
             `}>
               {['✓ No credit card required', '✓ Escrow protected', '✓ Cancel anytime', '✓ 24/7 support'].map(t => (
-                <span key={t} className="text-xs sm:text-sm text-white/50 font-medium">{t}</span>
+                <span key={t} className="text-xs sm:text-sm text-slate-500 dark:text-white/50 font-medium">{t}</span>
               ))}
             </div>
           )}
@@ -842,7 +845,7 @@ const PricingPage = () => {
         {/* Bottom wave */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-            <path d="M0 60V0C240 40 480 60 720 40C960 20 1200 40 1440 0V60H0Z" fill="#f9fafb" />
+            <path className="fill-gray-50 dark:fill-[#020617]" d="M0 60V0C240 40 480 60 720 40C960 20 1200 40 1440 0V60H0Z" />
           </svg>
         </div>
       </div>
@@ -852,7 +855,7 @@ const PricingPage = () => {
 
         {/* Social Proof Counter */}
         <div ref={socialRef} className={`text-center mb-16 transition-all duration-700 ${socialInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Trusted by 50,000+ professionals worldwide</p>
+          <p className="text-xs font-bold text-gray-400 dark:text-white/35 uppercase tracking-widest mb-6">Trusted by 50,000+ professionals worldwide</p>
           <SocialCounter inView={socialInView} />
         </div>
 
@@ -860,19 +863,19 @@ const PricingPage = () => {
         <div className="text-center mb-10">
           {tab === 'client' ? (
             <>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-3">
                 Everything You Need to Hire
                 <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent"> — 100% Free</span>
               </h2>
-              <p className="text-gray-500 max-w-lg mx-auto">Choose the plan that fits your hiring needs. All client plans are permanently free — no trials, no hidden fees.</p>
+              <p className="text-gray-500 dark:text-white/50 max-w-lg mx-auto">Choose the plan that fits your hiring needs. All client plans are permanently free — no trials, no hidden fees.</p>
             </>
           ) : (
             <>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-3">
                 Choose Your Path to
                 <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent"> Higher Earnings</span>
               </h2>
-              <p className="text-gray-500 max-w-lg mx-auto">More bids. Better ranking. Faster growth. Pick the plan that matches your ambition and start earning more today.</p>
+              <p className="text-gray-500 dark:text-white/50 max-w-lg mx-auto">More bids. Better ranking. Faster growth. Pick the plan that matches your ambition and start earning more today.</p>
             </>
           )}
         </div>
@@ -895,8 +898,8 @@ const PricingPage = () => {
         {tab === 'freelancer' && (
           <div className="mb-16">
             <div className="text-center mb-6">
-              <h3 className="text-xl font-extrabold text-gray-900 mb-1">Compare Plans Side by Side</h3>
-              <p className="text-sm text-gray-500">See exactly what you get at every tier</p>
+              <h3 className="text-xl font-extrabold text-gray-900 dark:text-white mb-1">Compare Plans Side by Side</h3>
+              <p className="text-sm text-gray-500 dark:text-white/45">See exactly what you get at every tier</p>
             </div>
             <ComparisonTable />
           </div>
@@ -905,8 +908,8 @@ const PricingPage = () => {
         {/* Trust Section */}
         <div className="mb-16">
           <div className="text-center mb-8">
-            <h3 className="text-xl font-extrabold text-gray-900 mb-1">Built on Trust & Safety</h3>
-            <p className="text-sm text-gray-500">Every transaction is protected by our escrow and dispute resolution system</p>
+            <h3 className="text-xl font-extrabold text-gray-900 dark:text-white mb-1">Built on Trust & Safety</h3>
+            <p className="text-sm text-gray-500 dark:text-white/45">Every transaction is protected by our escrow and dispute resolution system</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {TRUST_ITEMS.map((item, i) => (
@@ -919,8 +922,8 @@ const PricingPage = () => {
         {tab === 'freelancer' && (
           <div className="mb-16">
             <div className="text-center mb-8">
-              <h3 className="text-xl font-extrabold text-gray-900 mb-1">Hear From Top Earners</h3>
-              <p className="text-sm text-gray-500">Join thousands of freelancers who are already growing their careers</p>
+              <h3 className="text-xl font-extrabold text-gray-900 dark:text-white mb-1">Hear From Top Earners</h3>
+              <p className="text-sm text-gray-500 dark:text-white/45">Join thousands of freelancers who are already growing their careers</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               {TESTIMONIALS.map((t, i) => (
@@ -933,8 +936,8 @@ const PricingPage = () => {
         {/* FAQ Section */}
         <div className="max-w-3xl mx-auto mb-16">
           <div className="text-center mb-8">
-            <h3 className="text-xl font-extrabold text-gray-900 mb-1">Frequently Asked Questions</h3>
-            <p className="text-sm text-gray-500">Everything you need to know before you start</p>
+            <h3 className="text-xl font-extrabold text-gray-900 dark:text-white mb-1">Frequently Asked Questions</h3>
+            <p className="text-sm text-gray-500 dark:text-white/45">Everything you need to know before you start</p>
           </div>
           <div className="space-y-3">
             {FAQS.map((faq, i) => (
@@ -951,7 +954,7 @@ const PricingPage = () => {
       </div>
 
       {/* ══ BOTTOM CTA ════════════════════════════════════════ */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 py-16 sm:py-24 px-4 relative overflow-hidden">
+      <div className="bg-[linear-gradient(180deg,#f8fafc_0%,#eef6ff_100%)] dark:bg-gradient-to-r dark:from-slate-900 dark:via-blue-950 dark:to-slate-900 py-16 sm:py-24 px-4 relative overflow-hidden border-t border-slate-200 dark:border-white/5">
         {/* Glow effects */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full opacity-20"
@@ -959,13 +962,13 @@ const PricingPage = () => {
         </div>
 
         <div className="relative max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white mb-4 leading-tight">
             {tab === 'client'
               ? <>Ready to Hire<br /><span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"> for Free?</span></>
               : <>Ready to Level Up<br /><span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent"> Your Career?</span></>
             }
           </h2>
-          <p className="text-white/50 text-sm sm:text-base mb-8 max-w-lg mx-auto">
+          <p className="text-slate-600 dark:text-white/50 text-sm sm:text-base mb-8 max-w-lg mx-auto">
             {tab === 'client'
               ? 'Join 50,000+ clients who\'ve hired top freelancers without paying a single rupee.'
               : 'Start free today — upgrade when you\'re ready to scale. No pressure, no hidden costs.'
@@ -981,7 +984,7 @@ const PricingPage = () => {
             </button>
             <button
               onClick={() => navigate('/how-it-works')}
-              className="px-8 py-4 rounded-2xl font-bold text-sm border-2 border-white/20 text-white hover:bg-white/10 transition-all duration-200 cursor-pointer"
+              className="px-8 py-4 rounded-2xl font-bold text-sm border-2 border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 cursor-pointer dark:border-white/20 dark:bg-transparent dark:text-white dark:hover:bg-white/10"
             >
               See How It Works
             </button>
@@ -990,7 +993,7 @@ const PricingPage = () => {
           {/* Trust indicators */}
           <div className="flex flex-wrap justify-center gap-5 mt-8">
             {['No credit card required', 'Free forever for clients', 'Cancel anytime'].map(t => (
-              <span key={t} className="text-xs text-white/40 font-medium">{t}</span>
+              <span key={t} className="text-xs text-slate-500 dark:text-white/40 font-medium">{t}</span>
             ))}
           </div>
         </div>

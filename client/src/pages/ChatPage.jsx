@@ -59,7 +59,7 @@ const Avatar = memo(function Avatar({ user, size = "md", onlineUsers = [] }) {
                 <img
                     src={user.profilePic}
                     alt={user.name}
-                    className={`${sizeClass} rounded-2xl object-cover ring-2 ring-white/10`}
+                    className={`${sizeClass} rounded-2xl object-cover ring-2 ring-slate-200 dark:ring-white/10`}
                 />
             ) : (
                 <div className={`${sizeClass} rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-bold shadow-lg`}>
@@ -67,7 +67,7 @@ const Avatar = memo(function Avatar({ user, size = "md", onlineUsers = [] }) {
                 </div>
             )}
             {isOnline && (
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#0f172a]" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white dark:border-[#0f172a]" />
             )}
         </div>
     )
@@ -81,9 +81,9 @@ const MessageSkeleton = memo(function MessageSkeleton() {
         <div className="flex flex-col gap-3 px-4 py-4 animate-pulse">
             {[false, true, false, true, false].map((isMine, i) => (
                 <div key={i} className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
-                    {!isMine && <div className="w-8 h-8 rounded-2xl bg-white/10 flex-shrink-0" />}
+                    {!isMine && <div className="w-8 h-8 rounded-2xl bg-slate-200 dark:bg-white/10 flex-shrink-0" />}
                     <div
-                        className={`h-9 rounded-2xl bg-white/[0.06] ${isMine ? "w-48" : "w-36"}`}
+                        className={`h-9 rounded-2xl bg-slate-200 dark:bg-white/[0.06] ${isMine ? "w-48" : "w-36"}`}
                     />
                 </div>
             ))}
@@ -125,7 +125,7 @@ const MessageBubble = memo(function MessageBubble({ msg, isMine, showAvatar }) {
                     <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words whitespace-pre-wrap shadow-lg
                         ${isMine
                             ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-br-sm"
-                            : "bg-white/[0.05] backdrop-blur-xl border border-white/10 text-white/90 rounded-bl-sm"
+                            : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm dark:bg-white/[0.05] dark:backdrop-blur-xl dark:border-white/10 dark:text-white/90"
                         }`}
                     >
                         {msg.text}
@@ -134,9 +134,9 @@ const MessageBubble = memo(function MessageBubble({ msg, isMine, showAvatar }) {
 
                 {/* Timestamp + seen */}
                 <div className={`flex items-center gap-1.5 mt-1 px-1 ${isMine ? "flex-row-reverse" : ""}`}>
-                    <span className="text-[10px] text-white/30">{formatTime(msg.createdAt)}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-white/30">{formatTime(msg.createdAt)}</span>
                     {isMine && (
-                        <span className={`text-[10px] ${msg.seen ? "text-emerald-400" : "text-white/30"}`}>
+                        <span className={`text-[10px] ${msg.seen ? "text-emerald-500 dark:text-emerald-400" : "text-slate-400 dark:text-white/30"}`}>
                             {msg.seen ? "✓✓" : "✓"}
                         </span>
                     )}
@@ -158,7 +158,7 @@ const TypingIndicator = memo(function TypingIndicator({ otherUser }) {
             className="flex items-end gap-2 mb-2"
         >
             <Avatar user={otherUser} size="sm" />
-            <div className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl rounded-bl-sm px-4 py-3 shadow-lg flex items-center gap-1">
+            <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm flex items-center gap-1 dark:bg-white/[0.05] dark:backdrop-blur-xl dark:border-white/10 dark:shadow-lg">
                 {[0, 150, 300].map(delay => (
                     <motion.span
                         key={delay}
@@ -185,24 +185,24 @@ const ConversationItem = memo(function ConversationItem({
             onClick={onClick}
             className={`w-full flex items-center gap-3 px-4 py-4 text-left cursor-pointer border-none transition-all duration-200 border-l-[3px]
                 ${isActive
-                    ? "bg-gradient-to-r from-blue-500/10 to-transparent border-l-blue-500"
-                    : "bg-transparent hover:bg-white/[0.03] border-l-transparent"
+                    ? "bg-gradient-to-r from-blue-50 to-transparent border-l-blue-500 dark:from-blue-500/10"
+                    : "bg-transparent hover:bg-slate-50 border-l-transparent dark:hover:bg-white/[0.03]"
                 }`}
         >
             <Avatar user={other} onlineUsers={onlineUsers} />
 
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                    <p className={`text-sm truncate ${unread ? "font-bold text-white" : "font-semibold text-white/70"}`}>
+                    <p className={`text-sm truncate ${unread ? "font-bold text-slate-950 dark:text-white" : "font-semibold text-slate-700 dark:text-white/70"}`}>
                         {other?.name || "User"}
                     </p>
-                    <p className="text-[10px] text-white/30 ml-2 flex-shrink-0">
+                    <p className="text-[10px] text-slate-400 dark:text-white/30 ml-2 flex-shrink-0">
                         {formatTime(conv.lastMessage?.createdAt)}
                     </p>
                 </div>
 
                 <div className="flex items-center justify-between mt-1">
-                    <p className={`text-xs truncate max-w-[160px] ${unread ? "text-white/80 font-medium" : "text-white/40"}`}>
+                    <p className={`text-xs truncate max-w-[160px] ${unread ? "text-slate-700 font-medium dark:text-white/80" : "text-slate-500 dark:text-white/40"}`}>
                         {conv.lastMessage?.text || "Say hello 👋"}
                     </p>
                     {unread > 0 && (
@@ -236,11 +236,11 @@ const Sidebar = memo(function Sidebar({
     })
 
     return (
-        <div className="h-full flex flex-col bg-[#0f172a]">
+        <div className="h-full flex flex-col bg-white dark:bg-[#0f172a]">
             {/* Sidebar Header */}
-            <div className="px-5 pt-6 pb-4 border-b border-white/5 flex-shrink-0">
+            <div className="px-5 pt-6 pb-4 border-b border-slate-200 flex-shrink-0 dark:border-white/5">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-extrabold text-white">Messages</h2>
+                    <h2 className="text-xl font-extrabold text-slate-950 dark:text-white">Messages</h2>
                     <div className="flex items-center gap-3">
                         <span className="relative flex w-2 h-2">
                             <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping" />
@@ -249,7 +249,7 @@ const Sidebar = memo(function Sidebar({
                         {hasActiveConversation && (
                             <button
                                 onClick={onCloseSidebar}
-                                className="sm:hidden px-3 py-2 text-[11px] font-bold text-white bg-white/5 border border-white/10 rounded-xl"
+                                className="sm:hidden px-3 py-2 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl dark:text-white dark:bg-white/5 dark:border-white/10"
                             >
                                 Back to chat
                             </button>
@@ -257,12 +257,12 @@ const Sidebar = memo(function Sidebar({
                     </div>
                 </div>
                 <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 text-sm pointer-events-none">🔍</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 text-sm pointer-events-none">🔍</span>
                     <input
                         value={search}
                         onChange={e => onSearchChange(e.target.value)}
                         placeholder="Search conversations..."
-                        className="w-full pl-10 pr-4 py-3 text-sm text-white placeholder-white/25 bg-white/[0.03] border border-white/10 rounded-xl outline-none focus:bg-white/[0.06] focus:border-white/20 transition-all"
+                        className="w-full pl-10 pr-4 py-3 text-sm text-slate-900 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-300 transition-all dark:text-white dark:placeholder-white/25 dark:bg-white/[0.03] dark:border-white/10 dark:focus:bg-white/[0.06] dark:focus:border-white/20"
                     />
                 </div>
             </div>
@@ -271,9 +271,9 @@ const Sidebar = memo(function Sidebar({
             <div className="flex-1 overflow-y-auto overscroll-contain">
                 {filtered.length === 0 ? (
                     <div className="py-16 text-center px-6">
-                        <div className="w-16 h-16 bg-white/[0.03] rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">💬</div>
-                        <p className="text-white/50 text-sm font-semibold">No conversations yet</p>
-                        <p className="text-white/30 text-xs mt-1">Message a freelancer from their profile</p>
+                        <div className="w-16 h-16 bg-slate-100 dark:bg-white/[0.03] rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">💬</div>
+                        <p className="text-slate-600 dark:text-white/50 text-sm font-semibold">No conversations yet</p>
+                        <p className="text-slate-400 dark:text-white/30 text-xs mt-1">Message a freelancer from their profile</p>
                     </div>
                 ) : (
                     filtered.map(conv => {
@@ -305,11 +305,11 @@ const ChatHeader = memo(function ChatHeader({
     const isOnline = onlineUsers.includes(otherUser?._id?.toString())
 
     return (
-        <div className="sticky top-0 z-10 px-4 py-3 sm:py-4 bg-[#0f172a]/95 backdrop-blur-xl border-b border-white/5 flex items-center gap-3 flex-shrink-0">
+        <div className="sticky top-0 z-10 px-4 py-3 sm:py-4 bg-white/95 backdrop-blur-xl border-b border-slate-200 flex items-center gap-3 flex-shrink-0 dark:bg-[#0f172a]/95 dark:border-white/5">
             {/* Back button — mobile only */}
             <button
                 onClick={onBack}
-                className="sm:hidden w-9 h-9 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-all cursor-pointer border-none flex-shrink-0"
+                className="sm:hidden w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-950 hover:bg-slate-100 rounded-xl transition-all cursor-pointer border-none flex-shrink-0 dark:text-white/60 dark:hover:text-white dark:hover:bg-white/5"
             >
                 ←
             </button>
@@ -317,9 +317,9 @@ const ChatHeader = memo(function ChatHeader({
             <Avatar user={otherUser} size="lg" onlineUsers={onlineUsers} />
 
             <div className="flex-1 min-w-0">
-                <p className="font-bold text-white text-sm truncate">{otherUser?.name || "User"}</p>
-                <p className={`text-xs font-medium flex items-center gap-1 ${isOnline ? "text-emerald-400" : "text-white/30"}`}>
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${isOnline ? "bg-emerald-400" : "bg-white/30"}`} />
+                <p className="font-bold text-slate-950 dark:text-white text-sm truncate">{otherUser?.name || "User"}</p>
+                <p className={`text-xs font-medium flex items-center gap-1 ${isOnline ? "text-emerald-500 dark:text-emerald-400" : "text-slate-400 dark:text-white/30"}`}>
+                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${isOnline ? "bg-emerald-400" : "bg-slate-300 dark:bg-white/30"}`} />
                     {isOnline ? "Online" : "Offline"}
                     {activeConversation?.project?.title && (
                         <span className="text-blue-400 truncate"> · 📋 {activeConversation.project.title}</span>
@@ -348,15 +348,15 @@ const MessagesList = memo(function MessagesList({
     return (
         <div
             ref={messageListRef}
-            className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 bg-[#020617]"
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 bg-[#f5f7fb] dark:bg-[#020617]"
         >
             {msgLoading ? (
                 <MessageSkeleton />
             ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-16 text-center">
                     <div className="text-4xl mb-3">👋</div>
-                    <p className="text-white/60 text-sm font-semibold">Start the conversation!</p>
-                    <p className="text-white/30 text-xs mt-1">
+                    <p className="text-slate-600 dark:text-white/60 text-sm font-semibold">Start the conversation!</p>
+                    <p className="text-slate-400 dark:text-white/30 text-xs mt-1">
                         Say hello to {otherUser?.name?.split(" ")[0]}
                     </p>
                 </div>
@@ -397,8 +397,8 @@ const MessageInput = memo(function MessageInput({
     text, onChange, onSend, onKeyDown, sendLoading
 }) {
     return (
-        <div className="px-3 sm:px-4 py-3 sm:py-4 bg-[#0f172a]/80 backdrop-blur-xl border-t border-white/5 flex-shrink-0">
-            <div className="flex items-end gap-2 sm:gap-3 bg-white/[0.03] border border-white/10 rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 focus-within:border-blue-500/50 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+        <div className="px-3 sm:px-4 py-3 sm:py-4 bg-white/90 backdrop-blur-xl border-t border-slate-200 flex-shrink-0 dark:bg-[#0f172a]/80 dark:border-white/5">
+            <div className="flex items-end gap-2 sm:gap-3 bg-white border border-slate-200 rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-500/15 transition-all shadow-sm dark:bg-white/[0.03] dark:border-white/10 dark:focus-within:border-blue-500/50 dark:focus-within:ring-blue-500/20 dark:shadow-none">
                 <textarea
                     value={text}
                     onChange={onChange}
@@ -406,7 +406,7 @@ const MessageInput = memo(function MessageInput({
                     placeholder="Type a message..."
                     rows={1}
                     style={{ fontFamily: "inherit", resize: "none" }}
-                    className="flex-1 bg-transparent text-sm text-white placeholder-white/30 outline-none max-h-28 py-1.5 min-h-[24px]"
+                    className="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none max-h-28 py-1.5 min-h-[24px] dark:text-white dark:placeholder-white/30"
                 />
                 <motion.button
                     whileHover={{ scale: 1.1 }}
@@ -416,7 +416,7 @@ const MessageInput = memo(function MessageInput({
                     className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-base flex-shrink-0 transition-all border-none font-bold
                         ${text.trim() && !sendLoading
                             ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white cursor-pointer shadow-lg shadow-blue-500/20"
-                            : "bg-white/5 text-white/30 cursor-not-allowed"
+                            : "bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-white/5 dark:text-white/30"
                         }`}
                 >
                     {sendLoading ? (
@@ -424,7 +424,7 @@ const MessageInput = memo(function MessageInput({
                     ) : "↑"}
                 </motion.button>
             </div>
-            <p className="text-[10px] text-white/20 mt-2 text-center select-none">
+            <p className="text-[10px] text-slate-400 dark:text-white/20 mt-2 text-center select-none">
                 Enter to send · Shift+Enter for new line
             </p>
         </div>
@@ -436,7 +436,7 @@ const MessageInput = memo(function MessageInput({
 // ─────────────────────────────────────────────────────────────
 const EmptyChatState = memo(function EmptyChatState({ onOpenSidebar }) {
     return (
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-6 bg-[#f5f7fb] dark:bg-[#020617]">
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -444,8 +444,8 @@ const EmptyChatState = memo(function EmptyChatState({ onOpenSidebar }) {
             >
                 💬
             </motion.div>
-            <h3 className="text-2xl font-extrabold text-white mb-2">Select a conversation</h3>
-            <p className="text-white/40 text-sm max-w-xs mb-6">
+            <h3 className="text-2xl font-extrabold text-slate-950 dark:text-white mb-2">Select a conversation</h3>
+            <p className="text-slate-500 dark:text-white/40 text-sm max-w-xs mb-6">
                 Choose from the sidebar or message a freelancer from their profile.
             </p>
             {/* Mobile: open sidebar button */}
@@ -464,33 +464,33 @@ const EmptyChatState = memo(function EmptyChatState({ onOpenSidebar }) {
 // ─────────────────────────────────────────────────────────────
 const AuthLoadingScreen = () => (
     <div
-        className="flex h-[calc(100dvh-3.5rem)] bg-[#020617] overflow-hidden sm:h-[calc(100dvh-4rem)]"
+        className="flex h-[calc(100dvh-3.5rem)] bg-[#f5f7fb] overflow-hidden dark:bg-[#020617] sm:h-[calc(100dvh-4rem)]"
     >
         {/* Sidebar skeleton */}
-        <div className="hidden sm:flex flex-col w-72 lg:w-80 bg-[#0f172a] border-r border-white/5 animate-pulse">
-            <div className="px-5 pt-6 pb-4 border-b border-white/5">
-                <div className="h-6 w-28 bg-white/10 rounded-lg mb-4" />
-                <div className="h-10 w-full bg-white/5 rounded-xl" />
+        <div className="hidden sm:flex flex-col w-72 lg:w-80 bg-white border-r border-slate-200 animate-pulse dark:bg-[#0f172a] dark:border-white/5">
+            <div className="px-5 pt-6 pb-4 border-b border-slate-200 dark:border-white/5">
+                <div className="h-6 w-28 bg-slate-200 dark:bg-white/10 rounded-lg mb-4" />
+                <div className="h-10 w-full bg-slate-100 dark:bg-white/5 rounded-xl" />
             </div>
             <div className="p-4 space-y-3">
                 {[1, 2, 3].map(i => (
                     <div key={i} className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-white/10 flex-shrink-0" />
+                        <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-white/10 flex-shrink-0" />
                         <div className="flex-1 space-y-2">
-                            <div className="h-3 bg-white/10 rounded w-3/4" />
-                            <div className="h-2 bg-white/5 rounded w-1/2" />
+                            <div className="h-3 bg-slate-200 dark:bg-white/10 rounded w-3/4" />
+                            <div className="h-2 bg-slate-100 dark:bg-white/5 rounded w-1/2" />
                         </div>
                     </div>
                 ))}
             </div>
         </div>
         {/* Chat area skeleton */}
-        <div className="flex-1 flex flex-col bg-[#020617]">
-            <div className="h-16 bg-[#0f172a]/80 border-b border-white/5 animate-pulse flex items-center px-4 gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-white/10" />
+        <div className="flex-1 flex flex-col bg-[#f5f7fb] dark:bg-[#020617]">
+            <div className="h-16 bg-white/80 border-b border-slate-200 animate-pulse flex items-center px-4 gap-3 dark:bg-[#0f172a]/80 dark:border-white/5">
+                <div className="w-14 h-14 rounded-2xl bg-slate-200 dark:bg-white/10" />
                 <div className="space-y-2">
-                    <div className="h-3 w-24 bg-white/10 rounded" />
-                    <div className="h-2 w-16 bg-white/5 rounded" />
+                    <div className="h-3 w-24 bg-slate-200 dark:bg-white/10 rounded" />
+                    <div className="h-2 w-16 bg-slate-100 dark:bg-white/5 rounded" />
                 </div>
             </div>
             <div className="flex-1 flex items-center justify-center">
@@ -505,7 +505,7 @@ const AuthLoadingScreen = () => (
 // ─────────────────────────────────────────────────────────────
 const LoginRequiredScreen = () => (
     <div
-        className="flex min-h-[calc(100dvh-3.5rem)] flex-col items-center justify-center bg-[#020617] px-6 text-center sm:min-h-[calc(100dvh-4rem)]"
+        className="flex min-h-[calc(100dvh-3.5rem)] flex-col items-center justify-center bg-[#f5f7fb] px-6 text-center dark:bg-[#020617] sm:min-h-[calc(100dvh-4rem)]"
         style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
     >
         <MotionPanel
@@ -517,8 +517,8 @@ const LoginRequiredScreen = () => (
             🔒
         </MotionPanel>
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <h2 className="text-2xl font-extrabold text-white mb-2">Login Required</h2>
-            <p className="text-white/40 text-sm mb-6 max-w-xs">
+            <h2 className="text-2xl font-extrabold text-slate-950 dark:text-white mb-2">Login Required</h2>
+            <p className="text-slate-500 dark:text-white/40 text-sm mb-6 max-w-xs">
                 You need to be logged in to access messages.
             </p>
             <Link
@@ -729,7 +729,7 @@ const ChatPageContent = ({ user }) => {
     // ─────────────────────────────────────────────────────────
     return (
         <div
-            className="flex h-[calc(100dvh-3.5rem)] bg-[#020617] overflow-hidden sm:h-[calc(100dvh-4rem)]"
+            className="flex h-[calc(100dvh-3.5rem)] bg-[#f5f7fb] overflow-hidden dark:bg-[#020617] sm:h-[calc(100dvh-4rem)]"
             style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
         >
             {/*
@@ -750,7 +750,7 @@ const ChatPageContent = ({ user }) => {
                         exit={{ x: -20, opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         className={`
-                            flex-shrink-0 border-r border-white/5
+                            flex-shrink-0 border-r border-slate-200 dark:border-white/5
                             /* Mobile: full screen overlay */
                             absolute inset-0 z-20 w-full
                             /* Tablet+: fixed sidebar width */

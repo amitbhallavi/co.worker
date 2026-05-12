@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { disconnect, initSocket, subscribeToRatingEvents } from './utils/socketManager'
 import { fetchUserPlan } from './features/subscription/planSlice'
 import { addRatingSocket, updateRatingSocket, deleteRatingSocket } from './features/rating/ratingSlice'
+import { applyTheme, persistTheme } from './features/theme/themeUtils'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
@@ -30,12 +31,12 @@ const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage.jsx'))
 const SubscriptionManagement = lazy(() => import('./pages/SubscriptionManagement.jsx'))
 
 const RouteFallback = () => (
-  <div className="min-h-[calc(100vh-4rem)] bg-[#020617] flex items-center justify-center px-4">
+  <div className="min-h-[calc(100vh-4rem)] bg-white dark:bg-slate-950 flex items-center justify-center px-4">
     <div className="text-center">
-      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5">
+      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5">
         <div className="h-2.5 w-2.5 rounded-full bg-cyan-400 animate-pulse" />
       </div>
-      <p className="text-sm text-white/60">Loading page...</p>
+      <p className="text-sm text-slate-600 dark:text-white/60">Loading page...</p>
     </div>
   </div>
 )
@@ -103,6 +104,12 @@ const AppShell = () => {
 const App = () => {
   const dispatch = useDispatch()
   const { user } = useSelector(s => s.auth)
+  const theme = useSelector(s => s.theme.mode)
+
+  useEffect(() => {
+    applyTheme(theme)
+    persistTheme(theme)
+  }, [theme])
 
   useEffect(() => {
     if (!user?.token) {

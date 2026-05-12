@@ -4,6 +4,7 @@ import asyncHandler from "express-async-handler"
 import Payment from "../models/paymentModel.js"
 import Wallet from "../models/walletModel.js"
 import Project from "../models/projectModel.js"
+import { emitAdminDataChanged } from "../utils/adminRealtime.js"
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
@@ -150,12 +151,24 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         global.io.to(`user_${freelancerUserId}`).emit("projectAssigned", {
             _id: updatedProject._id,
             title: updatedProject.title,
-            client: updatedProject.user,
+            description: updatedProject.description,
+            user: updatedProject.user,
+            freelancer: updatedProject.freelancer,
             status: updatedProject.status,
             budget: updatedProject.budget,
+            duration: updatedProject.duration,
+            category: updatedProject.category,
+            technology: updatedProject.technology,
+            createdAt: updatedProject.createdAt,
             message: `Project "${updatedProject.title}" assigned to you!`,
         })
     }
+
+    emitAdminDataChanged("payment_verified", {
+        message: `Payment verified for ${updatedProject?.title || "project"}`,
+        paymentId: payment._id,
+        projectId: payment.project,
+    })
 
     res.status(200).json({ success: true, message: "Payment verified", payment })
 })
@@ -193,7 +206,13 @@ export const releaseEscrow = asyncHandler(async (req, res) => {
     payment.completedAt = new Date()
     await payment.save()
 
-    await Project.findByIdAndUpdate(projectId, { status: "completed" })
+    const updatedProject = await Project.findByIdAndUpdate(projectId, { status: "completed" }, { new: true })
+
+    emitAdminDataChanged("payment_released", {
+        message: `Payment released for ${updatedProject?.title || "project"}`,
+        paymentId: payment._id,
+        projectId,
+    })
 
     res.status(200).json({ success: true, message: "Payment released to freelancer wallet", payment })
 })

@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { logoutUser, refreshUser } from "../features/auth/authSlice"
 import { getUnreadCount } from "../features/ChatsAndMessages/chatSlice"
 import CoworkerIcon from "./CoworkerIcon"
+import ThemeToggle from "./ThemeToggle"
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -80,17 +81,17 @@ const Logo = () => (
     <Link to="/" className="group flex items-center gap-3 flex-shrink-0 select-none">
         <div className="relative flex-shrink-0">
             <div className="absolute inset-0 rounded-[20px] bg-cyan-300/35 blur-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-            <div className="relative rounded-[18px] border border-sky-100/80 bg-white/80 p-1.5 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.35)] transition-all duration-300 group-hover:-translate-y-0.5 group-hover:shadow-[0_22px_50px_-28px_rgba(43,196,212,0.42)]">
+            <div className="relative rounded-[18px] border border-sky-100/80 dark:border-sky-400/40 bg-white/80 dark:bg-slate-900/60 p-1.5 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.35)] dark:shadow-[0_18px_40px_-28px_rgba(0,0,0,0.5)] transition-all duration-300 group-hover:-translate-y-0.5 group-hover:shadow-[0_22px_50px_-28px_rgba(43,196,212,0.42)]">
                 <CoworkerIcon size={30} />
             </div>
         </div>
         <div className="flex flex-col leading-none">
-            <span className="auth-serif text-[17px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[18px]">
-                <span className="text-slate-900">Co</span>
+            <span className="auth-serif text-[17px] font-semibold tracking-[-0.04em] text-slate-900 dark:text-white sm:text-[18px]">
+                <span className="text-slate-900 dark:text-slate-100">Co</span>
                 <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">.</span>
-                <span className="font-medium text-slate-700">worker</span>
+                <span className="font-medium text-slate-700 dark:text-slate-400">worker</span>
             </span>
-            <span className="hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700/70 sm:block">
+            <span className="hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700/70 dark:text-sky-400/50 sm:block">
                 Secure freelance workspace
             </span>
         </div>
@@ -117,11 +118,11 @@ const Avatar = ({ user, size = "sm" }) => {
     if (user?.profilePic) {
         return (
             <img src={user.profilePic} alt={user.name}
-                className={`${sz} rounded-xl object-cover ring-2 ring-blue-200 group-hover:ring-blue-400 transition-all`} />
+                className={`${sz} rounded-xl object-cover ring-2 ring-blue-200 dark:ring-blue-900 group-hover:ring-blue-400 dark:group-hover:ring-blue-700 transition-all`} />
         )
     }
     return (
-        <div className={`${sz} rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm ring-2 ring-blue-100 group-hover:ring-blue-300 transition-all shadow-sm`}>
+        <div className={`${sz} rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm ring-2 ring-blue-100 dark:ring-blue-900 group-hover:ring-blue-300 dark:group-hover:ring-blue-700 transition-all shadow-sm`}>
             {getInitials(user?.name)}
         </div>
     )
@@ -131,7 +132,7 @@ const Avatar = ({ user, size = "sm" }) => {
 // Icon Button (reusable)
 // ─────────────────────────────────────────────────────────────
 const IconBtn = ({ to, onClick, children, badge, className = "", ariaLabel }) => {
-    const base = `relative flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50 ${className}`
+    const base = `relative flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-blue-50 dark:hover:bg-slate-800 ${className}`
     if (to) return (
         <Link to={to} aria-label={ariaLabel} className={base}>
             {children}
@@ -142,7 +143,7 @@ const IconBtn = ({ to, onClick, children, badge, className = "", ariaLabel }) =>
         <button type="button" onClick={onClick} aria-label={ariaLabel} className={base}>
             {children}
             {badge > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+                <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-950" />
             )}
         </button>
     )
@@ -166,9 +167,9 @@ const TalentDropdown = ({ onClose }) => {
     return (
         <div className="absolute top-[calc(100%+14px)] left-1/2 z-50 w-[560px] max-w-[96vw] -translate-x-1/2 drop-shadow-2xl">
             {/* Arrow tip */}
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-white border-l border-t border-gray-100 rounded-sm z-10" />
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-white dark:bg-slate-900 border-l border-t border-gray-100 dark:border-slate-700 rounded-sm z-10" />
 
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-2xl">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden shadow-2xl">
                 {/* Header band */}
                 <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-4 relative overflow-hidden">
                     <div className="absolute w-32 h-32 rounded-full bg-white/10 -top-12 -right-8 pointer-events-none" />
@@ -181,13 +182,13 @@ const TalentDropdown = ({ onClose }) => {
                     {/* Search */}
                     <form onSubmit={handleSearch} className="flex gap-2 mb-4">
                         <div className="relative flex-1">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">🔍</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-xs pointer-events-none">🔍</span>
                             <input
                                 type="text"
                                 value={query}
                                 onChange={e => setQuery(e.target.value)}
                                 placeholder="e.g. React developer, UI designer..."
-                                className="w-full pl-8 pr-3 py-2.5 text-xs border border-gray-200 rounded-xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all text-gray-800 placeholder-gray-400 bg-gray-50 focus:bg-white"
+                                className="w-full pl-8 pr-3 py-2.5 text-xs border border-gray-200 dark:border-slate-700 rounded-xl outline-none focus:border-blue-400 dark:focus:border-cyan-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-cyan-900 transition-all text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-gray-500 bg-gray-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700"
                             />
                         </div>
                         <button type="submit"
@@ -200,21 +201,21 @@ const TalentDropdown = ({ onClose }) => {
                     <div className="grid grid-cols-2 gap-2 mb-4">
                         {TALENT_CATEGORIES.map(item => (
                             <Link key={item.label} to={item.href} onClick={onClose}
-                                className="group relative flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-transparent transition-all duration-200 hover:-translate-y-0.5 overflow-hidden">
+                                className="group relative flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-transparent transition-all duration-200 hover:-translate-y-0.5 overflow-hidden">
                                 <span className={`absolute inset-0 bg-gradient-to-r ${item.color} opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl`} />
                                 <div className={`relative z-10 w-9 h-9 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center text-sm flex-shrink-0 shadow-sm`}>
                                     {item.icon}
                                 </div>
                                 <div className="relative z-10 min-w-0 flex-1">
                                     <div className="flex items-center gap-1.5">
-                                        <p className="text-xs font-bold text-gray-800 group-hover:text-white transition-colors truncate">{item.label}</p>
+                                        <p className="text-xs font-bold text-gray-800 dark:text-slate-200 group-hover:text-white transition-colors truncate">{item.label}</p>
                                         {item.badge && (
-                                            <span className="text-[9px] font-bold bg-orange-100 text-orange-600 group-hover:bg-white/25 group-hover:text-white px-1.5 py-0.5 rounded-full transition-colors flex-shrink-0">
+                                            <span className="text-[9px] font-bold bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300 group-hover:bg-white/25 group-hover:text-white px-1.5 py-0.5 rounded-full transition-colors flex-shrink-0">
                                                 {item.badge}
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-[10px] text-gray-500 group-hover:text-white/80 transition-colors">{item.sub}</p>
+                                    <p className="text-[10px] text-gray-500 dark:text-slate-400 group-hover:text-white/80 transition-colors">{item.sub}</p>
                                 </div>
                                 <span className="relative z-10 opacity-0 group-hover:opacity-100 text-white text-xs transition-opacity ml-auto">→</span>
                             </Link>
@@ -228,16 +229,16 @@ const TalentDropdown = ({ onClose }) => {
                             Browse All Talent ↗
                         </Link>
                         <Link to="/browse-projects" onClick={onClose}
-                            className="flex-1 text-center py-2.5 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-100 hover:-translate-y-0.5 transition-all">
+                            className="flex-1 text-center py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 text-xs font-semibold rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 hover:-translate-y-0.5 transition-all">
                             Browse Projects
                         </Link>
                     </div>
 
                     {/* Trust bar */}
-                    <div className="flex justify-center gap-5 mt-3 pt-3 border-t border-gray-100">
+                    <div className="flex justify-center gap-5 mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
                         {["Verified profiles", "Secure payments", "24/7 support"].map(t => (
-                            <span key={t} className="text-[10px] text-gray-400 flex items-center gap-1">
-                                <span className="text-emerald-500 font-bold">✓</span> {t}
+                            <span key={t} className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                                <span className="text-emerald-500 dark:text-emerald-400 font-bold">✓</span> {t}
                             </span>
                         ))}
                     </div>
@@ -278,38 +279,38 @@ const ProfileDropdown = ({ user, onLogout, unreadTotal }) => {
             >
                 <Avatar user={user} />
                 <div className="hidden lg:flex flex-col items-start leading-none">
-                    <span className="text-xs text-gray-500">Hey,</span>
-                    <span className="text-sm font-semibold text-gray-800 group-hover:text-blue-600 transition-colors max-w-20 truncate">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Hey,</span>
+                    <span className="text-sm font-semibold text-gray-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-cyan-400 transition-colors max-w-20 truncate">
                         {user?.name?.split(" ")[0]}
                     </span>
                 </div>
-                <svg className={`hidden lg:block w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${open ? "rotate-180" : ""}`}
+                <svg className={`hidden lg:block w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 flex-shrink-0 ${open ? "rotate-180" : ""}`}
                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
 
             {open && (
-                <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-60 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+                <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-60 overflow-hidden rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl">
                     {/* User header */}
-                    <div className="border-b border-gray-100 bg-gradient-to-br from-blue-50 to-cyan-50 px-4 py-3.5">
+                    <div className="border-b border-gray-100 dark:border-slate-700 bg-gradient-to-br from-blue-50 dark:from-slate-800 to-cyan-50 dark:to-slate-900 px-4 py-3.5">
                         <div className="flex items-center gap-3">
                             <Avatar user={user} size="md" />
                             <div className="min-w-0">
-                                <p className="truncate text-sm font-bold text-gray-900">{user?.name}</p>
-                                <p className="truncate text-xs text-gray-500">{user?.email}</p>
+                                <p className="truncate text-sm font-bold text-gray-900 dark:text-white">{user?.name}</p>
+                                <p className="truncate text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
                             </div>
                         </div>
-                        <span className="mt-2 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                        <span className="mt-2 inline-block rounded-full bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300">
                             {getRoleLabel(user)}
                         </span>
                     </div>
 
                     {/* Credits pill */}
                     {user?.credits !== undefined && (
-                        <div className="mx-3 mt-3 flex items-center justify-between rounded-xl border border-amber-100 bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-2">
-                            <span className="text-xs font-medium text-gray-600">Credits</span>
-                            <span className="text-sm font-black text-amber-600">⚡ {user.credits}</span>
+                        <div className="mx-3 mt-3 flex items-center justify-between rounded-xl border border-amber-100 dark:border-amber-900/40 bg-gradient-to-r from-amber-50 dark:from-amber-900/20 to-yellow-50 dark:to-yellow-900/20 px-3 py-2">
+                            <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Credits</span>
+                            <span className="text-sm font-black text-amber-600 dark:text-amber-400">⚡ {user.credits}</span>
                         </div>
                     )}
 
@@ -317,7 +318,7 @@ const ProfileDropdown = ({ user, onLogout, unreadTotal }) => {
                     <div className="px-1.5 py-2">
                         {menuItems.map(item => (
                             <Link key={item.label} to={item.href} onClick={() => setOpen(false)}
-                                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700">
+                                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:text-slate-200 transition-colors hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-700 dark:hover:text-cyan-400">
                                 <span className="text-base">{item.icon}</span>
                                 <span className="font-medium">{item.label}</span>
                             </Link>
@@ -325,7 +326,7 @@ const ProfileDropdown = ({ user, onLogout, unreadTotal }) => {
 
                         {/* Messages with badge */}
                         <Link to="/chat" onClick={() => setOpen(false)}
-                            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700">
+                            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:text-slate-200 transition-colors hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-700 dark:hover:text-cyan-400">
                             <span className="text-base">💬</span>
                             <span className="font-medium">Messages</span>
                             {unreadTotal > 0 && (
@@ -336,9 +337,9 @@ const ProfileDropdown = ({ user, onLogout, unreadTotal }) => {
                         </Link>
                     </div>
 
-                    <div className="border-t border-gray-100 p-2">
+                    <div className="border-t border-gray-100 dark:border-slate-700 p-2">
                         <button type="button" onClick={() => { onLogout(); setOpen(false) }}
-                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50">
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20">
                             <span>🚪</span> Log Out
                         </button>
                     </div>
@@ -356,8 +357,8 @@ const NavLinks = ({ isActive, talentOpen, onTalentToggle }) => (
         {NAV_LINKS.map(link => (
             <Link key={link.href} to={link.href}
                 className={`px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${isActive(link.href)
-                        ? "bg-blue-50 text-blue-700 font-semibold"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-blue-50 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 font-semibold"
+                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100"
                     }`}>
                 {link.label}
             </Link>
@@ -366,11 +367,11 @@ const NavLinks = ({ isActive, talentOpen, onTalentToggle }) => (
         <button
             type="button"
             onClick={onTalentToggle}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${talentOpen ? "bg-blue-50 text-blue-700 font-semibold" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${talentOpen ? "bg-blue-50 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 font-semibold" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100"
                 }`}
         >
             Find Talent
-            <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${talentOpen ? "rotate-180 text-blue-600" : "text-gray-400"}`}
+            <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${talentOpen ? "rotate-180 text-blue-600 dark:text-cyan-400" : "text-gray-400 dark:text-gray-500"}`}
                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
             </svg>
@@ -401,10 +402,7 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
     }, [open])
 
     useEffect(() => {
-        if (!open) {
-            setTalentOpen(false)
-            return
-        }
+        if (!open) return
 
         const handleKeyDown = (event) => {
             if (event.key === "Escape") {
@@ -438,20 +436,20 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                 aria-modal="true"
                 aria-label="Navigation menu"
             >
-                <div className="relative flex h-full flex-col overflow-hidden border-l border-slate-200/80 bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_58%,#eef6ff_100%)] shadow-[0_35px_100px_-40px_rgba(15,23,42,0.48)]">
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-44 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.16),transparent_58%)]" />
+                <div className="relative flex h-full flex-col overflow-hidden border-l border-slate-200 dark:border-slate-700 bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_58%,#eef6ff_100%)] dark:bg-gradient-to-b dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 shadow-[0_35px_100px_-40px_rgba(15,23,42,0.48)]">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-44 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.16),transparent_58%)] dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.08),transparent_58%)]" />
 
-                    <div className="relative flex items-center justify-between border-b border-slate-200/80 px-4 py-4">
+                    <div className="relative flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-4">
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">Navigation</p>
-                            <p className="mt-1 text-sm text-slate-500">Move faster on mobile</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700 dark:text-sky-400">Navigation</p>
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Move faster on mobile</p>
                         </div>
 
                         <button
                             type="button"
                             onClick={onClose}
                             aria-label="Close menu"
-                            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+                            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 shadow-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
                         >
                             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -461,13 +459,13 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
 
                     <div className="relative flex-1 overflow-y-auto px-4 pb-6 pt-4">
                         {user ? (
-                            <div className="rounded-[28px] bg-slate-950 p-4 text-white shadow-[0_24px_60px_-30px_rgba(15,23,42,0.7)]">
+                            <div className="rounded-[28px] bg-slate-950 dark:bg-gradient-to-br dark:from-slate-800 dark:to-slate-900 p-4 text-white shadow-[0_24px_60px_-30px_rgba(15,23,42,0.7)]">
                                 <div className="flex items-start gap-3">
                                     {user?.profilePic ? (
                                         <img
                                             src={user.profilePic}
                                             alt={user.name}
-                                            className="h-12 w-12 rounded-2xl object-cover ring-2 ring-white/15"
+                                            className="h-12 w-12 rounded-2xl object-cover ring-2 ring-white/15 dark:ring-white/20"
                                         />
                                     ) : (
                                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-sm font-bold text-white">
@@ -477,13 +475,13 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
 
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-base font-semibold">{user?.name}</p>
-                                        <p className="truncate text-xs text-slate-300">{user?.email}</p>
+                                        <p className="truncate text-xs text-slate-300 dark:text-slate-400">{user?.email}</p>
                                         <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
-                                            <span className="rounded-full bg-white/10 px-2.5 py-1 text-slate-100">
+                                            <span className="rounded-full bg-white/10 dark:bg-white/5 px-2.5 py-1 text-slate-100 dark:text-slate-200">
                                                 {getRoleLabel(user)}
                                             </span>
                                             {user?.credits !== undefined && (
-                                                <span className="rounded-full bg-amber-400/15 px-2.5 py-1 text-amber-200">
+                                                <span className="rounded-full bg-amber-400/15 dark:bg-amber-400/10 px-2.5 py-1 text-amber-200 dark:text-amber-300">
                                                     ⚡ {user.credits} credits
                                                 </span>
                                             )}
@@ -495,14 +493,14 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                                     <Link
                                         to={dashboardHref}
                                         onClick={onClose}
-                                        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                                        className="rounded-2xl border border-white/10 dark:border-white/5 bg-white/5 dark:bg-white/5 px-3 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10 dark:hover:bg-white/10"
                                     >
                                         Dashboard
                                     </Link>
                                     <Link
                                         to={showSeparateProfileLink ? profileHref : "/chat"}
                                         onClick={onClose}
-                                        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                                        className="rounded-2xl border border-white/10 dark:border-white/5 bg-white/5 dark:bg-white/5 px-3 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10 dark:hover:bg-white/10"
                                     >
                                         {showSeparateProfileLink
                                             ? "Profile"
@@ -511,12 +509,12 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                                 </div>
                             </div>
                         ) : (
-                            <div className="rounded-[28px] border border-sky-100 bg-white/90 p-4 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.3)]">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">Freelance command center</p>
-                                <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+                            <div className="rounded-[28px] border border-sky-100 dark:border-slate-700 bg-white/90 dark:bg-slate-800/50 p-4 shadow-[0_24px_60px_-34px_rgba(15,23,42,0.3)]">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700 dark:text-sky-400">Freelance command center</p>
+                                <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950 dark:text-white">
                                     Hire faster or start earning.
                                 </h2>
-                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                                     Projects, verified talent, secure payouts, and one clean mobile navigation that does not get in your way.
                                 </p>
                             </div>
@@ -525,8 +523,8 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                         <div className="mt-5 space-y-5">
                             <section>
                                 <div className="mb-3 flex items-center justify-between">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Main routes</p>
-                                    <span className="text-xs text-slate-400">Fast access</span>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Main routes</p>
+                                    <span className="text-xs text-slate-400 dark:text-slate-500">Fast access</span>
                                 </div>
 
                                 <div className="space-y-2">
@@ -534,14 +532,14 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                                         <Link
                                             to={dashboardHref}
                                             onClick={onClose}
-                                            className="flex items-center gap-3 rounded-[24px] border border-sky-100 bg-sky-50/80 px-4 py-3.5 transition-colors hover:bg-sky-100/80"
+                                            className="flex items-center gap-3 rounded-[24px] border border-sky-100 dark:border-slate-700 bg-sky-50/80 dark:bg-slate-800/60 px-4 py-3.5 transition-colors hover:bg-sky-100/80 dark:hover:bg-slate-700"
                                         >
-                                            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-sm font-bold text-sky-700 shadow-sm">
+                                            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white dark:bg-slate-900 text-sm font-bold text-sky-700 dark:text-cyan-400 shadow-sm">
                                                 ⚡
                                             </span>
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-sm font-semibold text-slate-900">Dashboard</p>
-                                                <p className="truncate text-xs text-slate-500">Open your workspace overview</p>
+                                                <p className="text-sm font-semibold text-slate-900 dark:text-white">Dashboard</p>
+                                                <p className="truncate text-xs text-slate-500 dark:text-slate-400">Open your workspace overview</p>
                                             </div>
                                         </Link>
                                     )}
@@ -551,14 +549,14 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                                             key={link.href}
                                             to={link.href}
                                             onClick={onClose}
-                                            className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white px-4 py-3.5 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)] transition-colors hover:border-sky-200 hover:bg-sky-50/60"
+                                            className="flex items-center gap-3 rounded-[24px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3.5 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)] transition-colors hover:border-sky-200 dark:hover:border-sky-600 hover:bg-sky-50/60 dark:hover:bg-slate-700"
                                         >
-                                            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white">
+                                            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 dark:bg-slate-700 text-sm font-semibold text-white dark:text-slate-200">
                                                 {link.icon}
                                             </span>
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-sm font-semibold text-slate-900">{link.label}</p>
-                                                <p className="truncate text-xs text-slate-500">{link.sub}</p>
+                                                <p className="text-sm font-semibold text-slate-900 dark:text-white">{link.label}</p>
+                                                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{link.sub}</p>
                                             </div>
                                         </Link>
                                     ))}
@@ -567,9 +565,9 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                                         <Link
                                             to="/chat"
                                             onClick={onClose}
-                                            className="flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white px-4 py-3.5 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)] transition-colors hover:border-sky-200 hover:bg-sky-50/60"
+                                            className="flex items-center gap-3 rounded-[24px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3.5 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)] transition-colors hover:border-sky-200 dark:hover:border-sky-600 hover:bg-sky-50/60 dark:hover:bg-slate-700"
                                         >
-                                            <span className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white">
+                                            <span className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 dark:bg-slate-700 text-sm font-semibold text-white dark:text-slate-200">
                                                 ✉
                                                 {unreadTotal > 0 && (
                                                     <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-red-500 px-1 text-[10px] font-bold leading-[18px] text-white">
@@ -578,29 +576,29 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                                                 )}
                                             </span>
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-sm font-semibold text-slate-900">Messages</p>
-                                                <p className="truncate text-xs text-slate-500">Open chat without hunting through the UI</p>
+                                                <p className="text-sm font-semibold text-slate-900 dark:text-white">Messages</p>
+                                                <p className="truncate text-xs text-slate-500 dark:text-slate-400">Open chat without hunting through the UI</p>
                                             </div>
                                         </Link>
                                     )}
                                 </div>
                             </section>
 
-                            <section className="rounded-[28px] border border-slate-200/80 bg-white/80 p-3 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.35)]">
+                            <section className="rounded-[28px] border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-800/60 p-3 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.35)]">
                                 <button
                                     type="button"
                                     onClick={() => setTalentOpen(v => !v)}
-                                    className="flex w-full items-center gap-3 rounded-[22px] px-3 py-3 text-left transition-colors hover:bg-slate-50"
+                                    className="flex w-full items-center gap-3 rounded-[22px] px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
                                 >
                                     <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white">
                                         💼
                                     </span>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-semibold text-slate-900">Find talent</p>
-                                        <p className="truncate text-xs text-slate-500">Open specialist categories</p>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-white">Find talent</p>
+                                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">Open specialist categories</p>
                                     </div>
                                     <svg
-                                        className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${talentOpen ? "rotate-180" : ""}`}
+                                        className={`h-4 w-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 ${talentOpen ? "rotate-180" : ""}`}
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -616,15 +614,15 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                                                 key={item.label}
                                                 to={item.href}
                                                 onClick={onClose}
-                                                className="rounded-[20px] border border-slate-200 bg-slate-50/80 p-3 transition-colors hover:border-sky-200 hover:bg-sky-50"
+                                                className="rounded-[20px] border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-700 p-3 transition-colors hover:border-sky-200 dark:hover:border-sky-600 hover:bg-sky-50 dark:hover:bg-slate-600"
                                             >
                                                 <div className={`flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br ${item.color} text-sm shadow-sm`}>
                                                     {item.icon}
                                                 </div>
-                                                <p className="mt-3 text-sm font-semibold text-slate-900">{item.label}</p>
-                                                <p className="mt-1 text-[11px] leading-5 text-slate-500">{item.sub}</p>
+                                                <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">{item.label}</p>
+                                                <p className="mt-1 text-[11px] leading-5 text-slate-500 dark:text-slate-400">{item.sub}</p>
                                                 {item.badge && (
-                                                    <span className="mt-2 inline-flex rounded-full bg-orange-100 px-2 py-1 text-[10px] font-bold text-orange-600">
+                                                    <span className="mt-2 inline-flex rounded-full bg-orange-100 dark:bg-orange-900/40 px-2 py-1 text-[10px] font-bold text-orange-600 dark:text-orange-300">
                                                         {item.badge}
                                                     </span>
                                                 )}
@@ -635,18 +633,18 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                             </section>
 
                             {showSeparateProfileLink && (
-                                <section className="rounded-[28px] border border-slate-200/80 bg-white/80 p-3 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.35)]">
+                                <section className="rounded-[28px] border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-800/60 p-3 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.35)]">
                                     <Link
                                         to={profileHref}
                                         onClick={onClose}
-                                        className="flex items-center gap-3 rounded-[22px] px-3 py-3 transition-colors hover:bg-slate-50"
+                                        className="flex items-center gap-3 rounded-[22px] px-3 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
                                     >
-                                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-sm text-violet-600">
+                                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 dark:bg-violet-900/40 text-sm text-violet-600 dark:text-violet-400">
                                             👤
                                         </span>
                                         <div>
-                                            <p className="text-sm font-semibold text-slate-900">My profile</p>
-                                            <p className="text-xs text-slate-500">Open your public freelancer profile</p>
+                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">My profile</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">Open your public freelancer profile</p>
                                         </div>
                                     </Link>
                                 </section>
@@ -654,12 +652,12 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                         </div>
                     </div>
 
-                    <div className="border-t border-slate-200/80 bg-white/85 p-4">
+                    <div className="border-t border-slate-200/80 dark:border-slate-700 bg-white/85 dark:bg-slate-800 p-4">
                         {user ? (
                             <button
                                 type="button"
                                 onClick={() => { onLogout(); onClose() }}
-                                className="w-full rounded-[22px] border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100"
+                                className="w-full rounded-[22px] border border-red-100 dark:border-red-900/40 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm font-semibold text-red-600 dark:text-red-400 transition-colors hover:bg-red-100 dark:hover:bg-red-900/30"
                             >
                                 Log Out
                             </button>
@@ -668,7 +666,7 @@ const MobileMenu = ({ open, onClose, user, onLogout, unreadTotal }) => {
                                 <Link
                                     to="/login"
                                     onClick={onClose}
-                                    className="w-full rounded-[22px] border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                                    className="w-full rounded-[22px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-center text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
                                 >
                                     Log In
                                 </Link>
@@ -742,8 +740,8 @@ const Navbar = () => {
     return (
         <>
             <header className={`sticky top-0 z-40 w-full transition-all duration-300 ${scrolled
-                    ? "bg-white/95 border-b border-gray-200 shadow-[0_2px_20px_rgba(0,0,0,0.06)]"
-                    : "bg-white/95 border-b border-gray-100"
+                    ? "bg-white/95 dark:bg-slate-950/95 border-b border-gray-200 dark:border-slate-700 shadow-[0_2px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_20px_rgba(0,0,0,0.3)]"
+                    : "bg-white/95 dark:bg-slate-950/95 border-b border-gray-100 dark:border-slate-800"
                 }`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-14 sm:h-16">
@@ -767,11 +765,14 @@ const Navbar = () => {
                                 <>
                                     {/* Credits pill — hidden on xs */}
                                     {user.credits !== undefined && (
-                                        <div className="hidden items-center gap-1 rounded-xl border border-amber-100 bg-amber-50 px-3 py-1.5 sm:flex">
-                                            <span className="text-amber-500 text-xs">⚡</span>
-                                            <span className="text-xs font-bold text-amber-700">{user.credits}</span>
+                                        <div className="hidden items-center gap-1 rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 sm:flex">
+                                            <span className="text-amber-500 dark:text-amber-400 text-xs">⚡</span>
+                                            <span className="text-xs font-bold text-amber-700 dark:text-amber-300">{user.credits}</span>
                                         </div>
                                     )}
+
+                                    {/* Theme toggle */}
+                                    <ThemeToggle />
 
                                     {/* Messages icon — hidden on mobile (visible sm+) */}
                                     <IconBtn to="/chat" badge={unreadTotal} ariaLabel="Messages" className="hidden md:flex">
@@ -788,9 +789,12 @@ const Navbar = () => {
                                 </>
                             ) : (
                                 <>
+                                    {/* Theme toggle */}
+                                    <ThemeToggle />
+
                                     <Link
                                         to="/login"
-                                        className="hidden rounded-xl px-4 py-2 text-sm font-medium text-gray-700 transition-all hover:bg-blue-50 hover:text-blue-700 md:block"
+                                        className="hidden rounded-xl px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 transition-all hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-700 dark:hover:text-cyan-400 md:block"
                                     >
                                         Log In
                                     </Link>
@@ -812,8 +816,8 @@ const Navbar = () => {
                                 aria-expanded={mobileOpen}
                                 className={`relative flex h-10 w-10 items-center justify-center rounded-2xl border transition-colors md:hidden ${
                                     mobileOpen
-                                        ? "border-sky-200 bg-sky-50 text-sky-700"
-                                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                        ? "border-sky-200 dark:border-sky-600 bg-sky-50 dark:bg-slate-800 text-sky-700 dark:text-cyan-400"
+                                        : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                                 }`}
                             >
                                 <span className="relative h-4 w-4">
@@ -823,7 +827,7 @@ const Navbar = () => {
                                 </span>
                                 {/* Unread dot on hamburger */}
                                 {unreadTotal > 0 && (
-                                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border border-white bg-red-500" />
+                                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border border-white dark:border-slate-900 bg-red-500" />
                                 )}
                             </button>
                         </div>
@@ -831,13 +835,15 @@ const Navbar = () => {
                 </div>
             </header>
 
-            <MobileMenu
-                open={mobileOpen}
-                onClose={handleCloseMobileMenu}
-                user={user}
-                onLogout={handleLogout}
-                unreadTotal={unreadTotal}
-            />
+            {mobileOpen && (
+                <MobileMenu
+                    open={mobileOpen}
+                    onClose={handleCloseMobileMenu}
+                    user={user}
+                    onLogout={handleLogout}
+                    unreadTotal={unreadTotal}
+                />
+            )}
         </>
     )
 }

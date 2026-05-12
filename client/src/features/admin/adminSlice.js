@@ -9,6 +9,9 @@ const initialState = {
     projects: [],
     bids: [],
     stats: null,
+    monthlyAnalytics: null,
+    recentPayments: [],
+    platformSettings: null,
     adminLoading: false,
     adminSuccess: false,
     adminError: false,
@@ -140,6 +143,95 @@ export const grantCredits = createAsyncThunk(
     }
 )
 
+// ── Monthly Analytics (Real-time aggregation) ────────────────────────────────
+export const getMonthlyAnalytics = createAsyncThunk(
+    "admin/getMonthlyAnalytics",
+    async (_, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await adminService.fetchMonthlyAnalytics(token)
+        } catch (error) {
+            return thunkAPI.rejectWithValue(errMsg(error))
+        }
+    }
+)
+
+// ── Recent Payments (Real-time transactions) ────────────────────────────────
+export const getRecentPayments = createAsyncThunk(
+    "admin/getRecentPayments",
+    async (_, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await adminService.fetchRecentPayments(token)
+        } catch (error) {
+            return thunkAPI.rejectWithValue(errMsg(error))
+        }
+    }
+)
+
+// ── Platform Settings (Persistent toggles) ────────────────────────────────
+export const getPlatformSettings = createAsyncThunk(
+    "admin/getPlatformSettings",
+    async (_, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await adminService.fetchPlatformSettings(token)
+        } catch (error) {
+            return thunkAPI.rejectWithValue(errMsg(error))
+        }
+    }
+)
+
+export const updatePlatformSettingsThunk = createAsyncThunk(
+    "admin/updatePlatformSettings",
+    async (settings, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await adminService.updatePlatformSettings(token, settings)
+        } catch (error) {
+            return thunkAPI.rejectWithValue(errMsg(error))
+        }
+    }
+)
+
+export const refreshAdminDashboard = createAsyncThunk(
+    "admin/refreshDashboard",
+    async (_, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            const [
+                users,
+                projects,
+                bids,
+                stats,
+                monthlyAnalytics,
+                recentPayments,
+                platformSettings,
+            ] = await Promise.all([
+                adminService.fetchAllUsers(token),
+                adminService.fetchAllProjects(token),
+                adminService.fetchAllBids(token),
+                adminService.fetchStats(token),
+                adminService.fetchMonthlyAnalytics(token),
+                adminService.fetchRecentPayments(token),
+                adminService.fetchPlatformSettings(token),
+            ])
+
+            return {
+                users,
+                projects,
+                bids,
+                stats,
+                monthlyAnalytics,
+                recentPayments,
+                platformSettings,
+            }
+        } catch (error) {
+            return thunkAPI.rejectWithValue(errMsg(error))
+        }
+    }
+)
+
 // ══════════════════════════════════════════════════════════════════════════════
 // SLICE
 // ══════════════════════════════════════════════════════════════════════════════
@@ -153,6 +245,18 @@ const rejected = (state, action) => {
     state.adminLoading = false
     state.adminError = true
     state.adminErrorMessage = action.payload
+}
+const softRefreshPending = (state) => {
+    const hasDashboardData =
+        state.users.length ||
+        state.projects.length ||
+        state.bids.length ||
+        state.stats ||
+        state.monthlyAnalytics
+
+    if (!hasDashboardData) {
+        pending(state)
+    }
 }
 
 const adminSlice = createSlice({
@@ -187,9 +291,39 @@ const adminSlice = createSlice({
                 p._id === pid ? { ...p, ...data } : p
             )
         },
+        // Real-time updates from Socket.IO
+        updateMonthlyAnalytics: (state, action) => {
+            state.monthlyAnalytics = action.payload
+        },
+        updatePaymentsList: (state, action) => {
+            state.recentPayments = action.payload
+        },
+        addPaymentToList: (state, action) => {
+            state.recentPayments = [action.payload, ...state.recentPayments].slice(0, 10)
+        },
+        updatePlatformSettings: (state, action) => {
+            state.platformSettings = action.payload
+        },
     },
     extraReducers: (builder) => {
         builder
+            // ── refreshAdminDashboard ──────────────────────────────────────────────
+            .addCase(refreshAdminDashboard.pending, softRefreshPending)
+            .addCase(refreshAdminDashboard.fulfilled, (state, action) => {
+                state.adminLoading = false
+                state.adminSuccess = true
+                state.adminError = false
+                state.adminErrorMessage = ""
+                state.users = action.payload.users
+                state.projects = action.payload.projects
+                state.bids = action.payload.bids
+                state.stats = action.payload.stats
+                state.monthlyAnalytics = action.payload.monthlyAnalytics
+                state.recentPayments = action.payload.recentPayments
+                state.platformSettings = action.payload.platformSettings
+            })
+            .addCase(refreshAdminDashboard.rejected, rejected)
+
             // ── getAllUsers ─────────────────────────────────────────────────────────
             .addCase(getAllUsers.pending, pending)
             .addCase(getAllUsers.fulfilled, (state, action) => {
@@ -278,6 +412,42 @@ const adminSlice = createSlice({
                 )
             })
             .addCase(grantCredits.rejected, rejected)
+
+            // ── getMonthlyAnalytics ─────────────────────────────────────────────────
+            .addCase(getMonthlyAnalytics.pending, pending)
+            .addCase(getMonthlyAnalytics.fulfilled, (state, action) => {
+                state.adminLoading = false
+                state.adminSuccess = true
+                state.monthlyAnalytics = action.payload
+            })
+            .addCase(getMonthlyAnalytics.rejected, rejected)
+
+            // ── getRecentPayments ───────────────────────────────────────────────────
+            .addCase(getRecentPayments.pending, pending)
+            .addCase(getRecentPayments.fulfilled, (state, action) => {
+                state.adminLoading = false
+                state.adminSuccess = true
+                state.recentPayments = action.payload
+            })
+            .addCase(getRecentPayments.rejected, rejected)
+
+            // ── getPlatformSettings ─────────────────────────────────────────────────
+            .addCase(getPlatformSettings.pending, pending)
+            .addCase(getPlatformSettings.fulfilled, (state, action) => {
+                state.adminLoading = false
+                state.adminSuccess = true
+                state.platformSettings = action.payload
+            })
+            .addCase(getPlatformSettings.rejected, rejected)
+
+            // ── updatePlatformSettings ──────────────────────────────────────────────
+            .addCase(updatePlatformSettingsThunk.pending, pending)
+            .addCase(updatePlatformSettingsThunk.fulfilled, (state, action) => {
+                state.adminLoading = false
+                state.adminSuccess = true
+                state.platformSettings = action.payload
+            })
+            .addCase(updatePlatformSettingsThunk.rejected, rejected)
     },
 })
 
@@ -287,6 +457,10 @@ export const {
     localDeleteUser,
     localUpdateBid,
     localUpdateProject,
+    updateMonthlyAnalytics,
+    updatePaymentsList,
+    addPaymentToList,
+    updatePlatformSettings,
 } = adminSlice.actions
 
 export default adminSlice.reducer

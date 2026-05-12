@@ -26,7 +26,7 @@ const deleteUser = async (token, uid) => {
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 const fetchAllProjects = async (token) => {
-    const res = await API.get(`/api/project`, authHeader(token))
+    const res = await API.get(`${BASE}/projects`, authHeader(token))
     return res.data
 }
 
@@ -62,6 +62,29 @@ const updateCredits = async (token, userDetails) => {
     return res.data
 }
 
+// ── Monthly Analytics (Real-time aggregated data) ───────────────────────────
+const fetchMonthlyAnalytics = async (token) => {
+    const res = await API.get(`${BASE}/analytics/monthly`, authHeader(token))
+    return res.data
+}
+
+// ── Recent Payments (Real-time payment transactions) ──────────────────────
+const fetchRecentPayments = async (token) => {
+    const res = await API.get(`${BASE}/payments/recent`, authHeader(token))
+    return res.data
+}
+
+// ── Platform Settings (Persistent toggles) ────────────────────────────────
+const fetchPlatformSettings = async (token) => {
+    const res = await API.get(`${BASE}/settings`, authHeader(token))
+    return res.data
+}
+
+const updatePlatformSettings = async (token, settings) => {
+    const res = await API.put(`${BASE}/settings`, settings, authHeader(token))
+    return res.data
+}
+
 const adminService = {
     fetchAllUsers,
     updateUser,
@@ -72,6 +95,10 @@ const adminService = {
     updateBid,
     fetchStats,
     updateCredits,
+    fetchMonthlyAnalytics,
+    fetchRecentPayments,
+    fetchPlatformSettings,
+    updatePlatformSettings,
 }
 
 export default adminService

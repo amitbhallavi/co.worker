@@ -249,6 +249,17 @@ export const initSocket = (httpServer) => {
             console.log(`[Socket] ${userId} left freelancer_${freelancerId}`)
         })
 
+        // ─── ADMIN DASHBOARD REAL-TIME UPDATES ────────────────────────────────────
+        socket.on("join_dashboard", () => {
+            socket.join("admin_dashboard")
+            console.log(`[Socket] ${userId} joined admin_dashboard`)
+        })
+
+        socket.on("leave_dashboard", () => {
+            socket.leave("admin_dashboard")
+            console.log(`[Socket] ${userId} left admin_dashboard`)
+        })
+
         socket.on("disconnect", () => {
             onlineUsers.delete(userId)
             activeRooms.delete(socket.id)
@@ -258,6 +269,27 @@ export const initSocket = (httpServer) => {
     })
 
     return io
+}
+
+// ─── BROADCAST DASHBOARD STAT UPDATES TO ALL CONNECTED ADMINS ────────────────
+export const broadcastDashboardStats = (stats) => {
+    if (global.io) {
+        global.io.to("admin_dashboard").emit("dashboard_stats_updated", stats)
+    }
+}
+
+// ─── BROADCAST MONTHLY ANALYTICS UPDATES ──────────────────────────────────────
+export const broadcastMonthlyAnalytics = (analytics) => {
+    if (global.io) {
+        global.io.to("admin_dashboard").emit("monthly_analytics_updated", analytics)
+    }
+}
+
+// ─── BROADCAST RECENT PAYMENTS UPDATES ────────────────────────────────────────
+export const broadcastPaymentUpdate = (payment) => {
+    if (global.io) {
+        global.io.to("admin_dashboard").emit("payment_updated", payment)
+    }
 }
 
 export const isUserOnline = (userId) => onlineUsers.has(userId.toString())

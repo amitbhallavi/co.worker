@@ -9,6 +9,7 @@ import chat from './ChatsAndMessages/chatSlice'
 import rating from './rating/ratingSlice'
 import subscription from './subscription/planSlice'
 import client from './client/clientSlice'
+import theme from './theme/themeSlice'
 
 const store = configureStore({
     reducer: {
@@ -22,6 +23,7 @@ const store = configureStore({
         rating,
         subscription,
         client,
+        theme,
     },
 })
 

@@ -58,12 +58,14 @@ const AnimatedStats = ({ inView, reducedMotion }) => {
         { value: `${freelancers}K+`, label: 'Freelancers', icon: '👨‍💻' },
       ].map((s, i) => (
         <div key={s.label} className={`
-          bg-white/[0.03] border border-white/[0.08] rounded-2xl px-4 py-4 text-center
-          hover:bg-white/[0.06] hover:border-white/[0.12] hover:-translate-y-0.5 transition-all duration-300
+          bg-white border border-slate-200 rounded-2xl px-4 py-4 text-center shadow-sm
+          hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-0.5
+          dark:bg-white/[0.03] dark:border-white/[0.08] dark:shadow-none dark:hover:bg-white/[0.06] dark:hover:border-white/[0.12]
+          transition-all duration-300
           ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
         `} style={{ transitionDelay: `${i * 100}ms` }}>
-          <div className="text-lg sm:text-xl font-bold text-white">{inView ? s.value : '0'}</div>
-          <div className="text-[11px] sm:text-xs text-white/40 mt-1">{s.label}</div>
+          <div className="text-lg sm:text-xl font-bold text-slate-950 dark:text-white">{inView ? s.value : '0'}</div>
+          <div className="text-[11px] sm:text-xs text-slate-500 dark:text-white/40 mt-1">{s.label}</div>
         </div>
       ))}
     </div>
@@ -116,15 +118,15 @@ const timeAgo = dateStr => {
 
 // ── Skeleton Card ──────────────────────────────────────────
 const SkeletonCard = () => (
-  <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 animate-pulse">
-    <div className="h-3 bg-white/10 rounded w-2/5 mb-3" />
-    <div className="h-4 bg-white/10 rounded w-3/4 mb-3" />
-    <div className="h-3 bg-white/10 rounded w-full mb-2" />
-    <div className="h-3 bg-white/10 rounded w-4/5 mb-4" />
+  <div className="bg-white border border-slate-200 dark:bg-white/[0.03] dark:border-white/[0.08] rounded-2xl p-6 animate-pulse">
+    <div className="h-3 bg-slate-200 dark:bg-white/10 rounded w-2/5 mb-3" />
+    <div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-3/4 mb-3" />
+    <div className="h-3 bg-slate-100 dark:bg-white/10 rounded w-full mb-2" />
+    <div className="h-3 bg-slate-100 dark:bg-white/10 rounded w-4/5 mb-4" />
     <div className="flex gap-2 mb-4">
-      {[1, 2, 3].map(i => <div key={i} className="h-6 bg-white/10 rounded w-16" />)}
+      {[1, 2, 3].map(i => <div key={i} className="h-6 bg-slate-100 dark:bg-white/10 rounded w-16" />)}
     </div>
-    <div className="h-10 bg-white/10 rounded w-full" />
+    <div className="h-10 bg-slate-100 dark:bg-white/10 rounded w-full" />
   </div>
 )
 
@@ -150,11 +152,11 @@ const BidModal = ({ project, onClose, onSubmit, loading }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-[#0f172a] border border-white/10 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden">
+      <div className="bg-white border border-slate-200 dark:bg-[#0f172a] dark:border-white/10 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden">
 
         {/* Drag handle mobile */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
+          <div className="w-10 h-1 rounded-full bg-slate-200 dark:bg-white/20" />
         </div>
 
         {/* Header */}
@@ -174,15 +176,15 @@ const BidModal = ({ project, onClose, onSubmit, loading }) => {
         </div>
 
         {/* Quick info */}
-        <div className="grid grid-cols-3 divide-x divide-white/5 bg-white/5">
+        <div className="grid grid-cols-3 divide-x divide-slate-200 bg-slate-50 dark:divide-white/5 dark:bg-white/5">
           {[
             { label: 'Budget', value: project.budget ? `₹${Number(project.budget).toLocaleString('en-IN')}` : '—' },
             { label: 'Duration', value: project.duration ? `${project.duration}d` : '—' },
             { label: 'Category', value: project.category ? project.category.split(' ')[0] : '—' },
           ].map(item => (
             <div key={item.label} className="px-4 py-3 text-center">
-              <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">{item.label}</p>
-              <p className="text-xs sm:text-sm font-black text-white truncate">{item.value}</p>
+              <p className="text-[10px] text-slate-400 dark:text-white/30 uppercase tracking-wider font-bold mb-0.5">{item.label}</p>
+              <p className="text-xs sm:text-sm font-black text-slate-950 dark:text-white truncate">{item.value}</p>
             </div>
           ))}
         </div>
@@ -190,22 +192,22 @@ const BidModal = ({ project, onClose, onSubmit, loading }) => {
         {/* Body */}
         <div className="px-5 sm:px-6 py-5 space-y-4">
           <div>
-            <label className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-slate-500 dark:text-white/60 uppercase tracking-wider mb-2">
               Your Bid Amount (₹)
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 font-bold text-base select-none">₹</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/40 font-bold text-base select-none">₹</span>
               <input
                 type="number" min="1"
                 value={amount}
                 onChange={e => { setAmount(e.target.value); setError('') }}
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                 placeholder="Enter your price..."
-                className={`w-full pl-8 pr-4 py-3 text-sm font-bold text-white
-                  border-2 rounded-xl outline-none transition-all placeholder-white/20 bg-white/5
+                className={`w-full pl-8 pr-4 py-3 text-sm font-bold text-slate-950 dark:text-white
+                  border-2 rounded-xl outline-none transition-all placeholder-slate-400 dark:placeholder-white/20 bg-slate-50 dark:bg-white/5
                   ${error
                     ? 'border-rose-500/50 focus:border-rose-500'
-                    : 'border-white/10 focus:border-blue-500/50 focus:bg-white/10'
+                    : 'border-slate-200 focus:border-blue-400 focus:bg-white dark:border-white/10 dark:focus:border-blue-500/50 dark:focus:bg-white/10'
                   }`}
               />
             </div>
@@ -215,7 +217,7 @@ const BidModal = ({ project, onClose, onSubmit, loading }) => {
               </p>
             )}
             {project.budget && !error && (
-              <p className="mt-1.5 text-xs text-white/30">
+              <p className="mt-1.5 text-xs text-slate-500 dark:text-white/30">
                 Project budget: <span className="font-semibold text-emerald-400">₹{Number(project.budget).toLocaleString('en-IN')}</span>
               </p>
             )}
@@ -225,8 +227,8 @@ const BidModal = ({ project, onClose, onSubmit, loading }) => {
             <p className="text-[11px] font-bold text-blue-400 uppercase tracking-wider mb-1.5">💡 Tips for a winning bid</p>
             <ul className="space-y-0.5">
               {['Keep your price competitive but fair', 'Bid within the project budget', 'Respond quickly after bidding'].map(tip => (
-                <li key={tip} className="text-xs text-blue-300/70 flex items-center gap-1.5">
-                  <span className="text-blue-400/50 flex-shrink-0">•</span>{tip}
+                <li key={tip} className="text-xs text-blue-700/70 dark:text-blue-300/70 flex items-center gap-1.5">
+                  <span className="text-blue-500/60 dark:text-blue-400/50 flex-shrink-0">•</span>{tip}
                 </li>
               ))}
             </ul>
@@ -236,17 +238,17 @@ const BidModal = ({ project, onClose, onSubmit, loading }) => {
         {/* Footer */}
         <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-0 flex gap-3">
           <button onClick={onClose}
-            className="flex-1 py-3 bg-white/5 text-white/70 font-bold text-sm rounded-xl hover:bg-white/10 transition-all cursor-pointer border border-white/10">
+            className="flex-1 py-3 bg-white text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-50 transition-all cursor-pointer border border-slate-200 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:border-white/10">
             Cancel
           </button>
           <button onClick={handleSubmit} disabled={loading}
-            className={`flex-1 py-3 text-white font-bold text-sm rounded-xl transition-all border-none flex items-center justify-center gap-2
+            className={`flex-1 py-3 font-bold text-sm rounded-xl transition-all border-none flex items-center justify-center gap-2
               ${loading
-                ? 'bg-white/10 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-600 to-cyan-500 hover:shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02] cursor-pointer'
+                ? 'bg-slate-200 text-slate-500 cursor-not-allowed dark:bg-white/10 dark:text-white'
+                : 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02] cursor-pointer'
               }`}>
             {loading
-              ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Sending...</>
+              ? <><span className="w-4 h-4 border-2 border-slate-500 dark:border-white border-t-transparent rounded-full animate-spin" /> Sending...</>
               : '💼 Send Bid ↗'
             }
           </button>
@@ -295,8 +297,8 @@ const ProjectCard = ({ project, index, onBidClick, myBids, reducedMotion = false
         ${isDone ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'}
         ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
         ${hovered && !reducedMotion && !isDone
-          ? 'bg-white/[0.08] border-white/20 shadow-xl -translate-y-0.5'
-          : 'bg-white/[0.03] border-white/[0.08] shadow-lg'
+          ? 'bg-white border-slate-300 shadow-xl -translate-y-0.5 dark:bg-white/[0.08] dark:border-white/20'
+          : 'bg-white border-slate-200 shadow-lg dark:bg-white/[0.03] dark:border-white/[0.08]'
         }
       `}
       style={{ transitionDelay: `${index * 60}ms` }}
@@ -307,7 +309,7 @@ const ProjectCard = ({ project, index, onBidClick, myBids, reducedMotion = false
       )}
 
       {/* Header */}
-      <div className="p-5 border-b border-white/[0.05]">
+      <div className="p-5 border-b border-slate-100 dark:border-white/[0.05]">
         <div className="flex justify-between items-start mb-3 gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap gap-1.5 mb-2">
@@ -326,20 +328,23 @@ const ProjectCard = ({ project, index, onBidClick, myBids, reducedMotion = false
                 </span>
               )}
             </div>
-            <h3 className="text-sm sm:text-base font-bold text-white leading-snug line-clamp-2">
+            <h3 className="text-sm sm:text-base font-bold text-slate-950 dark:text-white leading-snug line-clamp-2">
               {project.title}
             </h3>
           </div>
           <button
             onClick={e => { e.stopPropagation(); setSaved(!saved) }}
             className={`flex-shrink-0 border rounded-xl px-2.5 py-1.5 text-base transition-all duration-200 cursor-pointer
-              ${saved ? `bg-blue-500/20 border-blue-500/40 ${catStyle.text}` : 'bg-white/[0.05] border-white/10 text-white/30 hover:border-white/20'}`}
+              ${saved
+                ? `bg-blue-500/20 border-blue-500/40 ${catStyle.text}`
+                : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600 dark:bg-white/[0.05] dark:border-white/10 dark:text-white/30 dark:hover:border-white/20'
+              }`}
           >{saved ? '🔖' : '🤍'}</button>
         </div>
 
         {/* Description */}
         {project.description && (
-          <p className="text-xs sm:text-[13px] text-white/50 mb-3 leading-relaxed line-clamp-2">
+          <p className="text-xs sm:text-[13px] text-slate-600 dark:text-white/50 mb-3 leading-relaxed line-clamp-2">
             {project.description}
           </p>
         )}
@@ -348,7 +353,7 @@ const ProjectCard = ({ project, index, onBidClick, myBids, reducedMotion = false
         {skills.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
             {skills.map(s => (
-              <span key={s} className="bg-white/[0.05] border border-white/10 text-white/50 text-[11px] px-2.5 py-0.5 rounded-md">
+              <span key={s} className="bg-slate-50 border border-slate-200 text-slate-600 dark:bg-white/[0.05] dark:border-white/10 dark:text-white/50 text-[11px] px-2.5 py-0.5 rounded-md">
                 {s}
               </span>
             ))}
@@ -360,27 +365,27 @@ const ProjectCard = ({ project, index, onBidClick, myBids, reducedMotion = false
       <div className="flex flex-wrap items-center justify-between gap-3 p-5">
         <div className="flex gap-4 sm:gap-5 flex-wrap">
           <div>
-            <p className="text-[10px] text-white/30 mb-0.5">Budget</p>
+            <p className="text-[10px] text-slate-400 dark:text-white/30 mb-0.5">Budget</p>
             <p className="text-sm sm:text-[15px] font-bold text-emerald-400">
               ₹{project.budget ? Number(project.budget).toLocaleString('en-IN') : '—'}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-white/30 mb-0.5">Duration</p>
-            <p className="text-sm font-semibold text-white/70">
+            <p className="text-[10px] text-slate-400 dark:text-white/30 mb-0.5">Duration</p>
+            <p className="text-sm font-semibold text-slate-700 dark:text-white/70">
               {project.duration ? `${project.duration} days` : '—'}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-white/30 mb-0.5">Posted</p>
-            <p className="text-xs text-white/40">{timeAgo(project.createdAt)}</p>
+            <p className="text-[10px] text-slate-400 dark:text-white/30 mb-0.5">Posted</p>
+            <p className="text-xs text-slate-500 dark:text-white/40">{timeAgo(project.createdAt)}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
           {project.user?.name && (
             <div className="text-right hidden sm:block">
-              <p className="text-xs text-white/40">by {project.user.name}</p>
+              <p className="text-xs text-slate-500 dark:text-white/40">by {project.user.name}</p>
               <p className="text-[11px] text-emerald-400 font-semibold">✓ Verified</p>
             </div>
           )}
@@ -389,12 +394,12 @@ const ProjectCard = ({ project, index, onBidClick, myBids, reducedMotion = false
             onClick={e => { e.stopPropagation(); if (!btnDisabled && !alreadyBid) onBidClick(project) }}
             className={`px-4 sm:px-7 py-2 sm:py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap
               ${btnDisabled
-                ? 'bg-white/[0.05] text-white/30 border-white/10 cursor-not-allowed'
+                ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed dark:bg-white/[0.05] dark:text-white/30 dark:border-white/10'
                 : alreadyBid
-                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 cursor-default'
+                  ? 'bg-blue-50 text-blue-600 border-blue-200 cursor-default dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30'
                   : hovered && !reducedMotion
                     ? `bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-transparent shadow-lg shadow-blue-500/30 cursor-pointer`
-                    : 'bg-white/[0.05] text-white border-white/20 hover:border-white/40 cursor-pointer'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 cursor-pointer dark:bg-white/[0.05] dark:text-white dark:border-white/20 dark:hover:border-white/40'
               }`}
           >
             {getBtnLabel()}
@@ -408,15 +413,15 @@ const ProjectCard = ({ project, index, onBidClick, myBids, reducedMotion = false
 // ── Category Sidebar ────────────────────────────────────────
 const CategoryList = ({ category, setCategory, setPage, onSelect }) => (
   <div>
-    <p className="text-[11px] font-bold text-white/30 uppercase tracking-widest mb-3">Category</p>
+    <p className="text-[11px] font-bold text-slate-400 dark:text-white/30 uppercase tracking-widest mb-3">Category</p>
     {CATEGORIES.map(cat => (
       <button key={cat}
         onClick={() => { setCategory(cat); setPage(1); onSelect?.() }}
         className={`flex items-center justify-between w-full px-3 py-2 rounded-xl text-[13px] mb-0.5
           transition-all duration-150 text-left cursor-pointer border-none
           ${category === cat
-            ? 'bg-blue-500/20 text-blue-400 font-semibold border border-blue-500/30'
-            : 'text-white/50 hover:bg-white/[0.05] font-normal bg-transparent'
+            ? 'bg-blue-50 text-blue-600 font-semibold border border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30'
+            : 'text-slate-600 hover:bg-slate-50 font-normal bg-transparent dark:text-white/50 dark:hover:bg-white/[0.05]'
           }`}
       >
         <span>{cat}</span>
@@ -494,7 +499,7 @@ const FindWork = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617]" style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}>
+    <div className="min-h-screen bg-[#f5f7fb] text-slate-900 dark:bg-[#020617] dark:text-white" style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}>
 
       {/* Bid Modal */}
       {bidProject && (
@@ -507,26 +512,27 @@ const FindWork = () => {
       )}
 
       {/* ══ HERO ══════════════════════════════════════════════ */}
-      <div className="relative z-10 bg-[#0f172a]">
+      <div className="find-work-hero relative z-10">
         <div ref={heroRef} className="relative max-w-4xl mx-auto px-4 sm:px-8 pt-16 sm:pt-24 pb-14 sm:pb-20 text-center">
 
           {/* Live badge */}
           <div className={`
-            inline-flex items-center gap-2 bg-white/[0.05] border border-white/10 rounded-full px-5 py-2 mb-8
+            inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-5 py-2 mb-8 shadow-sm
+            dark:bg-white/[0.05] dark:border-white/10 dark:shadow-none
             transition-all duration-700 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
             <span className="relative flex w-2.5 h-2.5 flex-shrink-0">
               <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping" />
               <span className="relative rounded-full bg-emerald-400 w-2.5 h-2.5" />
             </span>
-            <span className="text-xs sm:text-sm text-white/70 font-semibold">
+            <span className="text-xs sm:text-sm text-slate-600 dark:text-white/70 font-semibold">
               12,400+ live projects available right now!
             </span>
           </div>
 
           {/* Headline */}
           <h1 className={`
-            text-4xl sm:text-6xl font-extrabold text-white leading-tight mb-3
+            text-4xl sm:text-6xl font-extrabold text-slate-950 dark:text-white leading-tight mb-3
             transition-all duration-700 delay-100 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
             Find Your
@@ -536,7 +542,7 @@ const FindWork = () => {
           </h1>
 
           <p className={`
-            text-base text-white/50 max-w-xl mx-auto mb-8 leading-relaxed
+            text-base text-slate-600 dark:text-white/50 max-w-xl mx-auto mb-8 leading-relaxed
             transition-all duration-700 delay-200 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
             Real projects posted by real clients — find your perfect match and start earning today.
@@ -548,14 +554,15 @@ const FindWork = () => {
             transition-all duration-700 delay-300 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
             <div className="relative flex-1">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-base pointer-events-none">🔍</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 text-base pointer-events-none">🔍</span>
               <input
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search by title, skill, technology..."
-                className="w-full pl-11 pr-4 py-3.5 text-sm text-white placeholder-white/25 bg-white/[0.05] border border-white/10
+                className="w-full pl-11 pr-4 py-3.5 text-sm text-slate-900 placeholder-slate-400 bg-white border border-slate-200
                   rounded-xl outline-none transition-all
-                  focus:bg-white/[0.08] focus:border-white/20 focus:ring-2 focus:ring-blue-500/20"
+                  focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-500/20
+                  dark:text-white dark:placeholder-white/25 dark:bg-white/[0.05] dark:border-white/10 dark:focus:bg-white/[0.08] dark:focus:border-white/20"
               />
             </div>
             <button
@@ -576,20 +583,20 @@ const FindWork = () => {
 
         {/* Sort bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-          <p className="text-sm text-white/40">
-            Showing <strong className="text-white">{paginated.length}</strong> of{' '}
-            <strong className="text-white">{filtered.length}</strong> projects
+          <p className="text-sm text-slate-500 dark:text-white/40">
+            Showing <strong className="text-slate-900 dark:text-white">{paginated.length}</strong> of{' '}
+            <strong className="text-slate-900 dark:text-white">{filtered.length}</strong> projects
             {category !== 'All' && <span className="text-blue-400"> · {category}</span>}
-            {search && <span className="text-white/60"> · "{search}"</span>}
+            {search && <span className="text-slate-600 dark:text-white/60"> · "{search}"</span>}
           </p>
           <div className="flex items-center gap-2">
             <button onClick={() => setDrawerOpen(!drawerOpen)}
-              className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/[0.05] text-xs font-semibold text-white/60 cursor-pointer hover:bg-white/[0.08] transition-all">
+              className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all dark:border-white/10 dark:bg-white/[0.05] dark:text-white/60 dark:hover:bg-white/[0.08]">
               ☰ {category === 'All' ? 'Category' : category.split(' ')[0]}
             </button>
-            <span className="text-sm text-white/30 hidden sm:inline">Sort:</span>
+            <span className="text-sm text-slate-400 dark:text-white/30 hidden sm:inline">Sort:</span>
             <select value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(1) }}
-              className="text-xs border border-white/10 bg-white/[0.05] text-white/70 rounded-lg px-3 py-2 outline-none cursor-pointer"
+              className="text-xs border border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/70 rounded-lg px-3 py-2 outline-none cursor-pointer"
               style={{ fontFamily: 'inherit' }}>
               {SORT_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
@@ -598,11 +605,11 @@ const FindWork = () => {
 
         {/* Mobile drawer */}
         {drawerOpen && (
-          <div className="md:hidden bg-[#0f172a] border border-white/10 rounded-2xl p-5 mb-5">
+          <div className="md:hidden bg-white border border-slate-200 dark:bg-[#0f172a] dark:border-white/10 rounded-2xl p-5 mb-5">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-white/30 uppercase tracking-widest">Category</span>
+              <span className="text-xs font-bold text-slate-400 dark:text-white/30 uppercase tracking-widest">Category</span>
               <button onClick={() => setDrawerOpen(false)}
-                className="text-white/40 hover:text-white/60 text-lg cursor-pointer bg-transparent border-none leading-none">✕</button>
+                className="text-slate-400 hover:text-slate-600 dark:text-white/40 dark:hover:text-white/60 text-lg cursor-pointer bg-transparent border-none leading-none">✕</button>
             </div>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.map(cat => (
@@ -610,8 +617,8 @@ const FindWork = () => {
                   onClick={() => { setCategory(cat); setPage(1); setDrawerOpen(false) }}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold border cursor-pointer transition-all duration-150
                     ${category === cat
-                      ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-                      : 'bg-white/[0.05] text-white/50 border-white/10 hover:border-white/20'}`}>
+                      ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 dark:bg-white/[0.05] dark:text-white/50 dark:border-white/10 dark:hover:border-white/20'}`}>
                   {cat}
                 </button>
               ))}
@@ -623,7 +630,7 @@ const FindWork = () => {
 
           {/* Sidebar */}
           <aside className="w-48 lg:w-52 flex-shrink-0 hidden md:block">
-            <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-4 lg:p-5 sticky top-6">
+            <div className="bg-white border border-slate-200 dark:bg-white/[0.03] dark:border-white/[0.08] rounded-2xl p-4 lg:p-5 sticky top-6 shadow-sm dark:shadow-none">
               <CategoryList category={category} setCategory={setCategory} setPage={setPage} />
             </div>
           </aside>
@@ -641,7 +648,7 @@ const FindWork = () => {
               <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8 sm:p-10 text-center">
                 <p className="text-4xl mb-3">⚠️</p>
                 <p className="text-base font-semibold text-rose-400 mb-1">Failed to load projects</p>
-                <p className="text-sm text-white/30">{projectErrorMessage}</p>
+                <p className="text-sm text-slate-500 dark:text-white/30">{projectErrorMessage}</p>
               </div>
             )}
 
@@ -661,10 +668,10 @@ const FindWork = () => {
             )}
 
             {hasData && paginated.length === 0 && (
-              <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl py-14 sm:py-16 px-5 text-center">
+              <div className="bg-white border border-slate-200 dark:bg-white/[0.03] dark:border-white/[0.08] rounded-2xl py-14 sm:py-16 px-5 text-center">
                 <p className="text-5xl mb-3">🔍</p>
-                <p className="text-lg font-semibold text-white mb-1">No matching projects</p>
-                <p className="text-sm text-white/30 mb-5">Try different keywords or category</p>
+                <p className="text-lg font-semibold text-slate-950 dark:text-white mb-1">No matching projects</p>
+                <p className="text-sm text-slate-500 dark:text-white/30 mb-5">Try different keywords or category</p>
                 <button onClick={() => { setSearch(''); setCategory('All'); setPage(1) }}
                   className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:scale-105 transition-all cursor-pointer border-none">
                   Clear Filters
@@ -673,10 +680,10 @@ const FindWork = () => {
             )}
 
             {!projectLoading && !hasData && !projectError && (
-              <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl py-14 sm:py-16 px-5 text-center">
+              <div className="bg-white border border-slate-200 dark:bg-white/[0.03] dark:border-white/[0.08] rounded-2xl py-14 sm:py-16 px-5 text-center">
                 <p className="text-5xl mb-3">📋</p>
-                <p className="text-lg font-semibold text-white mb-1">No projects yet</p>
-                <p className="text-sm text-white/30">Check back later for new opportunities</p>
+                <p className="text-lg font-semibold text-slate-950 dark:text-white mb-1">No projects yet</p>
+                <p className="text-sm text-slate-500 dark:text-white/30">Check back later for new opportunities</p>
               </div>
             )}
 
@@ -686,8 +693,8 @@ const FindWork = () => {
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                   className={`w-9 h-9 rounded-lg border text-base font-medium transition-all
                     ${page === 1
-                      ? 'border-white/10 text-white/20 cursor-not-allowed'
-                      : 'border-white/10 text-white/60 hover:border-white/30 hover:text-white cursor-pointer bg-transparent'
+                      ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-white dark:border-white/10 dark:text-white/20 dark:bg-transparent'
+                      : 'border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 cursor-pointer bg-white dark:border-white/10 dark:text-white/60 dark:hover:border-white/30 dark:hover:text-white dark:bg-transparent'
                     }`}>←</button>
 
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
@@ -695,7 +702,7 @@ const FindWork = () => {
                     className={`w-9 h-9 rounded-lg border text-sm font-semibold transition-all cursor-pointer
                       ${page === n
                         ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-transparent shadow-lg shadow-blue-500/20'
-                        : 'border-white/10 text-white/60 hover:border-white/30 bg-transparent'
+                        : 'border-slate-200 text-slate-600 hover:border-blue-300 bg-white dark:border-white/10 dark:text-white/60 dark:hover:border-white/30 dark:bg-transparent'
                       }`}>
                     {n}
                   </button>
@@ -704,8 +711,8 @@ const FindWork = () => {
                 <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
                   className={`w-9 h-9 rounded-lg border text-base font-medium transition-all
                     ${page === totalPages
-                      ? 'border-white/10 text-white/20 cursor-not-allowed'
-                      : 'border-white/10 text-white/60 hover:border-white/30 hover:text-white cursor-pointer bg-transparent'
+                      ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-white dark:border-white/10 dark:text-white/20 dark:bg-transparent'
+                      : 'border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 cursor-pointer bg-white dark:border-white/10 dark:text-white/60 dark:hover:border-white/30 dark:hover:text-white dark:bg-transparent'
                     }`}>→</button>
               </div>
             )}
@@ -714,14 +721,14 @@ const FindWork = () => {
       </div>
 
       {/* ══ BOTTOM CTA ════════════════════════════════════════ */}
-      <div className="relative z-10 bg-[#0f172a] py-16 sm:py-24 px-4 border-t border-white/[0.05]">
+      <div className="find-work-cta relative z-10 py-16 sm:py-24 px-4 border-t border-slate-200 dark:border-white/[0.05]">
         <div className="max-w-3xl mx-auto text-center relative">
-          <p className="text-xs font-bold text-white/30 uppercase tracking-widest mb-2">For Freelancers</p>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-white mb-3 leading-tight">
+          <p className="text-xs font-bold text-slate-400 dark:text-white/30 uppercase tracking-widest mb-2">For Freelancers</p>
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-950 dark:text-white mb-3 leading-tight">
             Ready to Start<br />
             <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent"> Earning?</span>
           </h2>
-          <p className="text-white/40 text-sm sm:text-base mb-6 sm:mb-7 max-w-lg mx-auto">
+          <p className="text-slate-600 dark:text-white/40 text-sm sm:text-base mb-6 sm:mb-7 max-w-lg mx-auto">
             Join 50,000+ freelancers already working with top clients. Create your profile in minutes.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -731,14 +738,15 @@ const FindWork = () => {
             >
               Create Free Profile ↗
             </button>
-            <button className="bg-white/[0.05] text-white px-6 sm:px-8 py-3.5 rounded-xl font-bold text-sm
-              border border-white/20 hover:bg-white/[0.08] transition-all cursor-pointer">
+            <button className="bg-white text-slate-700 px-6 sm:px-8 py-3.5 rounded-xl font-bold text-sm
+              border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer
+              dark:bg-white/[0.05] dark:text-white dark:border-white/20 dark:hover:bg-white/[0.08]">
               Browse All Projects
             </button>
           </div>
           <div className="flex flex-wrap justify-center gap-4 sm:gap-5 mt-6 sm:mt-8">
             {['✓ No signup fee', '✓ Get paid on time', '✓ 24/7 support', '✓ 10K+ active clients'].map(t => (
-              <span key={t} className="text-xs text-white/30 font-medium">{t}</span>
+              <span key={t} className="text-xs text-slate-500 dark:text-white/30 font-medium">{t}</span>
             ))}
           </div>
         </div>

@@ -84,10 +84,10 @@ const RatingSummary = ({
     }
 
     return (
-        <div className="space-y-8 bg-white">
+        <div className="space-y-8 bg-transparent text-slate-950 dark:text-white">
 
             {/* Rating Summary */}
-            <section className="py-8 px-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+            <section className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 px-6 py-8 shadow-sm dark:border-white/10 dark:from-white/[0.07] dark:via-white/[0.04] dark:to-cyan-400/[0.08] dark:shadow-none">
                 <RatingDisplay
                     averageRating={safeAverage}
                     totalReviews={safeTotalReviews}
@@ -108,7 +108,7 @@ const RatingSummary = ({
 
                 {userRating && (
                     <div className="mt-6 text-center">
-                        <p className="text-sm text-blue-700 bg-blue-100 px-4 py-2 rounded-lg inline-block">
+                        <p className="inline-block rounded-full border border-blue-200 bg-blue-100 px-4 py-2 text-sm text-blue-700 dark:border-blue-300/20 dark:bg-blue-400/10 dark:text-blue-100">
                             ✓ You've already rated this user ({userRating.rating}★)
                         </p>
                     </div>
@@ -117,7 +117,7 @@ const RatingSummary = ({
 
             {/* Write Review Modal */}
             {showReviewForm && (
-                <section className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
+                <section className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm">
                     <div className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <RatingInput
                             targetUserId={userId}
@@ -140,7 +140,7 @@ const RatingSummary = ({
             {/* Reviews List */}
             {safeTotalReviews > 0 && (
                 <section>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                    <h2 className="mb-6 text-2xl font-bold text-slate-950 dark:text-white">
                         Recent Reviews ({safeTotalReviews})
                     </h2>
                     <RatingsList
@@ -159,14 +159,14 @@ const RatingSummary = ({
 
             {/* Empty State */}
             {safeTotalReviews === 0 && !loading && (
-                <div className="text-center py-12">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-6 py-12 text-center dark:border-white/10 dark:bg-white/[0.04]">
                     <div className="text-5xl mb-4">⭐</div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">No reviews yet</h3>
-                    <p className="text-gray-600 mb-4">Be the first to share your experience</p>
+                    <h3 className="mb-2 text-lg font-bold text-slate-950 dark:text-white">No reviews yet</h3>
+                    <p className="mb-4 text-slate-600 dark:text-white/55">Be the first to share your experience</p>
                     {!userRating && (
                         <button
                             onClick={() => setShowReviewForm(true)}
-                            className="inline-block px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all border-none cursor-pointer">
+                            className="inline-block cursor-pointer rounded-xl border-none bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-2.5 font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5">
                             ✍️ Write First Review
                         </button>
                     )}
@@ -174,8 +174,8 @@ const RatingSummary = ({
             )}
 
             {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-700">Failed to load reviews</p>
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-400/20 dark:bg-red-500/10">
+                    <p className="text-red-700 dark:text-red-200">Failed to load reviews</p>
                 </div>
             )}
         </div>

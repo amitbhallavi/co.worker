@@ -7,6 +7,30 @@ import { createSubscriptionOrder, verifySubscriptionPayment, fetchUserPlan } fro
 import { PLANS } from '../config/planFeatures'
 import { loadRazorpayCheckout } from '../utils/loadRazorpay'
 
+const formatFeatureLabel = (key, value) => {
+    switch (key) {
+        case "maxBids":
+            return value === "unlimited" ? "Unlimited monthly bids" : `${value} monthly bids`
+        case "visibility":
+            return `${String(value).charAt(0).toUpperCase()}${String(value).slice(1)} search visibility`
+        case "platformFee":
+            return `${Math.round(value * 100)}% platform fee`
+        case "badge":
+            return value ? `${value} profile badge` : "No profile badge"
+        case "prioritySupport":
+            return value ? "Priority support" : "Standard support"
+        case "featuredListing":
+            return value ? "Featured listing" : "Standard listing"
+        default:
+            return key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase())
+    }
+}
+
+const isIncludedFeature = (key, value) => {
+    if (key === "badge" && !value) return false
+    return value !== false && value !== null && value !== undefined
+}
+
 const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
     const dispatch = useDispatch()
     const navigate = useNavigate()
@@ -180,21 +204,22 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+                className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
 
             {/* Modal */}
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-scale-in">
+                <div className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 animate-scale-in dark:border-white/10 dark:bg-slate-950 dark:shadow-black/60">
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                        <h2 className="text-2xl font-bold text-gray-900">
+                    <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 p-6 dark:border-white/10 dark:bg-white/[0.03]">
+                        <h2 className="text-2xl font-bold text-slate-950 dark:text-white">
                             Upgrade to {plan?.name}
                         </h2>
                         <button
                             onClick={onClose}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            aria-label="Close checkout"
+                            className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-white/10 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/15 dark:hover:text-white"
                         >
                             <X size={24} />
                         </button>
@@ -203,20 +228,20 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                     {/* Body */}
                     <div className="p-6 space-y-6">
                         {/* Plan Details */}
-                        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-5 border border-blue-100">
+                        <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#f8fbff_0%,#eefcff_100%)] p-5 shadow-inner shadow-white dark:border-cyan-400/20 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.98)_0%,rgba(8,47,73,0.68)_100%)] dark:shadow-none">
                             <div className="flex items-start justify-between mb-3">
                                 <div>
-                                    <h3 className="font-bold text-gray-900 text-lg">
+                                    <h3 className="font-bold text-slate-950 text-lg dark:text-white">
                                         {plan?.name} Plan
                                     </h3>
-                                    <p className="text-sm text-gray-500 mt-1">
+                                    <p className="text-sm text-slate-500 mt-1 dark:text-slate-400">
                                         {planType === "monthly"
                                             ? "Renew monthly"
                                             : "Renew yearly"}
                                     </p>
                                 </div>
                                 {plan?.badge && (
-                                    <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                                    <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white shadow-sm dark:bg-cyan-300 dark:text-slate-950">
                                         {plan.badge}
                                     </span>
                                 )}
@@ -226,18 +251,16 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                                 {Object.entries(plan?.features || {}).map(([key, value]) => (
                                     <div
                                         key={key}
-                                        className="flex items-center gap-2 text-sm text-gray-700"
+                                        className={`flex items-center gap-2 text-sm ${
+                                            isIncludedFeature(key, value)
+                                                ? "text-slate-700 dark:text-slate-200"
+                                                : "text-slate-400 dark:text-slate-500"
+                                        }`}
                                     >
-                                        <span className="text-green-500">✓</span>
-                                        <span>
-                                            {key === "maxBids"
-                                                ? `${value} monthly bids`
-                                                : key === "visibility"
-                                                ? `${value} visibility`
-                                                : key === "platformFee"
-                                                ? `${Math.round(value * 100)}% platform fee`
-                                                : key}
+                                        <span className={isIncludedFeature(key, value) ? "text-emerald-500 dark:text-emerald-300" : "text-slate-400 dark:text-slate-500"}>
+                                            {isIncludedFeature(key, value) ? "✓" : "×"}
                                         </span>
+                                        <span>{formatFeatureLabel(key, value)}</span>
                                     </div>
                                 ))}
                             </div>
@@ -246,10 +269,10 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                         {/* Price */}
                         {!isFree && (
                             <div className="text-center">
-                                <div className="text-4xl font-bold text-gray-900">
+                                <div className="text-4xl font-bold text-slate-950 dark:text-white">
                                     ₹{amount}
                                 </div>
-                                <p className="text-sm text-gray-500 mt-2">
+                                <p className="text-sm text-slate-500 mt-2 dark:text-slate-400">
                                     {planType === "monthly" ? "per month" : "per year"}
                                 </p>
                             </div>
@@ -257,8 +280,8 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
 
                         {/* Error Message */}
                         {error && errorMsg && (
-                            <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-                                <p className="text-sm text-red-700">{errorMsg}</p>
+                            <div className="p-3 rounded-xl bg-red-50 border border-red-200 dark:bg-red-950/40 dark:border-red-400/20">
+                                <p className="text-sm text-red-700 dark:text-red-200">{errorMsg}</p>
                             </div>
                         )}
 
@@ -266,7 +289,7 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                         <button
                             onClick={isFree ? handleFreeUpgrade : handlePaymentClick}
                             disabled={loading || orderLoading}
-                            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold py-3 rounded-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-bold py-3 rounded-xl transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 dark:shadow-cyan-950/30"
                         >
                             {loading || orderLoading ? (
                                 <>
@@ -281,7 +304,7 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                         </button>
 
                         {/* Terms */}
-                        <p className="text-xs text-gray-500 text-center">
+                        <p className="text-xs text-slate-500 text-center dark:text-slate-400">
                             By proceeding, you agree to our terms of service.
                             <br />
                             {isFree

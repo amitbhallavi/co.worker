@@ -4,12 +4,22 @@ import ratingService from "./ratingService"
 
 const emptyBreakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
 
+const getPayloadTargetUserId = (payload = {}) => payload.targetUser?._id || payload.targetUser || payload.targetUserId
+
+const isForActiveSummary = (state, payload) => {
+    if (!state.summaryUserId) return true
+
+    const targetUserId = getPayloadTargetUserId(payload)
+    return Boolean(targetUserId && String(targetUserId) === String(state.summaryUserId))
+}
+
 const initialState = {
     ratings: [],
     averageRating: 0,
     totalReviews: 0,
     verifiedReviews: 0,
     breakdown: emptyBreakdown,
+    summaryUserId: null,
     sort: "latest",
     filter: "all",
     loading: false,
@@ -130,13 +140,13 @@ const ratingSlice = createSlice({
         addRatingSocket: (state, action) => {
             const rating = action.payload
 
-            if (!rating?._id || !rating.rater || state.ratings.find((item) => item._id === rating._id)) {
+            if (!rating?._id || !rating.rater || !isForActiveSummary(state, rating) || state.ratings.find((item) => item._id === rating._id)) {
                 return
             }
 
             state.ratings.unshift(rating)
-            state.totalReviews = rating.totalReviews || state.totalReviews + 1
-            state.averageRating = rating.averageRating || state.averageRating
+            state.totalReviews = rating.totalReviews ?? state.totalReviews + 1
+            state.averageRating = rating.averageRating ?? state.averageRating
 
             const star = String(rating.rating)
             if (state.breakdown[star] !== undefined) {
@@ -149,9 +159,16 @@ const ratingSlice = createSlice({
         },
         updateRatingSocket: (state, action) => {
             const nextRating = action.payload
+
+            if (!isForActiveSummary(state, nextRating)) {
+                return
+            }
+
             const index = state.ratings.findIndex((rating) => rating._id === nextRating._id)
 
             if (index === -1) {
+                state.averageRating = nextRating.averageRating ?? state.averageRating
+                state.totalReviews = nextRating.totalReviews ?? state.totalReviews
                 return
             }
 
@@ -170,13 +187,18 @@ const ratingSlice = createSlice({
             }
 
             state.ratings[index] = { ...previousRating, ...nextRating }
-            state.averageRating = nextRating.averageRating || state.averageRating
+            state.averageRating = nextRating.averageRating ?? state.averageRating
+            state.totalReviews = nextRating.totalReviews ?? state.totalReviews
         },
         deleteRatingSocket: (state, action) => {
+            if (!isForActiveSummary(state, action.payload)) {
+                return
+            }
+
             const deletedRating = state.ratings.find((rating) => rating._id === action.payload.ratingId)
             state.ratings = state.ratings.filter((rating) => rating._id !== action.payload.ratingId)
-            state.totalReviews = action.payload.totalReviews || Math.max(0, state.totalReviews - 1)
-            state.averageRating = action.payload.averageRating || state.averageRating
+            state.totalReviews = action.payload.totalReviews ?? Math.max(0, state.totalReviews - 1)
+            state.averageRating = action.payload.averageRating ?? state.averageRating
 
             if (deletedRating) {
                 const star = String(deletedRating.rating)
@@ -198,6 +220,7 @@ const ratingSlice = createSlice({
                 state.loading = false
                 state.success = false
                 state.ratings = Array.isArray(action.payload.ratings) ? action.payload.ratings : []
+                state.summaryUserId = action.meta.arg.userId
                 applySummary(state, action.payload)
             })
             .addCase(fetchRatings.rejected, failRequest)
@@ -209,6 +232,7 @@ const ratingSlice = createSlice({
             })
             .addCase(fetchRatingSummary.fulfilled, (state, action) => {
                 state.loading = false
+                state.summaryUserId = action.meta.arg.userId
                 applySummary(state, action.payload)
             })
             .addCase(fetchRatingSummary.rejected, failRequest)
@@ -223,8 +247,8 @@ const ratingSlice = createSlice({
                     state.ratings.unshift(nextRating)
                 }
 
-                state.averageRating = action.payload.averageRating || state.averageRating
-                state.totalReviews = action.payload.totalReviews || state.totalReviews
+                state.averageRating = action.payload.averageRating ?? state.averageRating
+                state.totalReviews = action.payload.totalReviews ?? state.totalReviews
             })
             .addCase(createRating.rejected, failRequest)
 
@@ -254,8 +278,8 @@ const ratingSlice = createSlice({
                     state.ratings[index] = updatedRating
                 }
 
-                state.averageRating = action.payload.averageRating || state.averageRating
-                state.totalReviews = action.payload.totalReviews || state.totalReviews
+                state.averageRating = action.payload.averageRating ?? state.averageRating
+                state.totalReviews = action.payload.totalReviews ?? state.totalReviews
             })
             .addCase(updateRating.rejected, failRequest)
 
@@ -275,8 +299,8 @@ const ratingSlice = createSlice({
                     }
                 }
 
-                state.averageRating = action.payload.averageRating || state.averageRating
-                state.totalReviews = action.payload.totalReviews || Math.max(0, state.totalReviews - 1)
+                state.averageRating = action.payload.averageRating ?? state.averageRating
+                state.totalReviews = action.payload.totalReviews ?? Math.max(0, state.totalReviews - 1)
             })
             .addCase(deleteRating.rejected, failRequest)
 

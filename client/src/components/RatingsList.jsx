@@ -43,13 +43,13 @@ const RatingsList = ({
         return (
             <div className="space-y-4">
                 {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="animate-pulse border border-gray-200 rounded-lg p-4">
+                    <div key={i} className="animate-pulse rounded-xl border border-slate-200 p-4 dark:border-white/10">
                         <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-full bg-gray-200" />
+                            <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-white/10" />
                             <div className="flex-1 space-y-3">
-                                <div className="h-4 bg-gray-200 rounded w-1/4" />
-                                <div className="h-3 bg-gray-100 rounded" />
-                                <div className="h-3 bg-gray-100 rounded w-5/6" />
+                                <div className="h-4 w-1/4 rounded bg-slate-200 dark:bg-white/10" />
+                                <div className="h-3 rounded bg-slate-100 dark:bg-white/[0.07]" />
+                                <div className="h-3 w-5/6 rounded bg-slate-100 dark:bg-white/[0.07]" />
                             </div>
                         </div>
                     </div>
@@ -61,10 +61,10 @@ const RatingsList = ({
     // Empty State
     if (!ratings || ratings.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 px-4">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-12 dark:border-white/10 dark:bg-white/[0.04]">
                 <div className="text-5xl mb-3">⭐</div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">No reviews yet</h3>
-                <p className="text-gray-600 text-center max-w-sm">
+                <h3 className="mb-1 text-lg font-bold text-slate-950 dark:text-white">No reviews yet</h3>
+                <p className="max-w-sm text-center text-slate-600 dark:text-white/55">
                     Be the first to share your experience with this user
                 </p>
             </div>
@@ -74,17 +74,17 @@ const RatingsList = ({
     return (
         <div className="space-y-6">
             {/* Filter & Sort Controls */}
-            <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
                 {/* Rating Filter */}
                 <div>
-                    <p className="text-sm font-bold text-gray-700 mb-2">Filter by Rating</p>
+                    <p className="mb-2 text-sm font-bold text-slate-800 dark:text-white">Filter by Rating</p>
                     <div className="flex flex-wrap gap-2">
                         <button
                             onClick={() => handleFilterChange('all')}
-                            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                            className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                                 filter === 'all'
                                     ? 'bg-blue-600 text-white'
-                                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                    : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:bg-white/[0.07]'
                             }`}
                         >
                             All ({ratings.length})
@@ -93,10 +93,10 @@ const RatingsList = ({
                             <button
                                 key={star}
                                 onClick={() => handleFilterChange(String(star))}
-                                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors flex items-center gap-1 ${
+                                className={`flex items-center gap-1 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                                     filter === String(star)
                                         ? 'bg-yellow-500 text-white'
-                                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                        : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:bg-white/[0.07]'
                                 }`}
                             >
                                 {star}★ ({breakdown[star]})
@@ -107,34 +107,34 @@ const RatingsList = ({
 
                 {/* Sort Options */}
                 <div>
-                    <p className="text-sm font-bold text-gray-700 mb-2">Sort by</p>
-                    <div className="flex gap-2">
+                    <p className="mb-2 text-sm font-bold text-slate-800 dark:text-white">Sort by</p>
+                    <div className="flex flex-wrap gap-2">
                         <button
                             onClick={() => handleSortChange('latest')}
-                            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                            className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                                 sort === 'latest'
                                     ? 'bg-blue-600 text-white'
-                                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                    : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:bg-white/[0.07]'
                             }`}
                         >
                             Latest
                         </button>
                         <button
                             onClick={() => handleSortChange('highest')}
-                            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                            className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                                 sort === 'highest'
                                     ? 'bg-blue-600 text-white'
-                                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                    : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:bg-white/[0.07]'
                             }`}
                         >
                             Highest Rated
                         </button>
                         <button
                             onClick={() => handleSortChange('lowest')}
-                            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                            className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                                 sort === 'lowest'
                                     ? 'bg-blue-600 text-white'
-                                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                    : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:bg-white/[0.07]'
                             }`}
                         >
                             Lowest Rated

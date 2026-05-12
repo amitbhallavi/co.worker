@@ -1,6 +1,7 @@
 import Bid from "../models/bidModel.js"
 import Freelancer from "../models/freelancerModel.js"
 import Project from "../models/projectModel.js"
+import { emitAdminDataChanged } from "../utils/adminRealtime.js"
 import { ensure } from "../utils/http.js"
 
 const freelancerUserPopulate = {
@@ -33,6 +34,7 @@ const listProject = async (req, res) => {
 
     await project.save()
     await project.populate("user")
+    emitAdminDataChanged("project_created", { message: `Project posted: ${project.title}` })
 
     res.status(201).json(project)
 }
@@ -82,6 +84,7 @@ const acceptProjectRequest = async (req, res) => {
     ensure(updatedBid, 401, "Bid Not Updated!")
 
     if (!isAcceptedBidStatus(status)) {
+        emitAdminDataChanged("bid_updated", { message: `Bid updated: ${status}` })
         return res.status(200).json(updatedBid)
     }
 
@@ -103,6 +106,22 @@ const acceptProjectRequest = async (req, res) => {
         .populate("selectedBid")
 
     if (global.io) {
+        const assignedPayload = {
+            _id: updatedProject._id,
+            title: updatedProject.title,
+            description: updatedProject.description,
+            user: updatedProject.user,
+            freelancer: updatedProject.freelancer,
+            status: updatedProject.status,
+            budget: updatedProject.budget,
+            duration: updatedProject.duration,
+            category: updatedProject.category,
+            technology: updatedProject.technology,
+            createdAt: updatedProject.createdAt,
+            message: `Project "${updatedProject.title}" assigned to you. Payment is pending.`,
+        }
+
+        global.io.to(`user_${bid.freelancer.user._id}`).emit("projectAssigned", assignedPayload)
         global.io.to(`user_${bid.freelancer.user._id}`).emit("payment_pending", {
             projectId: updatedProject._id,
             title: updatedProject.title,
@@ -116,6 +135,8 @@ const acceptProjectRequest = async (req, res) => {
             finalAmount: bid.amount,
         })
     }
+
+    emitAdminDataChanged("project_assigned", { message: `Project assigned: ${updatedProject.title}` })
 
     res.status(200).json({
         project: updatedProject,
@@ -132,7 +153,7 @@ const getAssignedProjects = async (req, res) => {
 
     const assignedProjects = await Project.find({
         freelancer: freelancer._id,
-        status: { $in: ["in-progress", "completed"] },
+        status: { $in: ["accepted", "in-progress", "completed"] },
     })
         .populate("user", "-password")
         .populate(freelancerUserPopulate)

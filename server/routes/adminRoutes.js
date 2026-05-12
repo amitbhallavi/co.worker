@@ -17,5 +17,10 @@ router.get("/bids", adminController.getAllBids)
 router.put("/bids/:bid_id", adminController.updateBid)
 
 router.get("/stats", adminController.getDashboardStats)
+router.get("/analytics/monthly", adminController.getMonthlyAnalytics)
+router.get("/payments/recent", adminController.getRecentPayments)
+
+router.get("/settings", adminController.getPlatformSettings)
+router.put("/settings", adminController.updatePlatformSettings)
 
 export default router

@@ -21,24 +21,24 @@ const LoginForm = ({
     onForgotPassword,
 }) => {
     return (
-        <section className="rounded-[30px] border border-slate-200/80 bg-white px-5 py-6 shadow-[0_28px_80px_-45px_rgba(15,23,42,0.45)] sm:px-8 sm:py-8 lg:px-10 lg:py-9">
+        <section className="rounded-[30px] border border-slate-200/80 bg-white/95 px-5 py-6 shadow-2xl shadow-slate-950/10 backdrop-blur dark:border-white/10 dark:bg-slate-900/90 dark:shadow-black/35 sm:px-8 sm:py-8 lg:px-10 lg:py-9">
             <div className="mb-8">
-                <span className="inline-flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
+                <span className="inline-flex items-center gap-2 rounded-full border border-sky-100 dark:border-sky-900/50 bg-sky-50 dark:bg-sky-900/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">
                     <Sparkles className="size-3.5" />
                     Secure workspace access
                 </span>
 
-                <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+                <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-[2rem]">
                     Sign in to your workspace
                 </h2>
 
-                <p className="mt-3 max-w-md text-sm leading-7 text-slate-500">
+                <p className="mt-3 max-w-md text-sm leading-7 text-slate-500 dark:text-slate-400">
                     Access projects, chats, payouts, and the tools you use every day from one faster and cleaner login flow.
                 </p>
             </div>
 
             {serverError && (
-                <div className="mb-5 flex items-start gap-3 rounded-[22px] border border-rose-200 bg-rose-50/90 px-4 py-3 text-sm text-rose-700">
+                <div className="mb-5 flex items-start gap-3 rounded-[22px] border border-rose-200 dark:border-rose-900/30 bg-rose-50 dark:bg-rose-900/20 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
                     <CircleAlert className="mt-0.5 size-4 shrink-0" />
                     <p className="leading-6">{serverError}</p>
                 </div>
@@ -78,7 +78,7 @@ const LoginForm = ({
                         <button
                             type="button"
                             onClick={onTogglePassword}
-                            className="rounded-full p-2 text-slate-400 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-700"
+                            className="rounded-full p-2 text-slate-400 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
                             aria-label={showPassword ? 'Hide password' : 'Show password'}
                         >
                             {showPassword ? (
@@ -90,13 +90,13 @@ const LoginForm = ({
                     )}
                 />
 
-                <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-                    <label className="inline-flex items-center gap-3 font-medium text-slate-600">
+                <div className="flex flex-col gap-3 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
+                    <label className="inline-flex items-center gap-3 font-medium text-slate-600 dark:text-slate-300">
                         <input
                             type="checkbox"
                             checked={rememberMe}
                             onChange={onRememberChange}
-                            className="size-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                            className="size-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-950"
                         />
                         <span>Remember me on this device</span>
                     </label>
@@ -104,7 +104,7 @@ const LoginForm = ({
                     <button
                         type="button"
                         onClick={onForgotPassword}
-                        className="text-left font-semibold text-sky-700 transition-colors duration-200 hover:text-sky-800 sm:text-right"
+                        className="text-left font-semibold text-sky-700 transition-colors duration-200 hover:text-sky-800 dark:text-cyan-300 dark:hover:text-cyan-200 sm:text-right"
                     >
                         Forgot password?
                     </button>
@@ -115,17 +115,17 @@ const LoginForm = ({
                 </AuthButton>
             </form>
 
-            <div className="my-6 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
-                <div className="h-px flex-1 bg-slate-200" />
+            <div className="my-6 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                <div className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
                 <span>Trusted access</span>
-                <div className="h-px flex-1 bg-slate-200" />
+                <div className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
             </div>
 
             <div className="mb-6 grid gap-2 sm:grid-cols-3">
                 {trustItems.map((item) => (
                     <span
                         key={item}
-                        className="rounded-[18px] border border-slate-200 bg-slate-50/80 px-3 py-3 text-center text-xs font-medium text-slate-500"
+                        className="rounded-[18px] border border-slate-200 bg-slate-50/80 px-3 py-3 text-center text-xs font-medium text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300"
                     >
                         {item}
                     </span>

@@ -6,11 +6,11 @@ import { getFreelancers } from '../features/Freelancer/freelancerSlice'
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const ACCENT_BG  = 'bg-gradient-to-r from-blue-500 to-cyan-400'
-const CARD       = 'bg-white/[0.03] border border-white/[0.08] backdrop-blur-sm'
-const CARD_HOVER = 'hover:bg-white/[0.06] hover:border-white/[0.14]'
-const TEXT_1     = 'text-white'
-const TEXT_2     = 'text-white/55'
-const TEXT_3     = 'text-white/30'
+const CARD       = 'bg-white border border-slate-200 shadow-sm dark:bg-white/[0.03] dark:border-white/[0.08] dark:backdrop-blur-sm dark:shadow-none'
+const CARD_HOVER = 'hover:bg-slate-50 hover:border-slate-300 dark:hover:bg-white/[0.06] dark:hover:border-white/[0.14]'
+const TEXT_1     = 'text-slate-950 dark:text-white'
+const TEXT_2     = 'text-slate-600 dark:text-white/55'
+const TEXT_3     = 'text-slate-400 dark:text-white/30'
 
 // ─── Intersection Observer Hook ───────────────────────────────────────────────
 const useInView = (threshold = 0.12) => {
@@ -128,11 +128,11 @@ const FreelancerCard = memo(function FreelancerCard({ freelancer, index, colorIn
 
             {/* card body */}
             <div className={`flex flex-col flex-1 ${CARD} rounded-b-2xl border-t-0
-                transition-all duration-300 group-hover:bg-white/[0.06] group-hover:border-white/[0.15]
+                transition-all duration-300 group-hover:bg-slate-50 group-hover:border-slate-300 dark:group-hover:bg-white/[0.06] dark:group-hover:border-white/[0.15]
                 group-hover:-translate-y-1 group-hover:shadow-2xl`}
             >
                 {/* header */}
-                <div className="relative px-5 pt-5 pb-4 border-b border-white/[0.05]">
+                <div className="relative px-5 pt-5 pb-4 border-b border-slate-100 dark:border-white/[0.05]">
                     {/* category badge */}
                     <span className={`absolute top-3.5 right-4 text-[10px] font-semibold px-2.5 py-1 rounded-full border ${color.badge}`}>
                         {freelancer.category || 'Freelancer'}
@@ -145,18 +145,18 @@ const FreelancerCard = memo(function FreelancerCard({ freelancer, index, colorIn
                                 <img
                                     src={freelancer.user.profilePic}
                                     alt={freelancer.user?.name}
-                                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover ring-2 ring-white/10 shadow-lg"
+                                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover ring-2 ring-slate-200 dark:ring-white/10 shadow-lg"
                                     onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
                                 />
                             ) : null}
                             <div className={`${freelancer.user?.profilePic ? 'hidden' : 'flex'}
                                 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${color.bar}
-                                items-center justify-center ring-2 ring-white/10 shadow-lg`}>
+                                items-center justify-center ring-2 ring-slate-200 dark:ring-white/10 shadow-lg`}>
                                 <span className="text-white font-bold text-base">{initials}</span>
                             </div>
                             {/* online dot */}
                             <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400
-                                border-2 border-[#020617] shadow shadow-emerald-400/40" />
+                                border-2 border-white dark:border-[#020617] shadow shadow-emerald-400/40" />
                         </div>
 
                         <div className="min-w-0 flex-1 pr-12">
@@ -195,7 +195,7 @@ const FreelancerCard = memo(function FreelancerCard({ freelancer, index, colorIn
                     )}
 
                     {/* rating + rate */}
-                    <div className={`flex items-center justify-between pt-3 border-t border-white/[0.05] mt-auto`}>
+                    <div className={`flex items-center justify-between pt-3 border-t border-slate-100 dark:border-white/[0.05] mt-auto`}>
                         <div className="flex items-center gap-1.5">
                             <div className="flex gap-0.5">
                                 {Array.from({ length: 5 }).map((_, i) => (
@@ -234,21 +234,21 @@ const FreelancerCard = memo(function FreelancerCard({ freelancer, index, colorIn
 const SkeletonCard = memo(function SkeletonCard() {
     return (
         <div className={`${CARD} rounded-2xl overflow-hidden animate-pulse`}>
-            <div className="h-px bg-white/10" />
+            <div className="h-px bg-slate-200 dark:bg-white/10" />
             <div className="p-5 space-y-4">
                 <div className="flex items-center gap-3.5">
-                    <div className="w-16 h-16 rounded-2xl bg-white/[0.06]" />
+                    <div className="w-16 h-16 rounded-2xl bg-slate-200 dark:bg-white/[0.06]" />
                     <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-white/[0.06] rounded-lg w-3/4" />
-                        <div className="h-3 bg-white/[0.04] rounded-lg w-1/2" />
+                        <div className="h-4 bg-slate-200 dark:bg-white/[0.06] rounded-lg w-3/4" />
+                        <div className="h-3 bg-slate-100 dark:bg-white/[0.04] rounded-lg w-1/2" />
                     </div>
                 </div>
-                <div className="h-3 bg-white/[0.04] rounded-lg" />
-                <div className="h-3 bg-white/[0.04] rounded-lg w-4/5" />
+                <div className="h-3 bg-slate-100 dark:bg-white/[0.04] rounded-lg" />
+                <div className="h-3 bg-slate-100 dark:bg-white/[0.04] rounded-lg w-4/5" />
                 <div className="flex gap-2">
-                    {[1, 2, 3].map(i => <div key={i} className="h-5 w-14 bg-white/[0.04] rounded-full" />)}
+                    {[1, 2, 3].map(i => <div key={i} className="h-5 w-14 bg-slate-100 dark:bg-white/[0.04] rounded-full" />)}
                 </div>
-                <div className="h-10 bg-white/[0.04] rounded-xl mt-2" />
+                <div className="h-10 bg-slate-100 dark:bg-white/[0.04] rounded-xl mt-2" />
             </div>
         </div>
     )
@@ -302,15 +302,14 @@ function Talent() {
     const handleReset = () => { setSearch(''); setActiveFilter('All') }
 
     return (
-        <div className="min-h-screen bg-[#020617]" style={{ fontFamily: "'DM Sans','Inter',system-ui,sans-serif" }}>
+        <div className="min-h-screen bg-[#f5f7fb] text-slate-900 dark:bg-[#020617] dark:text-white" style={{ fontFamily: "'DM Sans','Inter',system-ui,sans-serif" }}>
             <style>{`
                 * { box-sizing: border-box }
             `}</style>
 
             {/* ══ HERO ════════════════════════════════════════════════════════ */}
             <section
-                className="relative overflow-hidden"
-                style={{ background: 'linear-gradient(160deg,#020617 0%,#0c1a38 50%,#020617 100%)' }}
+                className="relative overflow-hidden bg-[linear-gradient(160deg,#f8fafc_0%,#e0f2fe_52%,#f5f7fb_100%)] dark:bg-[linear-gradient(160deg,#020617_0%,#0c1a38_50%,#020617_100%)]"
             >
                 {/* ambient glows */}
                 <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -326,7 +325,7 @@ function Talent() {
                 <div ref={heroRef} className="relative z-10 max-w-3xl mx-auto px-4 sm:px-8 pt-14 sm:pt-20 pb-12 sm:pb-16 text-center">
 
                     {/* live badge */}
-                    <div className={`inline-flex items-center gap-2 bg-white/[0.04] border border-white/[0.09] 
+                    <div className={`inline-flex items-center gap-2 bg-white/80 border border-slate-200 dark:bg-white/[0.04] dark:border-white/[0.09]
                         rounded-full px-4 py-2 mb-6 transition-all duration-700
                         ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                     >
@@ -361,14 +360,14 @@ function Talent() {
                         transition-all duration-700 delay-300 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                     >
                         <div className="relative flex-1">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none">🔍</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/25 pointer-events-none">🔍</span>
                             <input
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 placeholder="Search by name, category, skills..."
-                                className={`w-full pl-10 pr-4 py-3 text-sm ${TEXT_1} placeholder-white/25
+                                className={`w-full pl-10 pr-4 py-3 text-sm ${TEXT_1} placeholder-slate-400 dark:placeholder-white/25
                                     ${CARD} rounded-xl outline-none transition-all
-                                    focus:bg-white/[0.07] focus:border-white/20 focus:ring-2 focus:ring-blue-500/20`}
+                                    focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-500/20 dark:focus:bg-white/[0.07] dark:focus:border-white/20`}
                             />
                         </div>
                         <button
@@ -393,7 +392,7 @@ function Talent() {
                                     cursor-pointer border min-h-[32px]
                                     ${activeFilter === f
                                         ? `${ACCENT_BG} text-white border-transparent shadow-md shadow-blue-500/20`
-                                        : `${CARD} ${TEXT_2} border-white/[0.08] hover:bg-white/[0.07] hover:text-white`
+                                        : `${CARD} ${TEXT_2} hover:bg-slate-50 hover:text-slate-950 dark:hover:bg-white/[0.07] dark:hover:text-white`
                                     }`}
                             >
                                 {f}
@@ -410,7 +409,7 @@ function Talent() {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
 
                 {/* result meta row */}
-                <div className={`flex flex-wrap items-center justify-between gap-3 mb-6 pb-5 border-b border-white/[0.06]`}>
+                <div className={`flex flex-wrap items-center justify-between gap-3 mb-6 pb-5 border-b border-slate-200 dark:border-white/[0.06]`}>
                     <p className={`text-sm ${TEXT_3}`}>
                         Showing&nbsp;
                         <strong className={TEXT_1}>{filtered.length}</strong>
@@ -444,8 +443,7 @@ function Talent() {
             </main>
 
             {/* ══ BOTTOM CTA ══════════════════════════════════════════════════ */}
-            <footer className="border-t border-white/[0.05]"
-                style={{ background: 'linear-gradient(160deg,#020617 0%,#0c1824 50%,#020617 100%)' }}
+            <footer className="border-t border-slate-200 bg-white dark:border-white/[0.05] dark:bg-[linear-gradient(160deg,#020617_0%,#0c1824_50%,#020617_100%)]"
             >
                 <div className="relative max-w-2xl mx-auto px-4 py-14 sm:py-20 text-center overflow-hidden">
                     {/* glow */}
@@ -470,7 +468,7 @@ function Talent() {
                         <button
                             onClick={() => navigate('/register')}
                             className={`bg-transparent ${TEXT_1} font-semibold text-sm px-8 py-3 rounded-xl
-                                cursor-pointer border border-white/15 hover:border-white/30 hover:bg-white/[0.04] transition-all`}
+                                cursor-pointer border border-slate-200 hover:border-slate-300 hover:bg-slate-50 dark:border-white/15 dark:hover:border-white/30 dark:hover:bg-white/[0.04] transition-all`}
                         >
                             Join as Freelancer
                         </button>

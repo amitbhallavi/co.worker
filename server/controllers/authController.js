@@ -2,6 +2,7 @@ import User from "../models/userModel.js"
 import bcrypt from "bcryptjs"
 import { createAuthToken } from "../utils/auth.js"
 import { ensure } from "../utils/http.js"
+import { emitAdminDataChanged } from "../utils/adminRealtime.js"
 
 const buildAuthResponse = (user) => ({
     _id: user.id,
@@ -37,6 +38,8 @@ const registerUser = async (req, res) => {
     })
 
     ensure(user, 500, "Failed to create user")
+
+    emitAdminDataChanged("user_registered", { message: `New user registered: ${user.name || user.email}` })
 
     res.status(201).json(buildAuthResponse(user))
 }

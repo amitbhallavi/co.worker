@@ -87,7 +87,7 @@ const MarqueeStrip = ({ reverse = false, light = false }) => {
         <div className="overflow-hidden py-2">
             <div className="flex gap-9 w-max" style={{ animation: `${reverse ? "marqueeRev" : "marquee"} 20s linear infinite` }}>
                 {doubled.map((item, i) => (
-                    <span key={i} className={`whitespace-nowrap text-xs font-semibold tracking-wide ${light ? "text-gray-400" : "text-white/50"}`}>
+                    <span key={i} className={`whitespace-nowrap text-xs font-semibold tracking-wide ${light ? "text-slate-400 dark:text-white/40" : "text-white/50"}`}>
                         {item}
                     </span>
                 ))}
@@ -134,15 +134,15 @@ const ListProject = () => {
 
     // ── dynamic input border (uses inline only for color value) ──
     const inputCls = () =>
-        `w-full text-sm font-[inherit] rounded-xl outline-none bg-white text-gray-900 transition-all duration-200 box-border`
+        `w-full box-border rounded-2xl bg-white text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 dark:bg-white/[0.06] dark:text-white dark:placeholder:text-white/35`
 
     const inputStyle = (name) => ({
-        border: `1.5px solid ${focusedField === name ? color.from : formData[name] ? "#BBF7D0" : "#E5E7EB"}`,
-        background: focusedField === name ? "#FAFBFF" : "white",
+        border: `1.5px solid ${focusedField === name ? color.from : formData[name] ? "#22C55E" : "rgba(148,163,184,.35)"}`,
+        boxShadow: focusedField === name ? `0 0 0 4px ${color.from}22` : "none",
     })
 
     return (
-        <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}>
+        <div className="min-h-screen bg-slate-50 dark:bg-[#020817]" style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}>
             <style>{`
                 @keyframes fadeUp      { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
                 @keyframes ping        { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2);opacity:0} }
@@ -268,13 +268,13 @@ const ListProject = () => {
                     <div className="fade-up">
 
                         {/* Project Info Card */}
-                        <div className="bg-white rounded-2xl shadow-md overflow-hidden mb-5">
+                        <div className="mb-5 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
                             <div className="h-1 transition-all duration-500"
                                 style={{ background: `linear-gradient(135deg,${color.from},${color.to})` }} />
                             <div className="p-8">
-                                <h2 className="text-lg font-extrabold text-gray-900 mb-6 flex items-center gap-2.5"
+                                <h2 className="mb-6 flex items-center gap-2.5 text-lg font-extrabold text-slate-950 dark:text-white"
                                     style={{ fontFamily: "'Playfair Display',serif" }}>
-                                    <span className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-base">📋</span>
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-base dark:bg-blue-400/10">📋</span>
                                     Project Information
                                 </h2>
 
@@ -282,7 +282,7 @@ const ListProject = () => {
 
                                     {/* Title */}
                                     <div>
-                                        <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-widest mb-2">
+                                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-slate-700 dark:text-white/65">
                                             Project Title <span className="text-red-500">*</span>
                                         </label>
                                         <input
@@ -294,12 +294,12 @@ const ListProject = () => {
                                             className={`${inputCls()} px-4 py-3.5`}
                                             style={inputStyle("title")}
                                         />
-                                        <p className="text-[11px] text-gray-400 mt-1.5">Be specific — better titles attract better proposals</p>
+                                        <p className="mt-1.5 text-[11px] text-slate-400 dark:text-white/40">Be specific — better titles attract better proposals</p>
                                     </div>
 
                                     {/* Description */}
                                     <div>
-                                        <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-widest mb-2">
+                                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-slate-700 dark:text-white/65">
                                             Description <span className="text-red-500">*</span>
                                         </label>
                                         <textarea
@@ -313,23 +313,23 @@ const ListProject = () => {
                                             style={inputStyle("description")}
                                         />
                                         <div className="flex justify-between mt-1.5">
-                                            <p className="text-[11px] text-gray-400">Min 50 characters recommended</p>
-                                            <span className={`text-[11px] font-semibold ${formData.description.length >= 50 ? "text-green-500" : "text-gray-400"}`}>
+                                            <p className="text-[11px] text-slate-400 dark:text-white/40">Min 50 characters recommended</p>
+                                            <span className={`text-[11px] font-semibold ${formData.description.length >= 50 ? "text-green-500" : "text-slate-400 dark:text-white/40"}`}>
                                                 {formData.description.length} chars
                                             </span>
                                         </div>
                                     </div>
 
                                     {/* Budget + Duration */}
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
                                         {/* Budget */}
                                         <div>
-                                            <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-widest mb-2">
+                                            <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-slate-700 dark:text-white/65">
                                                 Budget (₹) <span className="text-red-500">*</span>
                                             </label>
                                             <div className="relative">
-                                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500 z-10">₹</span>
+                                                <span className="absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-sm font-bold text-slate-500 dark:text-white/45">₹</span>
                                                 <input
                                                     type="number" name="budget" value={formData.budget}
                                                     onChange={handleChange}
@@ -344,7 +344,7 @@ const ListProject = () => {
                                                 {["5000", "10000", "25000", "50000"].map(v => (
                                                     <button key={v} type="button"
                                                         onClick={() => setFormData({ ...formData, budget: v })}
-                                                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150 border ${formData.budget === v ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-gray-50 text-gray-500 border-gray-200"}`}>
+                                                        className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-all duration-150 ${formData.budget === v ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-cyan-300/25 dark:bg-cyan-400/10 dark:text-cyan-200" : "border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/50"}`}>
                                                         ₹{Number(v).toLocaleString()}
                                                     </button>
                                                 ))}
@@ -353,11 +353,11 @@ const ListProject = () => {
 
                                         {/* Duration */}
                                         <div>
-                                            <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-widest mb-2">
+                                            <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-slate-700 dark:text-white/65">
                                                 Duration (days) <span className="text-red-500">*</span>
                                             </label>
                                             <div className="relative">
-                                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">days</span>
+                                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-white/40">days</span>
                                                 <input
                                                     type="number" name="duration" value={formData.duration}
                                                     onChange={handleChange}
@@ -372,7 +372,7 @@ const ListProject = () => {
                                                 {["3", "7", "14", "30"].map(v => (
                                                     <button key={v} type="button"
                                                         onClick={() => setFormData({ ...formData, duration: v })}
-                                                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150 border ${formData.duration === v ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-gray-50 text-gray-500 border-gray-200"}`}>
+                                                        className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-all duration-150 ${formData.duration === v ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-cyan-300/25 dark:bg-cyan-400/10 dark:text-cyan-200" : "border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/50"}`}>
                                                         {v}d
                                                     </button>
                                                 ))}
@@ -382,7 +382,7 @@ const ListProject = () => {
 
                                     {/* Category */}
                                     <div>
-                                        <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-widest mb-2.5">
+                                        <label className="mb-2.5 block text-[11px] font-bold uppercase tracking-widest text-slate-700 dark:text-white/65">
                                             Category <span className="text-red-500">*</span>
                                         </label>
                                         <div className="flex flex-wrap gap-2">
@@ -391,11 +391,9 @@ const ListProject = () => {
                                                 return (
                                                     <button key={cat} type="button"
                                                         onClick={() => setFormData({ ...formData, category: cat })}
-                                                        className="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 border"
+                                                        className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-semibold transition-all duration-200 ${sel ? "border-transparent text-white" : "border-slate-200 bg-slate-50 text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/70"}`}
                                                         style={{
-                                                            background: sel ? `linear-gradient(135deg,${color.from},${color.to})` : "#F9FAFB",
-                                                            color: sel ? "white" : "#374151",
-                                                            borderColor: sel ? "transparent" : "#E5E7EB",
+                                                            ...(sel ? { background: `linear-gradient(135deg,${color.from},${color.to})` } : {}),
                                                             boxShadow: sel ? `0 4px 12px ${color.from}33` : "none",
                                                             transform: sel ? "scale(1.05)" : "scale(1)",
                                                             animation: `pillPop 0.4s ease ${i * 0.04}s both`
@@ -411,17 +409,17 @@ const ListProject = () => {
                         </div>
 
                         {/* Technology Card */}
-                        <div className="bg-white rounded-2xl shadow-md overflow-hidden mb-5">
+                        <div className="mb-5 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
                             <div className="h-1 bg-gradient-to-r from-violet-500 to-pink-500" />
                             <div className="px-8 py-7">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-extrabold text-gray-900 flex items-center gap-2.5"
+                                    <h2 className="flex items-center gap-2.5 text-lg font-extrabold text-slate-950 dark:text-white"
                                         style={{ fontFamily: "'Playfair Display',serif" }}>
-                                        <span className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-base">⚙️</span>
+                                        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-purple-50 text-base dark:bg-purple-400/10">⚙️</span>
                                         Technologies Required
                                     </h2>
                                     {selectedTechs.length > 0 && (
-                                        <span className="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full border border-blue-200">
+                                        <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:border-cyan-300/25 dark:bg-cyan-400/10 dark:text-cyan-200">
                                             {selectedTechs.length} selected
                                         </span>
                                     )}
@@ -429,7 +427,7 @@ const ListProject = () => {
 
                                 {/* selected chips */}
                                 {selectedTechs.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 mb-4 p-3 bg-gray-50 rounded-xl border border-dashed border-blue-200">
+                                    <div className="mb-4 flex flex-wrap gap-1.5 rounded-2xl border border-dashed border-blue-200 bg-slate-50 p-3 dark:border-cyan-300/20 dark:bg-white/[0.04]">
                                         {selectedTechs.map(tech => (
                                             <span key={tech}
                                                 className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-white transition-all duration-300"
@@ -450,11 +448,9 @@ const ListProject = () => {
                                         const sel = selectedTechs.includes(tech)
                                         return (
                                             <button key={tech} type="button" onClick={() => toggleTech(tech)}
-                                                className="px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150 border"
+                                                className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 ${sel ? "border-cyan-300/60 bg-blue-50 text-blue-700 dark:bg-cyan-400/10 dark:text-cyan-200" : "border-slate-200 bg-slate-50 text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/70"}`}
                                                 style={{
-                                                    background: sel ? "#EFF6FF" : "#F9FAFB",
-                                                    color: sel ? "#1D4ED8" : "#374151",
-                                                    borderColor: sel ? color.from : "#E5E7EB",
+                                                    ...(sel ? { borderColor: color.from } : {}),
                                                     transform: sel ? "scale(1.05)" : "scale(1)"
                                                 }}>
                                                 {sel && <span className="mr-1">✓</span>}
@@ -463,14 +459,14 @@ const ListProject = () => {
                                         )
                                     })}
                                 </div>
-                                <p className="text-[11px] text-gray-400 mt-3">
+                                <p className="mt-3 text-[11px] text-slate-400 dark:text-white/40">
                                     💡 Select all technologies required — helps match the right freelancers
                                 </p>
                             </div>
                         </div>
 
                         {/* light marquee */}
-                        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden mb-5">
+                        <div className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]">
                             <MarqueeStrip reverse light />
                         </div>
 
@@ -478,8 +474,8 @@ const ListProject = () => {
                         <button type="button" onClick={() => isComplete && setStep(2)}
                             className="w-full py-4 rounded-2xl font-bold text-base transition-all duration-300 border-none cursor-pointer"
                             style={{
-                                background: isComplete ? `linear-gradient(135deg,${color.from},${color.to})` : "#E5E7EB",
-                                color: isComplete ? "white" : "#9CA3AF",
+                                background: isComplete ? `linear-gradient(135deg,${color.from},${color.to})` : "rgba(148,163,184,.22)",
+                                color: isComplete ? "white" : "#94A3B8",
                                 cursor: isComplete ? "pointer" : "not-allowed",
                                 boxShadow: isComplete ? `0 8px 24px ${color.from}44` : "none"
                             }}>
@@ -487,7 +483,7 @@ const ListProject = () => {
                         </button>
 
                         {!isComplete && (
-                            <p className="text-center text-xs text-gray-400 mt-2.5">
+                            <p className="mt-2.5 text-center text-xs text-slate-400 dark:text-white/40">
                                 Required: Title · Description · Budget · Duration · Category · Technology
                             </p>
                         )}
@@ -497,44 +493,44 @@ const ListProject = () => {
                 {/* ════ STEP 2: PREVIEW ════ */}
                 {step === 2 && (
                     <div className="fade-up">
-                        <div className="bg-white rounded-2xl shadow-md overflow-hidden mb-5">
+                        <div className="mb-5 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
                             <div className="h-1 bg-gradient-to-r from-green-400 to-emerald-500" />
                             <div className="p-8">
-                                <h2 className="text-xl font-extrabold text-gray-900 mb-6"
+                                <h2 className="mb-6 text-xl font-extrabold text-slate-950 dark:text-white"
                                     style={{ fontFamily: "'Playfair Display',serif" }}>
                                     📋 Review Your Project
                                 </h2>
                                 <div className="flex flex-col gap-4">
 
                                     {/* title */}
-                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                        <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Project Title</div>
-                                        <div className="text-lg font-bold text-gray-900">{formData.title}</div>
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                                        <div className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/40">Project Title</div>
+                                        <div className="text-lg font-bold text-slate-950 dark:text-white">{formData.title}</div>
                                     </div>
 
                                     {/* description */}
-                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                        <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Description</div>
-                                        <div className="text-sm text-gray-600 leading-relaxed">{formData.description}</div>
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                                        <div className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/40">Description</div>
+                                        <div className="text-sm leading-relaxed text-slate-600 dark:text-white/65">{formData.description}</div>
                                     </div>
 
                                     {/* stats grid */}
-                                    <div className="grid grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                         {[
                                             { label: "Budget", value: `₹${Number(formData.budget).toLocaleString()}`, color: "#166534", bg: "#F0FDF4" },
                                             { label: "Duration", value: `${formData.duration} days`, color: "#1D4ED8", bg: "#EFF6FF" },
                                             { label: "Category", value: formData.category, color: "#7C3AED", bg: "#FDF4FF" },
                                         ].map(s => (
-                                            <div key={s.label} className="p-3.5 rounded-xl text-center" style={{ background: s.bg }}>
-                                                <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">{s.label}</div>
-                                                <div className="text-sm font-extrabold" style={{ color: s.color }}>{s.value}</div>
+                                            <div key={s.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 text-center dark:border-white/10 dark:bg-white/[0.04]">
+                                                <div className="mb-1 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/40">{s.label}</div>
+                                                <div className="text-sm font-extrabold text-slate-900 dark:text-cyan-200">{s.value}</div>
                                             </div>
                                         ))}
                                     </div>
 
                                     {/* technologies */}
-                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                        <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Technologies</div>
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                                        <div className="mb-2.5 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/40">Technologies</div>
                                         <div className="flex flex-wrap gap-1.5">
                                             {selectedTechs.map(t => (
                                                 <span key={t} className="px-3 py-1 rounded-full text-xs font-semibold text-white"
@@ -551,7 +547,7 @@ const ListProject = () => {
                         {/* action buttons */}
                         <div className="flex gap-3">
                             <button type="button" onClick={() => setStep(1)}
-                                className="flex-1 py-3.5 rounded-2xl border border-gray-200 bg-white text-gray-700 font-bold text-sm cursor-pointer transition-all hover:bg-gray-50">
+                                className="flex-1 cursor-pointer rounded-2xl border border-slate-200 bg-white py-3.5 text-sm font-bold text-slate-700 transition-all hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/75 dark:hover:bg-white/[0.09]">
                                 ← Edit Details
                             </button>
                             <button type="submit"

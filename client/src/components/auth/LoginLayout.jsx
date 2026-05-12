@@ -35,11 +35,11 @@ const LoginLayout = ({
     mobileDescription = 'Login to continue with a faster, cleaner, and more secure experience.',
 }) => {
     return (
-        <div className="auth-sans relative isolate min-h-screen overflow-hidden bg-[linear-gradient(180deg,#eef5ff_0%,#f8fbff_46%,#edf7ff_100%)] text-slate-900">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.14),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(34,211,238,0.14),transparent_30%)]" />
+        <div className="auth-sans relative isolate min-h-screen overflow-hidden bg-[linear-gradient(135deg,#eef7ff_0%,#f8fafc_48%,#e8fff8_100%)] text-slate-900 dark:bg-[linear-gradient(180deg,#020617_0%,#071427_54%,#062f35_100%)] dark:text-white">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(34,211,238,0.16),transparent_30%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.24),transparent_26%),radial-gradient(circle_at_85%_20%,rgba(45,212,191,0.18),transparent_22%)]" />
 
             <div
-                className="pointer-events-none absolute inset-0 opacity-45"
+                className="pointer-events-none absolute inset-0 opacity-45 dark:opacity-60"
                 style={{
                     backgroundImage:
                         'linear-gradient(rgba(148,163,184,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.14) 1px, transparent 1px)',
@@ -47,9 +47,9 @@ const LoginLayout = ({
                 }}
             />
 
-            <div className="relative mx-auto flex min-h-screen w-full max-w-[1440px] items-center px-4 py-6 sm:px-6 lg:px-10">
-                <div className="grid w-full overflow-hidden rounded-[34px] border border-white/80 bg-white/80 shadow-[0_36px_120px_-60px_rgba(15,23,42,0.55)] lg:grid-cols-[1.04fr_0.96fr]">
-                    <div className="relative hidden min-h-[720px] overflow-hidden bg-[linear-gradient(160deg,#0f172a_0%,#082f49_54%,#0f766e_100%)] p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-12">
+            <div className="relative mx-auto flex min-h-screen w-full max-w-[1440px] items-start px-4 py-5 sm:px-6 sm:py-8 lg:items-center lg:px-10">
+                <div className="grid w-full overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/80 shadow-2xl shadow-sky-950/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80 dark:shadow-black/40 sm:rounded-[34px] lg:grid-cols-[1.04fr_0.96fr]">
+                    <div className="relative hidden min-h-[720px] overflow-hidden bg-gradient-to-br from-blue-600 to-slate-900 dark:bg-[linear-gradient(160deg,#0f172a_0%,#082f49_54%,#0f766e_100%)] p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-12">
                         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.24),transparent_26%),radial-gradient(circle_at_85%_20%,rgba(45,212,191,0.18),transparent_22%)]" />
 
                         <div className="relative">
@@ -152,33 +152,33 @@ const LoginLayout = ({
                         </div>
                     </div>
 
-                    <div className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:px-8 lg:min-h-[720px] lg:px-10 lg:py-12">
-                        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.08),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(255,255,255,0.82)_100%)]" />
+                    <div className="relative flex items-start justify-center bg-white/90 px-4 py-7 dark:bg-slate-950/90 sm:px-8 sm:py-10 lg:min-h-[720px] lg:items-center lg:px-10 lg:py-12">
+                        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.1),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.86)_0%,rgba(248,250,252,0.76)_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.12),transparent_34%),linear-gradient(180deg,rgba(15,23,42,0.86)_0%,rgba(2,6,23,0.72)_100%)]" />
 
                         <div className="relative w-full max-w-xl">
-                            <div className="mb-8 lg:hidden">
+                            <div className="mb-6 lg:hidden">
                                 <Link
                                     to="/"
-                                    className="inline-flex items-center gap-3 rounded-full border border-white/80 bg-white px-4 py-3 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.28)]"
+                                    className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white/90 px-4 py-3 shadow-lg shadow-slate-950/10 transition-colors hover:border-sky-200 dark:border-white/10 dark:bg-white/10 dark:shadow-black/25 dark:hover:bg-white/15"
                                 >
                                     <CoworkerIcon size={38} />
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-900">
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
                                             Co.worker
                                         </p>
-                                        <p className="text-xs text-slate-500">
+                                        <p className="text-xs text-gray-600 dark:text-slate-400">
                                             Secure freelance workspace
                                         </p>
                                     </div>
                                 </Link>
 
-                                <p className="mt-6 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
+                                <p className="mt-6 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-cyan-300">
                                     {mobileBadge}
                                 </p>
-                                <h1 className="auth-serif mt-3 text-4xl leading-tight text-slate-950">
+                                <h1 className="auth-serif mt-3 text-4xl leading-tight text-slate-950 dark:text-white">
                                     {mobileTitle}
                                 </h1>
-                                <p className="mt-3 max-w-md text-sm leading-7 text-slate-600">
+                                <p className="mt-3 max-w-md text-sm leading-7 text-slate-600 dark:text-slate-300">
                                     {mobileDescription}
                                 </p>
                             </div>

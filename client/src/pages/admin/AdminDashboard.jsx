@@ -1,14 +1,24 @@
 // ===== FILE: client/src/pages/admin/AdminDashboard.jsx =====
 
-import { useState, useEffect, useCallback, createContext, useContext } from "react"
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useDeferredValue,
+  useRef,
+  startTransition,
+  createContext,
+  useContext,
+} from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 import {
-  getAllUsers,
-  getAllProjects,
-  getAllBids,
   getDashboardStats,
+  getMonthlyAnalytics,
+  refreshAdminDashboard,
+  updatePlatformSettingsThunk,
   adminUpdateUser,
   adminDeleteUser,
   adminUpdateProject,
@@ -18,8 +28,12 @@ import {
   localUpdateBid,
   localUpdateProject,
   resetAdminState,
+  updateMonthlyAnalytics,
+  addPaymentToList,
 } from "../../features/admin/adminSlice"
 import AdminPayments from "../AdminPayments"
+import { getSocket, initSocket } from "../../utils/socketManager"
+import { toggleTheme } from "../../features/theme/themeSlice"
 
 // ─── THEME ────────────────────────────────────────────────────────────────────
 const THEMES = {
@@ -80,17 +94,49 @@ const THEMES = {
 }
 const ThemeCtx = createContext(THEMES.dark)
 
-// ─── DUMMY PAYMENTS (no payments model yet — swap with real API when ready) ───
-const DUMMY_PAYMENTS = [
-  { _id: "t1", user: "Arjun Mehta", amount: 25000, status: "Completed", method: "UPI", date: "2024-03-15", txId: "TXN001" },
-  { _id: "t2", user: "Sneha Patel", amount: 12000, status: "Pending", method: "Card", date: "2024-03-18", txId: "TXN002" },
-  { _id: "t3", user: "Rohan Das", amount: 30000, status: "Failed", method: "Net Banking", date: "2024-03-20", txId: "TXN003" },
-  { _id: "t4", user: "Arjun Mehta", amount: 45000, status: "Completed", method: "UPI", date: "2024-03-22", txId: "TXN004" },
-  { _id: "t5", user: "Sneha Patel", amount: 8000, status: "Completed", method: "Card", date: "2024-03-25", txId: "TXN005" },
-]
+const DEFAULT_PLATFORM_TOGGLES = {
+  "Maintenance Mode": false,
+  "New Registrations": true,
+  "Bid System": true,
+  "Payment Gateway": true,
+}
 
+// ─── MONTHS (for chart labels) ────────────────────────────────────────────────
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-const MONTHLY_DATA = [18, 26, 34, 28, 48, 42, 55, 63, 58, 72, 67, 84]
+
+const normalizeStatus = (status) => String(status || "").trim().toLowerCase()
+const statusIs = (status, ...matches) => matches.map(normalizeStatus).includes(normalizeStatus(status))
+
+const getEntityName = (entity, fallback = "—") => {
+  if (!entity) return fallback
+  if (typeof entity === "string") return entity
+  return entity.name || entity.user?.name || entity.email || entity.user?.email || fallback
+}
+
+const getProjectOwnerName = (project) => getEntityName(project?.user || project?.client)
+const getBidFreelancerName = (bid) => getEntityName(bid?.freelancer)
+const getBidProjectTitle = (bid) => (
+  typeof bid?.project === "object" ? bid.project?.title : bid?.project
+) || "—"
+
+const getPaymentAmount = (payment) => Number(payment?.totalAmount ?? payment?.amount ?? payment?.freelancerAmount ?? 0)
+const getPaymentRevenue = (payment) => Number(payment?.platformFee ?? payment?.fee ?? 0)
+
+const formatCompactMoney = (amount) => {
+  const value = Number(amount || 0)
+  if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`
+  if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`
+  if (value >= 1000) return `₹${(value / 1000).toFixed(0)}K`
+  return `₹${value.toLocaleString("en-IN")}`
+}
+
+const getGrowthPercent = (data = []) => {
+  if (data.length < 2) return 0
+  const current = Number(data[data.length - 1] || 0)
+  const previous = Number(data[data.length - 2] || 0)
+  if (previous === 0) return current > 0 ? 100 : 0
+  return Math.round(((current - previous) / previous) * 100)
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SMALL UI COMPONENTS
@@ -98,9 +144,10 @@ const MONTHLY_DATA = [18, 26, 34, 28, 48, 42, 55, 63, 58, 72, 67, 84]
 
 // ─── SPARKLINE ────────────────────────────────────────────────────────────────
 function SparkLine({ data, color = "#6366f1", height = 40 }) {
-  const max = Math.max(...data), min = Math.min(...data), range = max - min || 1
+  const safeData = Array.isArray(data) && data.length > 1 ? data : [0, 0]
+  const max = Math.max(...safeData), min = Math.min(...safeData), range = max - min || 1
   const w = 260, h = height
-  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 6)}`).join(" ")
+  const pts = safeData.map((v, i) => `${(i / (safeData.length - 1)) * w},${h - ((v - min) / range) * (h - 6)}`).join(" ")
   const gid = `sg${color.replace(/[^a-z0-9]/gi, "")}${height}`
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height }}>
@@ -119,13 +166,14 @@ function SparkLine({ data, color = "#6366f1", height = 40 }) {
 // ─── BAR CHART ───────────────────────────────────────────────────────────────
 function BarChart({ data, labels, color = "#6366f1", height = 120 }) {
   const t = useContext(ThemeCtx)
-  const max = Math.max(...data) || 1
+  const safeData = Array.isArray(data) && data.length ? data : [0]
+  const max = Math.max(...safeData) || 1
   return (
     <div className="flex items-end gap-0.5 w-full" style={{ height }}>
-      {data.map((v, i) => (
+      {safeData.map((v, i) => (
         <div key={i} className="flex flex-col items-center flex-1 gap-0.5 group relative">
           <div className="w-full rounded-t transition-all duration-500"
-            style={{ height: `${(v / max) * (height - 20)}px`, background: color, opacity: 0.6 + (i / data.length) * 0.4 }}>
+            style={{ height: `${(v / max) * (height - 20)}px`, background: color, opacity: 0.6 + (i / safeData.length) * 0.4 }}>
             <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs bg-slate-800 text-white px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-10">{v}</span>
           </div>
           <span style={{ color: t.textMuted, fontSize: 8 }}>{labels[i]}</span>
@@ -151,6 +199,14 @@ function Badge({ label }) {
     Pending: "bg-amber-500/20  text-amber-500  border-amber-500/30",
     Accepted: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30",
     Rejected: "bg-red-500/20    text-red-500    border-red-500/30",
+    pending: "bg-amber-500/20  text-amber-500  border-amber-500/30",
+    accepted: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30",
+    rejected: "bg-red-500/20    text-red-500    border-red-500/30",
+    "in-progress": "bg-blue-500/20   text-blue-500   border-blue-500/30",
+    completed: "bg-teal-500/20   text-teal-600   border-teal-500/30",
+    failed: "bg-red-500/20    text-red-500    border-red-500/30",
+    escrow: "bg-blue-500/20   text-blue-500   border-blue-500/30",
+    released: "bg-teal-500/20   text-teal-600   border-teal-500/30",
     Failed: "bg-red-500/20    text-red-500    border-red-500/30",
     fraud: "bg-orange-500/20 text-orange-500 border-orange-500/30",
   }
@@ -335,15 +391,16 @@ const AdminDashboard = () => {
 
   // ── Redux state ────────────────────────────────────────────────────────────
   const { user } = useSelector(s => s.auth)
-  const { users, projects, bids, stats, adminLoading, adminError, adminErrorMessage } = useSelector(s => s.admin)
+  const appTheme = useSelector(s => s.theme?.mode || "light")
+  const { users, projects, bids, stats, monthlyAnalytics, recentPayments, platformSettings, adminLoading, adminError, adminErrorMessage } = useSelector(s => s.admin)
 
   // ── Theme ──────────────────────────────────────────────────────────────────
-  const [themeName, setThemeName] = useState("dark")
+  const themeName = appTheme === "dark" ? "dark" : "light"
   const t = THEMES[themeName]
 
   // ── Local UI state ─────────────────────────────────────────────────────────
   const [section, setSection] = useState("dashboard")
-  const payments = DUMMY_PAYMENTS
+  const payments = useMemo(() => (recentPayments && recentPayments.length > 0 ? recentPayments : []), [recentPayments])
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState("All")
   const [statusFilter, setStatusFilter] = useState("All")
@@ -357,20 +414,61 @@ const AdminDashboard = () => {
     { id: 1, msg: "Admin session started", time: "Just now", type: "info" },
     { id: 2, msg: "Dashboard data loaded", time: "Just now", type: "success" },
   ])
+  const refreshTimerRef = useRef(null)
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  const pushActivity = useCallback((msg, type = "info") => {
+    setActivity(prev => [{ id: Date.now(), msg, time: "Just now", type }, ...prev.slice(0, 29)])
+  }, [setActivity])
+
+  const refreshAdminData = useCallback(() => {
+    dispatch(refreshAdminDashboard())
+  }, [dispatch])
+
+  const scheduleAdminRefresh = useCallback(() => {
+    if (refreshTimerRef.current) {
+      window.clearTimeout(refreshTimerRef.current)
+    }
+
+    refreshTimerRef.current = window.setTimeout(() => {
+      refreshAdminData()
+      refreshTimerRef.current = null
+    }, 250)
+  }, [refreshAdminData])
+
+  const changeSection = useCallback((nextSection) => {
+    startTransition(() => setSection(nextSection))
+  }, [])
 
   // ── Platform toggles (must be top-level — never inside .map()) ────────────
-  const [platformToggles, setPlatformToggles] = useState({
-    "Maintenance Mode": false,
-    "New Registrations": true,
-    "Bid System": true,
-    "Payment Gateway": true,
-  })
+  const [platformToggleOverrides, setPlatformToggleOverrides] = useState({})
+  const platformToggles = useMemo(() => ({
+    ...DEFAULT_PLATFORM_TOGGLES,
+    ...(platformSettings ? {
+      "Maintenance Mode": Boolean(platformSettings.maintenanceMode?.enabled),
+      "New Registrations": platformSettings.registrations?.enabled !== false,
+      "Bid System": platformSettings.bidSystem?.enabled !== false,
+      "Payment Gateway": platformSettings.paymentGateway?.enabled !== false,
+    } : {}),
+    ...platformToggleOverrides,
+  }), [platformSettings, platformToggleOverrides])
   const togglePlatform = (label) => {
-    setPlatformToggles(prev => {
-      const next = !prev[label]
-      toast.success(`${label} ${next ? "enabled" : "disabled"}`)
-      return { ...prev, [label]: next }
-    })
+    const next = !platformToggles[label]
+    toast.success(`${label} ${next ? "enabled" : "disabled"}`)
+
+    const settingMap = {
+      "Maintenance Mode": { maintenanceMode: { enabled: next } },
+      "New Registrations": { registrations: { enabled: next } },
+      "Bid System": { bidSystem: { enabled: next } },
+      "Payment Gateway": { paymentGateway: { enabled: next } },
+    }
+
+    const updateData = settingMap[label]
+    if (updateData) {
+      dispatch(updatePlatformSettingsThunk(updateData))
+    }
+
+    setPlatformToggleOverrides(prev => ({ ...prev, [label]: next }))
   }
 
   // ── Auth guard (stable deps — no navigate in deps) ─────────────────────────
@@ -381,11 +479,75 @@ const AdminDashboard = () => {
   // ── Fetch all data once on mount ──────────────────────────────────────────
   useEffect(() => {
     if (!user?.isAdmin) return
-    dispatch(getAllUsers())
-    dispatch(getAllProjects())
-    dispatch(getAllBids())
-    dispatch(getDashboardStats())
-  }, [dispatch, user?.isAdmin])
+    refreshAdminData()
+
+    // ─ Join admin dashboard room for real-time updates
+    const activeSocket = getSocket() || initSocket(user.token)
+    activeSocket?.emit("join_dashboard")
+
+    return () => {
+      activeSocket?.emit("leave_dashboard")
+    }
+  }, [refreshAdminData, user?.isAdmin, user?.token])
+
+  // ── Listen for real-time dashboard updates via Socket.IO ──────────────────
+  useEffect(() => {
+    if (!user?.isAdmin) return
+
+    const activeSocket = getSocket() || initSocket(user.token)
+    if (!activeSocket) return
+
+    const handleMonthlyAnalyticsUpdate = (data) => {
+      dispatch(updateMonthlyAnalytics(data))
+      pushActivity("Monthly analytics updated", "info")
+    }
+
+    const handlePaymentUpdate = (data) => {
+      const payment = data?.payment || data
+      if (payment?._id) {
+        dispatch(addPaymentToList(payment))
+      }
+      dispatch(getDashboardStats())
+      dispatch(getMonthlyAnalytics())
+      pushActivity(`Payment updated: ₹${getPaymentAmount(payment).toLocaleString("en-IN")}`, "success")
+    }
+
+    const handleStatsUpdate = (data) => {
+      dispatch({ type: "admin/getStats/fulfilled", payload: data })
+      pushActivity("Dashboard stats updated", "info")
+    }
+
+    const handleAdminDataChanged = (data) => {
+      scheduleAdminRefresh()
+      pushActivity(data?.message || `Platform data changed${data?.type ? `: ${data.type}` : ""}`, "info")
+    }
+
+    activeSocket.on("monthly_analytics_updated", handleMonthlyAnalyticsUpdate)
+    activeSocket.on("payment_updated", handlePaymentUpdate)
+    activeSocket.on("dashboard_stats_updated", handleStatsUpdate)
+    activeSocket.on("admin_data_changed", handleAdminDataChanged)
+
+    return () => {
+      activeSocket.off("monthly_analytics_updated", handleMonthlyAnalyticsUpdate)
+      activeSocket.off("payment_updated", handlePaymentUpdate)
+      activeSocket.off("dashboard_stats_updated", handleStatsUpdate)
+      activeSocket.off("admin_data_changed", handleAdminDataChanged)
+    }
+  }, [dispatch, pushActivity, scheduleAdminRefresh, user?.isAdmin, user?.token])
+
+  // Socket events are best-effort; this keeps admin numbers current even when
+  // a backend path has not yet been wired to emit a dashboard event.
+  useEffect(() => {
+    if (!user?.isAdmin) return
+    const intervalId = window.setInterval(refreshAdminData, 30000)
+    return () => window.clearInterval(intervalId)
+  }, [refreshAdminData, user?.isAdmin])
+
+  useEffect(() => () => {
+    if (refreshTimerRef.current) {
+      window.clearTimeout(refreshTimerRef.current)
+    }
+  }, [])
 
   // ── Show error toasts ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -394,11 +556,6 @@ const AdminDashboard = () => {
       dispatch(resetAdminState())
     }
   }, [adminError, adminErrorMessage, dispatch])
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
-  const pushActivity = useCallback((msg, type = "info") => {
-    setActivity(prev => [{ id: Date.now(), msg, time: "Just now", type }, ...prev.slice(0, 29)])
-  }, [])
 
   const exportJSON = (data, name) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
@@ -410,40 +567,70 @@ const AdminDashboard = () => {
 
   // ── Sort helpers ───────────────────────────────────────────────────────────
   const toggleSort = key => setSortCfg(p => ({ key, dir: p.key === key && p.dir === "asc" ? "desc" : "asc" }))
-  const sortArr = arr => [...arr].sort((a, b) => {
+  const sortArr = useCallback(arr => [...arr].sort((a, b) => {
     const mod = sortCfg.dir === "asc" ? 1 : -1
     const av = a[sortCfg.key], bv = b[sortCfg.key]
     if (typeof av === "string") return (av || "").localeCompare(bv || "") * mod
     return ((av || 0) - (bv || 0)) * mod
-  })
+  }), [sortCfg])
   const getSortIcon = col => sortCfg.key === col ? (sortCfg.dir === "asc" ? "↑" : "↓") : "↕"
 
   // ── Computed ───────────────────────────────────────────────────────────────
-  const q = search.toLowerCase()
-  const freelancers = users.filter(u => u.isFreelancer)
-  const totalRevenue = payments.filter(p => p.status === "Completed").reduce((s, p) => s + p.amount, 0)
-  const totalCredits = stats?.totalCredits || users.reduce((s, u) => s + (u.credits || 0), 0)
-  const fraudUsers = users.filter(u => u.fraudFlag)
-  const fraudBids = bids.filter(b => b.fraudFlag)
+  const deferredSearch = useDeferredValue(search)
+  const q = useMemo(() => deferredSearch.trim().toLowerCase(), [deferredSearch])
+  const freelancers = useMemo(() => users.filter(u => u.isFreelancer), [users])
+  const topFreelancers = useMemo(
+    () => [...freelancers].sort((a, b) => (b.completedProjects || 0) - (a.completedProjects || 0)).slice(0, 5),
+    [freelancers]
+  )
+  const totalRevenue = useMemo(() => (
+    stats?.totalRevenue ?? payments
+      .filter(p => statusIs(p.status, "escrow", "released", "completed"))
+      .reduce((s, p) => s + getPaymentRevenue(p), 0)
+  ), [payments, stats?.totalRevenue])
+  const totalCredits = useMemo(
+    () => stats?.totalCredits ?? users.reduce((s, u) => s + (u.credits || 0), 0),
+    [stats?.totalCredits, users]
+  )
+  const fraudUsers = useMemo(() => users.filter(u => u.fraudFlag), [users])
+  const fraudBids = useMemo(() => bids.filter(b => b.fraudFlag), [bids])
+  const acceptedBidsCount = useMemo(() => bids.filter(b => statusIs(b.status, "accepted")).length, [bids])
+  const rejectedBidsCount = useMemo(() => bids.filter(b => statusIs(b.status, "rejected")).length, [bids])
+  const completedProjectsCount = useMemo(() => projects.filter(p => statusIs(p.status, "completed")).length, [projects])
+  const successfulPaymentsCount = useMemo(
+    () => stats?.successfulPayments ?? payments.filter(p => statusIs(p.status, "released", "completed")).length,
+    [payments, stats?.successfulPayments]
+  )
+  const totalPaymentsCount = stats?.totalPayments ?? payments.length
+  const monthlyBids = monthlyAnalytics?.bids || []
+  const monthlyRevenue = monthlyAnalytics?.revenue || []
+  const monthlyUsers = monthlyAnalytics?.userGrowth || []
+  const monthlyFreelancers = monthlyAnalytics?.freelancers || []
+  const monthlyProjects = monthlyAnalytics?.projects || []
 
-  const filteredUsers = sortArr(users).filter(u => {
+  const filteredUsers = useMemo(() => sortArr(users).filter(u => {
     const mq = !q || u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u._id?.includes(q)
     const mr = roleFilter === "All" || (roleFilter === "Freelancer" && u.isFreelancer) || (roleFilter === "User" && !u.isFreelancer && !u.isAdmin) || (roleFilter === "Admin" && u.isAdmin)
     const ms = statusFilter === "All" || (u.status || "Active") === statusFilter
     return mq && mr && ms
-  })
-  const filteredProjects = sortArr(projects).filter(p => {
-    const mq = !q || p.title?.toLowerCase().includes(q) || (typeof p.client === "string" ? p.client : p.client?.name || "").toLowerCase().includes(q)
-    const ms = statusFilter === "All" || p.status === statusFilter
+  }), [q, roleFilter, sortArr, statusFilter, users])
+  const visibleUsers = useMemo(
+    () => section === "freelancers" ? filteredUsers.filter(u => u.isFreelancer) : filteredUsers,
+    [filteredUsers, section]
+  )
+  const filteredProjects = useMemo(() => sortArr(projects).filter(p => {
+    const mq = !q || p.title?.toLowerCase().includes(q) || getProjectOwnerName(p).toLowerCase().includes(q)
+    const ms = statusFilter === "All" || statusIs(p.status, statusFilter)
     return mq && ms
-  })
-  const filteredBids = sortArr(bids).filter(b => {
-    const fl = typeof b.freelancer === "string" ? b.freelancer : b.freelancer?.name || ""
-    const pr = typeof b.project === "string" ? b.project : b.project?.title || ""
+  }), [projects, q, sortArr, statusFilter])
+  const filteredBids = useMemo(() => sortArr(bids).filter(b => {
+    const fl = getBidFreelancerName(b)
+    const pr = getBidProjectTitle(b)
     const mq = !q || fl.toLowerCase().includes(q) || pr.toLowerCase().includes(q)
-    const ms = statusFilter === "All" || b.status === statusFilter
+    const ms = statusFilter === "All" || statusIs(b.status, statusFilter)
     return mq && ms
-  })
+  }), [bids, q, sortArr, statusFilter])
+  const highValueProjects = useMemo(() => projects.filter(p => p.budget >= 25000), [projects])
   // ── Admin actions ──────────────────────────────────────────────────────────
   const doUpdateUser = (uid, data) => {
     dispatch(localUpdateUser({ uid, data }))
@@ -471,7 +658,7 @@ const AdminDashboard = () => {
     dispatch(localUpdateBid({ bid_id, data }))
     dispatch(adminUpdateBid({ bid_id, data }))
       .unwrap()
-      .then(() => { toast.success(`Bid ${data.status || "updated"}`); pushActivity(`Bid ${data.status || "updated"}`, data.status === "Accepted" ? "success" : "warn") })
+      .then(() => { toast.success(`Bid ${data.status || "updated"}`); pushActivity(`Bid ${data.status || "updated"}`, statusIs(data.status, "accepted") ? "success" : "warn") })
       .catch(() => { })
   }
   // ── Selects style ──────────────────────────────────────────────────────────
@@ -514,7 +701,7 @@ const AdminDashboard = () => {
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search everything…" className="rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none w-56" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.inputText }} />
               {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ background: "none", border: "none", color: t.textMuted, cursor: "pointer" }}>✕</button>}
             </div>
-            <ThemeToggle theme={themeName} toggle={() => setThemeName(n => n === "dark" ? "light" : "dark")} />
+            <ThemeToggle theme={themeName} toggle={() => dispatch(toggleTheme())} />
             <div className="relative">
               <button onClick={() => setShowNotif(s => !s)} className="relative p-2 rounded-xl" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.textSub, cursor: "pointer" }}>
                 🔔<span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center" style={{ fontSize: 9 }}>{activity.length}</span>
@@ -549,7 +736,7 @@ const AdminDashboard = () => {
             {NAV.map(n => {
               const active = section === n.id
               return (
-                <button key={n.id} onClick={() => setSection(n.id)}
+                <button key={n.id} onClick={() => changeSection(n.id)}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", margin: "2px 8px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", transition: "all .18s", textAlign: "left", background: active ? t.activeNav : "transparent", color: active ? "#6366f1" : t.textSub, borderLeft: active ? "3px solid #6366f1" : "3px solid transparent" }}
                   onMouseEnter={e => { if (!active) e.currentTarget.style.background = t.rowHover }}
                   onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent" }}>
@@ -572,7 +759,7 @@ const AdminDashboard = () => {
                     <p className="text-sm" style={{ color: t.textSub }}>Welcome, {user?.name || "Admin"} — real-time platform metrics</p>
                   </div>
                   <div className="flex gap-2 flex-wrap">
-                    <Btn onClick={() => { dispatch(getAllUsers()); dispatch(getAllProjects()); dispatch(getAllBids()); dispatch(getDashboardStats()); toast.info("Data refreshed") }} color="indigo">↻ Refresh</Btn>
+                    <Btn onClick={() => { refreshAdminData(); toast.info("Data refreshed") }} color="indigo">↻ Refresh</Btn>
                     <Btn onClick={() => exportJSON({ users, projects, bids }, "full-backup")} color="amber">💾 Backup</Btn>
                   </div>
                 </div>
@@ -581,12 +768,12 @@ const AdminDashboard = () => {
                 {adminLoading && !users.length ? <Skeleton rows={2} /> : (
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
                     {[
-                      { label: "Total Users", value: stats?.totalUsers || users.length, icon: "👥", color: "#6366f1", data: MONTHLY_DATA },
-                      { label: "Freelancers", value: stats?.totalFreelancers || freelancers.length, icon: "🧑‍💻", color: "#a78bfa", data: MONTHLY_DATA.map(v => Math.round(v * 0.4)) },
-                      { label: "Projects", value: stats?.totalProjects || projects.length, icon: "💼", color: "#38bdf8", data: MONTHLY_DATA.map(v => Math.round(v * 0.25)) },
-                      { label: "Total Bids", value: stats?.totalBids || bids.length, icon: "🏷️", color: "#34d399", data: MONTHLY_DATA },
-                      { label: "Revenue", value: `₹${(totalRevenue / 1000).toFixed(0)}K`, icon: "💰", color: "#f59e0b", data: MONTHLY_DATA.map(v => v * 2) },
-                      { label: "Credits", value: `${(totalCredits / 1000).toFixed(1)}K`, icon: "⚡", color: "#f472b6", data: MONTHLY_DATA.map(v => v * 3) },
+                      { label: "Total Users", value: stats?.totalUsers ?? users.length, icon: "👥", color: "#6366f1", data: monthlyUsers },
+                      { label: "Freelancers", value: stats?.totalFreelancers ?? freelancers.length, icon: "🧑‍💻", color: "#a78bfa", data: monthlyFreelancers },
+                      { label: "Projects", value: stats?.totalProjects ?? projects.length, icon: "💼", color: "#38bdf8", data: monthlyProjects },
+                      { label: "Total Bids", value: stats?.totalBids ?? bids.length, icon: "🏷️", color: "#34d399", data: monthlyBids },
+                      { label: "Revenue", value: formatCompactMoney(totalRevenue), icon: "💰", color: "#f59e0b", data: monthlyRevenue.map(v => Math.round(v / 1000)) },
+                      { label: "Credits", value: totalCredits.toLocaleString("en-IN"), icon: "⚡", color: "#f472b6", data: monthlyUsers },
                     ].map(c => (
                       <div key={c.label} className="rounded-2xl p-4 transition-all hover:scale-[1.02]" style={{ background: t.card, border: `1px solid ${t.border}` }}>
                         <div className="flex items-center justify-between mb-1">
@@ -602,19 +789,25 @@ const AdminDashboard = () => {
 
                 {/* CHARTS */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[{ title: "Bids / Month", data: MONTHLY_DATA, color: "#6366f1" }, { title: "Revenue (₹K)", data: MONTHLY_DATA.map(v => v * 2), color: "#f59e0b" }, { title: "User Growth", data: MONTHLY_DATA.map(v => Math.round(v * 0.7)), color: "#34d399" }].map(c => (
+                  {monthlyAnalytics ? [
+                    { title: "Bids / Month", data: monthlyBids, color: "#6366f1" },
+                    { title: "Revenue (₹K)", data: monthlyRevenue.map(v => Math.round(v / 1000)), color: "#f59e0b" },
+                    { title: "User Growth", data: monthlyUsers, color: "#34d399" }
+                  ].map(c => (
                     <div key={c.title} className="rounded-2xl p-5" style={{ background: t.card, border: `1px solid ${t.border}` }}>
                       <h3 className="text-sm font-semibold mb-4" style={{ color: t.text }}>{c.title}</h3>
-                      <BarChart data={c.data} labels={MONTHS} color={c.color} height={128} />
+                      <BarChart data={c.data.length > 0 ? c.data : [0]} labels={monthlyAnalytics.months || MONTHS} color={c.color} height={128} />
                     </div>
-                  ))}
+                  )).slice(0, 3) : (
+                    <div style={{ color: t.textMuted }}>Loading analytics...</div>
+                  )}
                 </div>
 
                 {/* BOTTOM ROW */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card>
                     <h3 className="text-sm font-semibold mb-4" style={{ color: t.text }}>🏆 Top Freelancers</h3>
-                    {freelancers.slice(0, 5).sort((a, b) => (b.completedProjects || 0) - (a.completedProjects || 0)).map((f, i) => (
+                    {topFreelancers.map((f, i) => (
                       <div key={f._id} className="flex items-center gap-3 mb-3 p-2 rounded-xl" style={{ background: t.summaryRow }}>
                         <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: ["#f59e0b", "#94a3b8", "#b45309", "#6366f1"][i] + "22", color: ["#f59e0b", "#94a3b8", "#b45309", "#6366f1"][i] || "#6366f1" }}>{i + 1}</span>
                         <div className="flex-1 min-w-0">
@@ -629,9 +822,9 @@ const AdminDashboard = () => {
                   <Card>
                     <h3 className="text-sm font-semibold mb-4" style={{ color: t.text }}>📊 Platform Health</h3>
                     {[
-                      { label: "Bid Accept Rate", val: Math.round(bids.filter(b => b.status === "Accepted").length / Math.max(bids.length, 1) * 100), color: "#6366f1" },
-                      { label: "Project Success", val: Math.round(projects.filter(p => p.status === "Completed").length / Math.max(projects.length, 1) * 100), color: "#34d399" },
-                      { label: "Payment Success", val: Math.round(payments.filter(p => p.status === "Completed").length / Math.max(payments.length, 1) * 100), color: "#f59e0b" },
+                      { label: "Bid Accept Rate", val: Math.round(acceptedBidsCount / Math.max(bids.length, 1) * 100), color: "#6366f1" },
+                      { label: "Project Success", val: Math.round(completedProjectsCount / Math.max(projects.length, 1) * 100), color: "#34d399" },
+                      { label: "Payment Success", val: Math.round(successfulPaymentsCount / Math.max(totalPaymentsCount, 1) * 100), color: "#f59e0b" },
                       { label: "Fraud Rate", val: Math.round(fraudUsers.length / Math.max(users.length, 1) * 100), color: "#f87171" },
                     ].map(m => (
                       <div key={m.label} className="mb-3">
@@ -652,7 +845,7 @@ const AdminDashboard = () => {
                     {!fraudUsers.length && !fraudBids.length && <p className="text-xs" style={{ color: t.textMuted }}>No active fraud alerts 🎉</p>}
                     <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${t.border}` }}>
                       <p className="text-xs font-semibold mb-2" style={{ color: t.textMuted }}>💎 High-Value Projects</p>
-                      {projects.filter(p => p.budget >= 25000).map(p => (
+                      {highValueProjects.map(p => (
                         <p key={p._id} className="text-xs mb-1" style={{ color: t.textSub }}>· {p.title} <span style={{ color: "#f59e0b", fontWeight: 700 }}>₹{p.budget?.toLocaleString()}</span></p>
                       ))}
                     </div>
@@ -667,7 +860,7 @@ const AdminDashboard = () => {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h1 className="text-2xl font-bold" style={{ color: t.text }}>{section === "users" ? "All Users" : "Freelancers"}</h1>
-                    <p className="text-sm" style={{ color: t.textSub }}>{filteredUsers.filter(u => section === "freelancers" ? u.isFreelancer : true).length} records</p>
+                    <p className="text-sm" style={{ color: t.textSub }}>{visibleUsers.length} records</p>
                   </div>
                   <div className="flex gap-2 flex-wrap">
                     <div className="relative">
@@ -698,9 +891,9 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredUsers.filter(u => section === "freelancers" ? u.isFreelancer : true).length === 0
+                          {visibleUsers.length === 0
                             ? <tr><td colSpan={8}><Empty icon="👤" label="No users match filters" /></td></tr>
-                            : filteredUsers.filter(u => section === "freelancers" ? u.isFreelancer : true).map(u => {
+                            : visibleUsers.map(u => {
                               const profile = u.profile || {}
                               const skills = u.skills?.length ? u.skills : profile.skills?.length ? profile.skills : []
                               const done = u.completedProjects != null ? u.completedProjects : profile.completedProjects ?? 0
@@ -757,7 +950,7 @@ const AdminDashboard = () => {
                       </table>
                     </div>
                     <p className="px-4 py-2 text-xs text-right" style={{ color: t.textMuted }}>
-                      Showing {filteredUsers.filter(u => section === "freelancers" ? u.isFreelancer : true).length} of {users.length}
+                      Showing {visibleUsers.length} of {users.length}
                     </p>
                   </div>
                 )}
@@ -773,14 +966,14 @@ const AdminDashboard = () => {
                     <p className="text-sm" style={{ color: t.textSub }}>{filteredProjects.length} projects</p>
                   </div>
                   <div className="flex gap-2">
-                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={SEL}><option value="All">All</option><option>Open</option><option>In-Progress</option><option>Completed</option><option>Cancelled</option></select>
+                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={SEL}><option value="All">All</option><option value="pending">Pending</option><option value="accepted">Accepted</option><option value="in-progress">In Progress</option><option value="completed">Completed</option><option value="rejected">Rejected</option></select>
                     <Btn onClick={() => exportJSON(projects, "projects")} color="indigo">↓ Export</Btn>
                   </div>
                 </div>
                 {adminLoading ? <Skeleton rows={3} /> : filteredProjects.length === 0 ? <Empty icon="💼" label="No projects" /> : (
                   <div className="grid gap-4">
                     {filteredProjects.map(p => {
-                      const clientName = typeof p.client === "object" ? p.client?.name : p.client
+                      const clientName = getProjectOwnerName(p)
                       const projectBids = p.bids || bids.filter(b => {
                         const proj = typeof b.project === "object" ? b.project?._id : b.project
                         return proj === p._id
@@ -806,16 +999,16 @@ const AdminDashboard = () => {
                                   <p className="text-xs font-semibold mb-1" style={{ color: t.textMuted }}>Bids:</p>
                                   <div className="flex flex-wrap gap-2">
                                     {projectBids.map(b => {
-                                      const flName = typeof b.freelancer === "object" ? b.freelancer?.name : b.freelancer
+                                      const flName = getBidFreelancerName(b)
                                       return (
                                         <div key={b._id} className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl" style={{ background: t.summaryRow, border: `1px solid ${t.border}` }}>
                                           <span style={{ color: t.text }}>{flName}</span>
                                           <span style={{ color: "#10b981", fontWeight: 700 }}>₹{b.amount?.toLocaleString()}</span>
                                           <Badge label={b.status} />
-                                          {b.status === "Pending" && (
+                                          {statusIs(b.status, "pending") && (
                                             <>
-                                              <Btn onClick={() => doUpdateBid(b._id, { status: "Accepted" })} color="green" size="xs">✓</Btn>
-                                              <Btn onClick={() => doUpdateBid(b._id, { status: "Rejected" })} color="red" size="xs">✗</Btn>
+                                              <Btn onClick={() => doUpdateBid(b._id, { status: "accepted" })} color="green" size="xs">✓</Btn>
+                                              <Btn onClick={() => doUpdateBid(b._id, { status: "rejected" })} color="red" size="xs">✗</Btn>
                                             </>
                                           )}
                                         </div>
@@ -827,7 +1020,7 @@ const AdminDashboard = () => {
                             </div>
                             <div className="flex flex-wrap gap-2 shrink-0">
                               <select value={p.status} onChange={e => doUpdateProject(p._id, { status: e.target.value })} style={{ ...SEL, fontSize: 12, padding: "5px 10px" }}>
-                                <option>Open</option><option>In-Progress</option><option>Completed</option><option>Cancelled</option>
+                                <option value="pending">Pending</option><option value="accepted">Accepted</option><option value="in-progress">In Progress</option><option value="completed">Completed</option><option value="rejected">Rejected</option>
                               </select>
                               <Btn onClick={() => { const fl = window.prompt("Assign freelancer:", p.assignedTo || ""); if (fl !== null) doUpdateProject(p._id, { assignedTo: fl }) }} color="indigo" size="sm">Assign</Btn>
                               <Btn onClick={() => setConfirmModal({ title: "Delete Project", body: `Delete "${p.title}"?`, onConfirm: () => dispatch(localUpdateProject({ pid: p._id, data: {} })) })} color="red" size="sm">Delete</Btn>
@@ -847,15 +1040,15 @@ const AdminDashboard = () => {
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div>
                     <h1 className="text-2xl font-bold" style={{ color: t.text }}>Bids Management</h1>
-                    <p className="text-sm" style={{ color: t.textSub }}>{filteredBids.length} bids · Accept rate: {Math.round(bids.filter(b => b.status === "Accepted").length / Math.max(bids.length, 1) * 100)}%</p>
+                    <p className="text-sm" style={{ color: t.textSub }}>{filteredBids.length} bids · Accept rate: {Math.round(acceptedBidsCount / Math.max(bids.length, 1) * 100)}%</p>
                   </div>
                   <div className="flex gap-2">
-                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={SEL}><option value="All">All</option><option>Pending</option><option>Accepted</option><option>Rejected</option></select>
+                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={SEL}><option value="All">All</option><option value="pending">Pending</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option></select>
                     <Btn onClick={() => exportJSON(bids, "bids")} color="indigo">↓ Export</Btn>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[{ l: "Total", v: bids.length, c: "#6366f1" }, { l: "Accepted", v: bids.filter(b => b.status === "Accepted").length, c: "#10b981" }, { l: "Rejected", v: bids.filter(b => b.status === "Rejected").length, c: "#ef4444" }, { l: "Fraud Flags", v: fraudBids.length, c: "#f59e0b" }].map(s => (
+                  {[{ l: "Total", v: bids.length, c: "#6366f1" }, { l: "Accepted", v: acceptedBidsCount, c: "#10b981" }, { l: "Rejected", v: rejectedBidsCount, c: "#ef4444" }, { l: "Fraud Flags", v: fraudBids.length, c: "#f59e0b" }].map(s => (
                     <div key={s.l} className="rounded-2xl p-4 text-center" style={{ background: t.card, border: `1px solid ${t.border}` }}>
                       <div className="text-2xl font-bold" style={{ color: s.c }}>{s.v}</div>
                       <div className="text-xs mt-1" style={{ color: t.textSub }}>{s.l}</div>
@@ -878,8 +1071,8 @@ const AdminDashboard = () => {
                         </thead>
                         <tbody>
                           {filteredBids.map(b => {
-                            const flName = typeof b.freelancer === "object" ? b.freelancer?.name : b.freelancer
-                            const prName = typeof b.project === "object" ? b.project?.title : b.project
+                            const flName = getBidFreelancerName(b)
+                            const prName = getBidProjectTitle(b)
                             return (
                               <TR key={b._id} fraud={!!b.fraudFlag}>
                                 <TD className="font-medium" style={{ color: t.text }}><Hl text={flName} q={q} /></TD>
@@ -889,9 +1082,9 @@ const AdminDashboard = () => {
                                 <TD>{b.fraudFlag ? <Badge label="fraud" /> : <span style={{ color: t.textMuted, fontSize: 11 }}>Clean</span>}</TD>
                                 <TD>
                                   <div className="flex gap-1 flex-wrap">
-                                    {b.status === "Pending" && <>
-                                      <Btn onClick={() => doUpdateBid(b._id, { status: "Accepted" })} color="green" size="xs">Accept</Btn>
-                                      <Btn onClick={() => doUpdateBid(b._id, { status: "Rejected" })} color="red" size="xs">Reject</Btn>
+                                    {statusIs(b.status, "pending") && <>
+                                      <Btn onClick={() => doUpdateBid(b._id, { status: "accepted" })} color="green" size="xs">Accept</Btn>
+                                      <Btn onClick={() => doUpdateBid(b._id, { status: "rejected" })} color="red" size="xs">Reject</Btn>
                                     </>}
                                     <Btn onClick={() => doUpdateBid(b._id, { fraudFlag: !b.fraudFlag })} color={b.fraudFlag ? "green" : "orange"} size="xs">{b.fraudFlag ? "Clear" : "Flag"}</Btn>
                                   </div>
@@ -908,9 +1101,9 @@ const AdminDashboard = () => {
                 <Card>
                   <h3 className="text-sm font-semibold mb-4" style={{ color: t.text }}>Bids Per Freelancer</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[...new Set(bids.map(b => typeof b.freelancer === "object" ? b.freelancer?.name : b.freelancer).filter(Boolean))].map(fl => {
-                      const fb = bids.filter(b => (typeof b.freelancer === "object" ? b.freelancer?.name : b.freelancer) === fl)
-                      const acc = fb.filter(b => b.status === "Accepted").length
+                    {[...new Set(bids.map(getBidFreelancerName).filter(Boolean))].map(fl => {
+                      const fb = bids.filter(b => getBidFreelancerName(b) === fl)
+                      const acc = fb.filter(b => statusIs(b.status, "accepted")).length
                       const ratio = Math.round((acc / Math.max(fb.length, 1)) * 100)
                       return (
                         <div key={fl} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: t.summaryRow }}>
@@ -938,7 +1131,7 @@ const AdminDashboard = () => {
             )}
 
 
-            
+
 
 
             {/* ════ ANALYTICS ════ */}
@@ -949,7 +1142,12 @@ const AdminDashboard = () => {
                   <p className="text-sm" style={{ color: t.textSub }}>Full platform performance insights</p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[{ label: "User Growth", val: "+12%", color: "#10b981", bg: "rgba(16,185,129,.1)" }, { label: "Revenue Growth", val: "+22%", color: "#f59e0b", bg: "rgba(245,158,11,.1)" }, { label: "Bid Volume", val: "+18%", color: "#6366f1", bg: "rgba(99,102,241,.1)" }, { label: "Fraud Reduced", val: "-5%", color: "#34d399", bg: "rgba(52,211,153,.1)" }].map(m => (
+                  {[
+                    { label: "User Growth", val: `${getGrowthPercent(monthlyUsers)}%`, color: "#10b981", bg: "rgba(16,185,129,.1)" },
+                    { label: "Revenue Growth", val: `${getGrowthPercent(monthlyRevenue)}%`, color: "#f59e0b", bg: "rgba(245,158,11,.1)" },
+                    { label: "Bid Volume", val: `${getGrowthPercent(monthlyBids)}%`, color: "#6366f1", bg: "rgba(99,102,241,.1)" },
+                    { label: "Fraud Rate", val: `${Math.round(fraudBids.length / Math.max(bids.length, 1) * 100)}%`, color: "#f97316", bg: "rgba(249,115,22,.1)" },
+                  ].map(m => (
                     <div key={m.label} className="rounded-2xl p-4 text-center" style={{ background: m.bg, border: `1px solid ${m.color}33` }}>
                       <div className="text-2xl font-bold" style={{ color: m.color }}>{m.val}</div>
                       <div className="text-xs mt-1" style={{ color: t.textSub }}>{m.label}</div>
@@ -958,13 +1156,17 @@ const AdminDashboard = () => {
                   ))}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[{ title: "Monthly Bids", sub: "Total bids placed", data: MONTHLY_DATA, color: "#6366f1" }, { title: "Monthly Revenue (₹K)", sub: "Completed volume", data: MONTHLY_DATA.map(v => v * 2), color: "#f59e0b" }, { title: "User Growth", sub: "New registrations", data: MONTHLY_DATA.map(v => Math.round(v * .7)), color: "#34d399" }].map(c => (
+                  {monthlyAnalytics ? [
+                    { title: "Monthly Bids", sub: "Total bids placed", data: monthlyAnalytics.bids || [], color: "#6366f1" },
+                    { title: "Monthly Revenue (₹K)", sub: "Completed volume", data: monthlyRevenue.map(v => Math.round(v / 1000)), color: "#f59e0b" },
+                    { title: "User Growth", sub: "New registrations", data: monthlyUsers, color: "#34d399" }
+                  ].map(c => (
                     <div key={c.title} className="rounded-2xl p-5" style={{ background: t.card, border: `1px solid ${t.border}` }}>
                       <h3 className="text-sm font-semibold" style={{ color: t.text }}>{c.title}</h3>
                       <p className="text-xs mb-4" style={{ color: t.textMuted }}>{c.sub}</p>
-                      <BarChart data={c.data} labels={MONTHS} color={c.color} height={155} />
+                      <BarChart data={c.data.length > 0 ? c.data : [0]} labels={monthlyAnalytics?.months || MONTHS} color={c.color} height={155} />
                     </div>
-                  ))}
+                  )) : <div style={{ color: t.textMuted }}>Loading analytics...</div>}
                   <Card>
                     <h3 className="text-sm font-semibold mb-4" style={{ color: t.text }}>💰 Top Earning Freelancers</h3>
                     {freelancers.sort((a, b) => (b.credits || 0) - (a.credits || 0)).slice(0, 5).map((f, i) => (
@@ -996,13 +1198,19 @@ const AdminDashboard = () => {
                   </Card>
                   <Card>
                     <h3 className="text-sm font-semibold mb-4" style={{ color: t.text }}>📊 Project Status</h3>
-                    {["Open", "In-Progress", "Completed", "Cancelled"].map(s => {
-                      const count = projects.filter(p => p.status === s).length
+                    {[
+                      ["pending", "Pending", "#f59e0b"],
+                      ["accepted", "Accepted", "#38bdf8"],
+                      ["in-progress", "In Progress", "#6366f1"],
+                      ["completed", "Completed", "#34d399"],
+                      ["rejected", "Rejected", "#f87171"],
+                    ].map(([status, label, color]) => {
+                      const count = projects.filter(p => statusIs(p.status, status)).length
                       const pct = Math.round(count / Math.max(projects.length, 1) * 100)
                       return (
-                        <div key={s} className="mb-3">
-                          <div className="flex justify-between items-center text-xs mb-1"><span className="flex items-center gap-2" style={{ color: t.textSub }}><Badge label={s} /></span><span style={{ color: t.text, fontWeight: 600 }}>{count} ({pct}%)</span></div>
-                          <div className="h-2 rounded-full" style={{ background: t.progressBg }}><div className="h-full rounded-full" style={{ width: `${pct}%`, background: { Open: "#34d399", "In-Progress": "#38bdf8", Completed: "#6366f1", Cancelled: "#f87171" }[s], transition: "width .6s" }} /></div>
+                        <div key={status} className="mb-3">
+                          <div className="flex justify-between items-center text-xs mb-1"><span className="flex items-center gap-2" style={{ color: t.textSub }}><Badge label={status} /> {label}</span><span style={{ color: t.text, fontWeight: 600 }}>{count} ({pct}%)</span></div>
+                          <div className="h-2 rounded-full" style={{ background: t.progressBg }}><div className="h-full rounded-full" style={{ width: `${pct}%`, background: color, transition: "width .6s" }} /></div>
                         </div>
                       )
                     })}
@@ -1062,8 +1270,8 @@ const AdminDashboard = () => {
                         <thead><tr><TH>Freelancer</TH><TH>Project</TH><TH>Amount</TH><TH>Status</TH><TH>Actions</TH></tr></thead>
                         <tbody>
                           {fraudBids.map(b => {
-                            const fl = typeof b.freelancer === "object" ? b.freelancer?.name : b.freelancer
-                            const pr = typeof b.project === "object" ? b.project?.title : b.project
+                            const fl = getBidFreelancerName(b)
+                            const pr = getBidProjectTitle(b)
                             return (
                               <TR key={b._id} fraud>
                                 <TD className="font-medium" style={{ color: t.text }}>{fl}</TD>
@@ -1073,7 +1281,7 @@ const AdminDashboard = () => {
                                 <TD>
                                   <div className="flex gap-1">
                                     <Btn onClick={() => doUpdateBid(b._id, { fraudFlag: false })} color="green" size="xs">Clear</Btn>
-                                    <Btn onClick={() => doUpdateBid(b._id, { status: "Rejected" })} color="red" size="xs">Reject</Btn>
+                                    <Btn onClick={() => doUpdateBid(b._id, { status: "rejected" })} color="red" size="xs">Reject</Btn>
                                   </div>
                                 </TD>
                               </TR>
@@ -1130,7 +1338,7 @@ const AdminDashboard = () => {
                   <Card>
                     <h3 className="text-sm font-semibold mb-4" style={{ color: t.text }}>📊 Live Counts</h3>
                     <div className="grid grid-cols-2 gap-3">
-                      {[{ l: "Total Users", v: users.length, c: "#6366f1" }, { l: "Freelancers", v: freelancers.length, c: "#a78bfa" }, { l: "Open Projects", v: projects.filter(p => p.status === "Open").length, c: "#38bdf8" }, { l: "Pending Bids", v: bids.filter(b => b.status === "Pending").length, c: "#f59e0b" }, { l: "Failed Payments", v: payments.filter(p => p.status === "Failed").length, c: "#ef4444" }, { l: "Fraud Flags", v: fraudUsers.length + fraudBids.length, c: "#f97316" }].map(s => (
+                      {[{ l: "Total Users", v: users.length, c: "#6366f1" }, { l: "Freelancers", v: freelancers.length, c: "#a78bfa" }, { l: "Pending Projects", v: projects.filter(p => statusIs(p.status, "pending")).length, c: "#38bdf8" }, { l: "Pending Bids", v: bids.filter(b => statusIs(b.status, "pending")).length, c: "#f59e0b" }, { l: "Failed Payments", v: payments.filter(p => statusIs(p.status, "failed")).length, c: "#ef4444" }, { l: "Fraud Flags", v: fraudUsers.length + fraudBids.length, c: "#f97316" }].map(s => (
                         <div key={s.l} className="rounded-xl p-3 text-center" style={{ background: t.summaryRow, border: `1px solid ${t.border}` }}>
                           <div className="text-xl font-bold" style={{ color: s.c }}>{s.v}</div>
                           <div className="text-xs mt-0.5" style={{ color: t.textMuted }}>{s.l}</div>

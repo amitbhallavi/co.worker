@@ -3,6 +3,7 @@ import Freelancer from "../models/freelancerModel.js"
 import PreviousWork from "../models/previousWorks.js"
 import Project from "../models/projectModel.js"
 import User from "../models/userModel.js"
+import { emitAdminDataChanged } from "../utils/adminRealtime.js"
 import { ensure } from "../utils/http.js"
 
 const getFreelancerProfileByUserId = async (userId) => {
@@ -42,6 +43,7 @@ const becomeFreelancer = async (req, res) => {
     ).select("-password")
 
     ensure(updatedUser, 500, "Failed to update user freelancer status")
+    emitAdminDataChanged("freelancer_created", { message: `Freelancer joined: ${updatedUser.name}` })
 
     res.status(201).json({
         success: true,
@@ -92,6 +94,7 @@ const applyForProject = async (req, res) => {
             credits: updatedUser.credits,
         })
     }
+    emitAdminDataChanged("bid_created", { message: `New bid placed: ₹${bid.amount}` })
 
     res.status(201).json(bid)
 }
@@ -104,6 +107,7 @@ const submitProject = async (req, res) => {
     ).populate("user").populate("freelancer")
 
     ensure(project, 404, "Project not found")
+    emitAdminDataChanged("project_status_updated", { message: `Project moved to ${project.status}` })
     res.status(200).json(project)
 }
 

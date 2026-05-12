@@ -88,13 +88,13 @@ const LiveActivityFeed = memo(function LiveActivityFeed() {
     }, [])
 
     return (
-        <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4">
+        <div className="bg-white/30 dark:bg-white/[0.03] backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl p-4 dark:text-white">
             <div className="flex items-center gap-2 mb-3">
                 <span className="relative flex w-2 h-2">
                     <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping" />
                     <span className="relative rounded-full bg-emerald-400 w-2 h-2" />
                 </span>
-                <span className="text-xs font-bold text-white/60 uppercase tracking-wider">Live Activity</span>
+                <span className="text-xs font-bold text-gray-600 dark:text-white/60 uppercase tracking-wider">Live Activity</span>
             </div>
             <AnimatePresence mode="wait">
                 <MotionPanel
@@ -110,7 +110,7 @@ const LiveActivityFeed = memo(function LiveActivityFeed() {
             </AnimatePresence>
             <div className="flex gap-1 mt-3">
                 {activities.slice(0, 5).map((_, i) => (
-                    <div key={i} className="h-1 flex-1 rounded-full bg-white/10 overflow-hidden">
+                    <div key={i} className="h-1 flex-1 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
                         <motion.div className="h-full bg-emerald-400" initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 4, ease: "linear" }} />
                     </div>
                 ))}
@@ -133,10 +133,10 @@ const TrustBar = memo(function TrustBar({ stats, shouldAnimate = true }) {
                 <motion.div
                     key={stat.label}
                     {...getIntroMotion(shouldAnimate, i * 0.1)}
-                    className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-3 text-center hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300"
+                    className="bg-white border border-gray-200 dark:bg-white/[0.03] dark:border-white/10 rounded-2xl px-4 py-3 text-center hover:bg-gray-50 dark:hover:bg-white/[0.06] hover:border-gray-300 dark:hover:border-white/20 transition-all duration-300"
                 >
-                    <div className="text-xl sm:text-2xl font-bold text-white">{stat.value}</div>
-                    <div className="text-[11px] text-white/40">{stat.label}</div>
+                    <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</div>
+                    <div className="text-[11px] text-gray-600 dark:text-white/40">{stat.label}</div>
                 </motion.div>
             ))}
         </div>
@@ -159,7 +159,7 @@ const CategoryCard = memo(function CategoryCard({ category, index, onClick, shou
             {...getRevealMotion(shouldAnimate, index * 0.08, 12)}
             whileHover={{ scale: 1.05, y: -4 }}
             onClick={onClick}
-            className={`group relative bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:bg-white/[0.06] hover:border-white/20 hover:shadow-2xl ${color.glow} ${color.hover}`}
+            className={`group relative bg-white border border-gray-200 dark:bg-white/[0.03] dark:backdrop-blur-xl dark:border-white/10 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:bg-gray-50 dark:hover:bg-white/[0.06] hover:border-gray-300 dark:hover:border-white/20 hover:shadow-2xl ${color.glow} ${color.hover}`}
         >
             <div className={`absolute inset-0 bg-gradient-to-br ${color.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300 rounded-2xl`} />
             <div
@@ -167,8 +167,8 @@ const CategoryCard = memo(function CategoryCard({ category, index, onClick, shou
             >
                 <span className="text-2xl">{category.icon}</span>
             </div>
-            <h3 className="font-bold text-white text-center mb-1">{category.label}</h3>
-            <p className="text-xs text-white/40 text-center">{category.count} experts</p>
+            <h3 className="font-bold text-slate-900 dark:text-white text-center mb-1">{category.label}</h3>
+            <p className="text-xs text-gray-600 dark:text-white/40 text-center">{category.count} experts</p>
             <div
                 className={`mt-3 inline-flex items-center gap-1 bg-gradient-to-r ${color.gradient} text-white text-[10px] font-bold px-3 py-1 rounded-full mx-auto opacity-0 group-hover:opacity-100 transition-all duration-300`}
             >
@@ -195,7 +195,7 @@ const FreelancerCard = memo(function FreelancerCard({ freelancer, index, shouldA
         <motion.div
             {...getRevealMotion(shouldAnimate, index * 0.08)}
             whileHover={{ y: -4 }}
-            className="group bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 hover:bg-white/[0.06] hover:border-white/20 hover:shadow-2xl transition-all duration-300"
+            className="group bg-white border border-gray-200 dark:bg-white/[0.03] dark:backdrop-blur-xl dark:border-white/10 rounded-2xl p-5 hover:bg-gray-50 dark:hover:bg-white/[0.06] hover:border-gray-300 dark:hover:border-white/20 hover:shadow-2xl transition-all duration-300"
         >
             <div className="flex items-start gap-3 mb-4">
                 <div className="relative">
@@ -203,7 +203,7 @@ const FreelancerCard = memo(function FreelancerCard({ freelancer, index, shouldA
                         <img
                             src={freelancer.user.profilePic}
                             alt={freelancer.user?.name}
-                            className="w-14 h-14 rounded-xl object-cover ring-2 ring-white/20"
+                            className="w-14 h-14 rounded-xl object-cover ring-2 ring-gray-200 dark:ring-white/20"
                         />
                     ) : (
                         <div
@@ -214,29 +214,29 @@ const FreelancerCard = memo(function FreelancerCard({ freelancer, index, shouldA
                             </span>
                         </div>
                     )}
-                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#0f172a]" />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-white dark:border-slate-950" />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-white text-sm truncate">{freelancer.user?.name || "Unknown"}</h3>
-                    <p className="text-xs text-white/40 truncate">{freelancer.category || "Freelancer"}</p>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm truncate">{freelancer.user?.name || "Unknown"}</h3>
+                    <p className="text-xs text-gray-600 dark:text-white/40 truncate">{freelancer.category || "Freelancer"}</p>
                     <div className="flex items-center gap-1 mt-1">
                         <span className="text-amber-400 text-xs">*</span>
-                        <span className="text-xs text-white/70 font-semibold">{(freelancer.rating || 0).toFixed(1)}</span>
-                        <span className="text-xs text-white/30">({freelancer.totalRatings || 0})</span>
+                        <span className="text-xs text-slate-900 dark:text-white/70 font-semibold">{(freelancer.rating || 0).toFixed(1)}</span>
+                        <span className="text-xs text-gray-600 dark:text-white/30">({freelancer.totalRatings || 0})</span>
                     </div>
                 </div>
             </div>
             <div className="flex flex-wrap gap-1.5 mb-4">
                 {skills.map((sk, i) => (
-                    <span key={i} className="bg-white/5 border border-white/10 text-white/50 text-[10px] px-2 py-0.5 rounded-md">
+                    <span key={i} className="bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/50 text-[10px] px-2 py-0.5 rounded-md">
                         {sk}
                     </span>
                 ))}
             </div>
-            <div className="flex items-center justify-between pt-3 border-t border-white/5">
+            <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-white/5">
                 <div>
-                    <span className="text-sm font-bold text-white">{freelancer.hourlyRate ? `Rs.${freelancer.hourlyRate}` : "Open"}</span>
-                    <span className="text-[10px] text-white/30">/hr</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">{freelancer.hourlyRate ? `Rs.${freelancer.hourlyRate}` : "Open"}</span>
+                    <span className="text-[10px] text-gray-600 dark:text-white/30">/hr</span>
                 </div>
                 <Link
                     to={`/profile/${freelancer.user?._id}`}
@@ -266,7 +266,7 @@ const HowItWorksStep = memo(function HowItWorksStep({ step, index, isActive, sho
     return (
         <motion.div
             {...getRevealMotion(shouldAnimate, index * 0.15)}
-            className={`relative flex flex-col items-center text-center p-6 rounded-2xl transition-all duration-300 ${isActive ? "bg-white/[0.06] border border-white/20 shadow-xl" : "hover:bg-white/[0.03]"}`}
+            className={`relative flex flex-col items-center text-center p-6 rounded-2xl transition-all duration-300 ${isActive ? "bg-white border border-slate-200 shadow-xl dark:bg-white/[0.06] dark:border-white/20" : "hover:bg-slate-50 dark:hover:bg-white/[0.03]"}`}
         >
             <motion.div
                 className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${colors[index]} flex items-center justify-center mb-4 shadow-lg transition-all duration-300 ${isActive ? "scale-110 shadow-xl" : ""}`}
@@ -275,11 +275,11 @@ const HowItWorksStep = memo(function HowItWorksStep({ step, index, isActive, sho
             >
                 {icons[index]}
             </motion.div>
-            <span className={`text-xs font-bold uppercase tracking-wider mb-2 ${isActive ? "text-blue-400" : "text-white/40"}`}>
+            <span className={`text-xs font-bold uppercase tracking-wider mb-2 ${isActive ? "text-blue-500 dark:text-blue-400" : "text-slate-400 dark:text-white/40"}`}>
                 Step {index + 1}
             </span>
-            <h3 className={`text-lg font-bold mb-2 ${isActive ? "text-white" : "text-white/60"}`}>{step.title}</h3>
-            <p className={`text-sm leading-relaxed ${isActive ? "text-white/70" : "text-white/40"}`}>{step.desc}</p>
+            <h3 className={`text-lg font-bold mb-2 ${isActive ? "text-slate-950 dark:text-white" : "text-slate-700 dark:text-white/60"}`}>{step.title}</h3>
+            <p className={`text-sm leading-relaxed ${isActive ? "text-slate-600 dark:text-white/70" : "text-slate-500 dark:text-white/40"}`}>{step.desc}</p>
             {isActive && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 h-1 w-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full" />}
         </motion.div>
     )
@@ -290,15 +290,15 @@ const FeatureCard = memo(function FeatureCard({ feature, index, shouldAnimate = 
         <motion.div
             {...getRevealMotion(shouldAnimate, index * 0.1)}
             whileHover={{ scale: 1.03, y: -2 }}
-            className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/[0.06] hover:border-white/20 hover:shadow-xl transition-all duration-300 group"
+            className="bg-white border border-slate-200 rounded-2xl p-6 hover:bg-slate-50 hover:border-slate-300 hover:shadow-xl dark:bg-white/[0.03] dark:backdrop-blur-xl dark:border-white/10 dark:hover:bg-white/[0.06] dark:hover:border-white/20 transition-all duration-300 group"
         >
             <div
                 className={`w-12 h-12 bg-gradient-to-br ${feature.gradient} rounded-xl flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-all duration-300`}
             >
                 <span className="text-2xl">{feature.icon}</span>
             </div>
-            <h3 className="text-base font-bold text-white mb-2">{feature.title}</h3>
-            <p className="text-sm text-white/40 leading-relaxed">{feature.desc}</p>
+            <h3 className="text-base font-bold text-slate-950 dark:text-white mb-2">{feature.title}</h3>
+            <p className="text-sm text-slate-500 dark:text-white/40 leading-relaxed">{feature.desc}</p>
         </motion.div>
     )
 })
@@ -310,7 +310,7 @@ const TestimonialCard = memo(function TestimonialCard({ testimonial, shouldAnima
             {...getRevealMotion(shouldAnimate, 0, 12)}
             onMouseEnter={() => setIsActive(true)}
             onMouseLeave={() => setIsActive(false)}
-            className={`bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 transition-all duration-300 ${isActive ? "bg-white/[0.06] border-white/20 shadow-xl" : ""}`}
+            className={`bg-white border border-slate-200 rounded-2xl p-6 transition-all duration-300 dark:bg-white/[0.03] dark:backdrop-blur-xl dark:border-white/10 ${isActive ? "bg-slate-50 border-slate-300 shadow-xl dark:bg-white/[0.06] dark:border-white/20" : ""}`}
         >
             <div className="flex items-center gap-0.5 mb-3">
                 {[...Array(5)].map((_, i) => (
@@ -319,14 +319,14 @@ const TestimonialCard = memo(function TestimonialCard({ testimonial, shouldAnima
                     </svg>
                 ))}
             </div>
-            <p className="text-sm text-white/60 leading-relaxed mb-5">"{testimonial.text}"</p>
+            <p className="text-sm text-slate-600 dark:text-white/60 leading-relaxed mb-5">"{testimonial.text}"</p>
             <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 bg-gradient-to-br ${testimonial.gradient} rounded-full flex items-center justify-center`}>
                     <span className="text-white font-bold text-xs">{testimonial.name.split(" ").map((n) => n[0]).join("")}</span>
                 </div>
                 <div>
-                    <h4 className="text-sm font-semibold text-white">{testimonial.name}</h4>
-                    <p className="text-xs text-white/40">{testimonial.role}</p>
+                    <h4 className="text-sm font-semibold text-slate-950 dark:text-white">{testimonial.name}</h4>
+                    <p className="text-xs text-slate-500 dark:text-white/40">{testimonial.role}</p>
                 </div>
             </div>
         </motion.div>
@@ -387,8 +387,8 @@ const PricingCard = memo(function PricingCard({ plan, billing, index, onSelect, 
         <motion.div
             {...getRevealMotion(shouldAnimate, index * 0.1)}
             whileHover={{ scale: 1.03 }}
-            className={`relative flex flex-col bg-white/[0.03] backdrop-blur-xl border rounded-2xl p-6 transition-all duration-300 ${
-                isHighlighted ? "border-blue-500/50 bg-gradient-to-b from-blue-500/10 to-transparent" : "border-white/10 hover:bg-white/[0.06] hover:border-white/20"
+            className={`relative flex flex-col bg-white border rounded-2xl p-6 transition-all duration-300 dark:bg-white/[0.03] dark:backdrop-blur-xl ${
+                isHighlighted ? "border-blue-500/50 bg-gradient-to-b from-blue-50 to-white dark:from-blue-500/10 dark:to-transparent" : "border-slate-200 hover:bg-slate-50 hover:border-slate-300 dark:border-white/10 dark:hover:bg-white/[0.06] dark:hover:border-white/20"
             }`}
         >
             {isHighlighted && (
@@ -399,15 +399,15 @@ const PricingCard = memo(function PricingCard({ plan, billing, index, onSelect, 
             <div className={`w-12 h-12 bg-gradient-to-br ${plan.gradient} rounded-xl flex items-center justify-center mx-auto mb-4`}>
                 <span className="text-2xl">{plan.icon}</span>
             </div>
-            <h3 className="text-lg font-bold text-white text-center mb-1">{plan.title}</h3>
-            <p className="text-xs text-white/40 text-center mb-4">{plan.subtitle}</p>
+            <h3 className="text-lg font-bold text-slate-950 dark:text-white text-center mb-1">{plan.title}</h3>
+            <p className="text-xs text-slate-500 dark:text-white/40 text-center mb-4">{plan.subtitle}</p>
             <div className="text-center mb-4">
                 {price === 0 ? (
-                    <span className="text-3xl font-extrabold text-white">FREE</span>
+                    <span className="text-3xl font-extrabold text-slate-950 dark:text-white">FREE</span>
                 ) : (
                     <>
-                        <span className="text-3xl font-extrabold text-white">₹{price.toLocaleString("en-IN")}</span>
-                        <span className="text-sm text-white/40 ml-1">{period}</span>
+                        <span className="text-3xl font-extrabold text-slate-950 dark:text-white">₹{price.toLocaleString("en-IN")}</span>
+                        <span className="text-sm text-slate-500 dark:text-white/40 ml-1">{period}</span>
                     </>
                 )}
                 {isYearly && plan.yearlyDiscount && (
@@ -416,7 +416,7 @@ const PricingCard = memo(function PricingCard({ plan, billing, index, onSelect, 
             </div>
             <ul className="space-y-2 mb-6 flex-1">
                 {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-white/60">
+                    <li key={i} className="flex items-center gap-2 text-sm text-slate-600 dark:text-white/60">
                         <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
@@ -430,7 +430,7 @@ const PricingCard = memo(function PricingCard({ plan, billing, index, onSelect, 
                 className={`flex w-full items-center justify-center gap-2 border py-2.5 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer ${
                     isHighlighted
                         ? "border-transparent bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-blue-500/30"
-                        : "bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:border-white/20"
+                        : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 dark:bg-white/5 dark:text-white/70 dark:border-white/10 dark:hover:bg-white/10 dark:hover:border-white/20"
                 }`}
             >
                 {plan.requiresPayment && <CreditCard size={16} />}
@@ -440,10 +440,10 @@ const PricingCard = memo(function PricingCard({ plan, billing, index, onSelect, 
     )
 })
 
-const Skeleton = ({ className }) => <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />
+const Skeleton = ({ className }) => <div className={`bg-slate-200 dark:bg-white/5 animate-pulse rounded-xl ${className}`} />
 
 const FreelancerSkeleton = () => (
-    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+    <div className="bg-white border border-slate-200 dark:bg-white/[0.03] dark:border-white/10 rounded-2xl p-5">
         <div className="flex items-start gap-3 mb-4">
             <Skeleton className="w-14 h-14 rounded-xl" />
             <div className="flex-1">
@@ -456,7 +456,7 @@ const FreelancerSkeleton = () => (
             <Skeleton className="h-5 w-16" />
             <Skeleton className="h-5 w-16" />
         </div>
-        <div className="flex justify-between pt-3 border-t border-white/5">
+        <div className="flex justify-between pt-3 border-t border-slate-100 dark:border-white/5">
             <Skeleton className="h-4 w-12" />
             <Skeleton className="h-8 w-16 rounded-lg" />
         </div>
@@ -619,7 +619,7 @@ const Home = () => {
     )
 
     return (
-        <div className="min-h-screen bg-[#020617]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+        <div className="min-h-screen bg-[#f5f7fb] text-slate-900 dark:bg-[#020617] dark:text-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
             <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
                 @keyframes shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
@@ -634,18 +634,18 @@ const Home = () => {
                         <div className="space-y-8">
                             <motion.div
                                 {...getIntroMotion(shouldAnimate)}
-                                className="inline-flex items-center gap-2 bg-white/[0.05] border border-white/10 rounded-full px-4 py-2"
+                                className="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 shadow-sm dark:bg-white/[0.05] dark:border-white/10 dark:shadow-none"
                             >
                                 <span className="relative flex w-2 h-2">
                                     <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping" />
                                     <span className="relative rounded-full bg-emerald-400 w-2 h-2" />
                                 </span>
-                                <span className="text-xs sm:text-sm text-white/70 font-medium">Verified experts online now</span>
+                                <span className="text-xs sm:text-sm text-slate-600 dark:text-white/70 font-medium">Verified experts online now</span>
                             </motion.div>
 
                             <motion.h1
                                 {...getIntroMotion(shouldAnimate, 0.1)}
-                                className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight"
+                                className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-950 dark:text-white leading-tight"
                             >
                                 Hire Top Freelancers.
                                 <br />
@@ -654,7 +654,7 @@ const Home = () => {
 
                             <motion.p
                                 {...getIntroMotion(shouldAnimate, 0.2)}
-                                className="text-lg sm:text-xl text-white/50 max-w-lg"
+                                className="text-lg sm:text-xl text-slate-600 dark:text-white/50 max-w-lg"
                             >
                                 Connect with world-class freelancers. Secure payments. Real-time collaboration. Start your project today.
                             </motion.p>
@@ -665,20 +665,20 @@ const Home = () => {
                                 className="flex flex-col sm:flex-row gap-3 max-w-xl"
                             >
                                 <div className="flex-1 relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-lg">search</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 text-lg">search</span>
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder={searchType === "freelancers" ? "Search freelancers by skill..." : "Search projects..."}
-                                        className="w-full pl-11 pr-4 py-4 text-sm text-white placeholder-white/30 bg-white/[0.05] border border-white/10 rounded-xl outline-none transition-all focus:bg-white/[0.08] focus:border-white/20 focus:ring-2 focus:ring-blue-500/20"
+                                        className="w-full pl-11 pr-4 py-4 text-sm text-slate-900 placeholder-slate-400 bg-white border border-slate-200 rounded-xl outline-none transition-all focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-500/20 dark:text-white dark:placeholder-white/30 dark:bg-white/[0.05] dark:border-white/10 dark:focus:bg-white/[0.08] dark:focus:border-white/20"
                                     />
                                 </div>
                                 <div className="flex gap-2">
                                     <select
                                         value={searchType}
                                         onChange={(e) => setSearchType(e.target.value)}
-                                        className="px-4 py-4 text-sm font-medium text-white bg-white/[0.05] border border-white/10 rounded-xl outline-none cursor-pointer"
+                                        className="px-4 py-4 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl outline-none cursor-pointer dark:text-white dark:bg-white/[0.05] dark:border-white/10"
                                     >
                                         <option value="freelancers">Find Talent</option>
                                         <option value="projects">Find Work</option>
@@ -704,7 +704,7 @@ const Home = () => {
                                 </Link>
                                 <Link
                                     to="/find/work"
-                                    className="bg-white/[0.05] text-white px-6 py-3 rounded-xl font-semibold text-sm border border-white/10 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200"
+                                    className="bg-white text-slate-700 px-6 py-3 rounded-xl font-semibold text-sm border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 dark:bg-white/[0.05] dark:text-white dark:border-white/10 dark:hover:bg-white/[0.08] dark:hover:border-white/20"
                                 >
                                     Find Work
                                 </Link>
@@ -723,14 +723,14 @@ const Home = () => {
                 </div>
             </section>
 
-            <section className="relative z-10 py-20 bg-[#0f172a]">
+            <section className="relative z-10 py-20 bg-white border-y border-slate-200 dark:bg-[#0f172a] dark:border-white/5">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
                         {...getRevealMotion(shouldAnimate)}
                         className="text-center mb-12"
                     >
-                        <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">Browse Top Categories</h2>
-                        <p className="text-white/50 text-lg">Find the perfect freelancer for any project</p>
+                        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white mb-3">Browse Top Categories</h2>
+                        <p className="text-slate-600 dark:text-white/50 text-lg">Find the perfect freelancer for any project</p>
                     </motion.div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                         {categories.map((cat, i) => (
@@ -744,8 +744,8 @@ const Home = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h2 className="text-3xl font-extrabold text-white mb-2">Top Freelancers</h2>
-                            <p className="text-white/50">Highly rated professionals ready to help</p>
+                            <h2 className="text-3xl font-extrabold text-slate-950 dark:text-white mb-2">Top Freelancers</h2>
+                            <p className="text-slate-600 dark:text-white/50">Highly rated professionals ready to help</p>
                         </div>
                         <Link to="/talent" className="text-sm font-semibold text-blue-400 hover:text-blue-300 transition-colors">
                             View All
@@ -760,21 +760,21 @@ const Home = () => {
                             ))
                         ) : (
                             <div className="col-span-full text-center py-12">
-                                <p className="text-white/40">No freelancers found</p>
+                                <p className="text-slate-500 dark:text-white/40">No freelancers found</p>
                             </div>
                         )}
                     </div>
                 </div>
             </section>
 
-            <section className="relative z-10 py-20 bg-[#0f172a]">
+            <section className="relative z-10 py-20 bg-white border-y border-slate-200 dark:bg-[#0f172a] dark:border-white/5">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
                         {...getRevealMotion(shouldAnimate)}
                         className="text-center mb-12"
                     >
-                        <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">How It Works</h2>
-                        <p className="text-white/50 text-lg">Get started in just a few simple steps</p>
+                        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white mb-3">How It Works</h2>
+                        <p className="text-slate-600 dark:text-white/50 text-lg">Get started in just a few simple steps</p>
                     </motion.div>
                     <div className="grid md:grid-cols-3 gap-6">
                         {howItWorksSteps.map((step, i) => (
@@ -786,7 +786,7 @@ const Home = () => {
                             <button
                                 key={i}
                                 onClick={() => setActiveStep(i)}
-                                className={`rounded-full transition-all duration-300 ${activeStep === i ? "w-6 h-2.5 bg-gradient-to-r from-blue-500 to-cyan-500" : "w-2.5 h-2.5 bg-white/20 hover:bg-white/30"}`}
+                                className={`rounded-full transition-all duration-300 ${activeStep === i ? "w-6 h-2.5 bg-gradient-to-r from-blue-500 to-cyan-500" : "w-2.5 h-2.5 bg-slate-300 hover:bg-slate-400 dark:bg-white/20 dark:hover:bg-white/30"}`}
                             />
                         ))}
                     </div>
@@ -799,8 +799,8 @@ const Home = () => {
                         {...getRevealMotion(shouldAnimate)}
                         className="text-center mb-12"
                     >
-                        <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">Why Choose Co.Worker?</h2>
-                        <p className="text-white/50 text-lg">Everything you need for successful collaboration</p>
+                        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white mb-3">Why Choose Co.Worker?</h2>
+                        <p className="text-slate-600 dark:text-white/50 text-lg">Everything you need for successful collaboration</p>
                     </motion.div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {features.map((feature, i) => (
@@ -810,17 +810,17 @@ const Home = () => {
                 </div>
             </section>
 
-            <section className="relative z-10 py-20 bg-[#0f172a]">
+            <section className="relative z-10 py-20 bg-white border-y border-slate-200 dark:bg-[#0f172a] dark:border-white/5">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
                         {...getRevealMotion(shouldAnimate)}
                         className="text-center mb-8"
                     >
-                        <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">Simple, Transparent Pricing</h2>
-                        <p className="text-white/50 text-lg">Start free. Scale as you grow.</p>
+                        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white mb-3">Simple, Transparent Pricing</h2>
+                        <p className="text-slate-600 dark:text-white/50 text-lg">Start free. Scale as you grow.</p>
                     </motion.div>
                     <div className="mb-10 flex justify-center">
-                        <div className="inline-flex rounded-2xl border border-white/10 bg-white/[0.04] p-1">
+                        <div className="inline-flex rounded-2xl border border-slate-200 bg-slate-100 p-1 dark:border-white/10 dark:bg-white/[0.04]">
                             {[
                                 { key: "monthly", label: "Monthly" },
                                 { key: "yearly", label: "Yearly", badge: "Under ₹500" },
@@ -831,14 +831,14 @@ const Home = () => {
                                     onClick={() => setPricingBilling(option.key)}
                                     className={`flex items-center gap-2 rounded-xl border-none px-5 py-2.5 text-sm font-bold transition-all cursor-pointer ${
                                         pricingBilling === option.key
-                                            ? "bg-white text-slate-950 shadow-lg"
-                                            : "bg-transparent text-white/55 hover:text-white"
+                                            ? "bg-white text-slate-950 shadow-lg dark:bg-white dark:text-slate-950"
+                                            : "bg-transparent text-slate-500 hover:text-slate-950 dark:text-white/55 dark:hover:text-white"
                                     }`}
                                 >
                                     {option.label}
                                     {option.badge && (
                                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
-                                            pricingBilling === option.key ? "bg-emerald-100 text-emerald-700" : "bg-white/10 text-white/45"
+                                            pricingBilling === option.key ? "bg-emerald-100 text-emerald-700" : "bg-white text-slate-500 dark:bg-white/10 dark:text-white/45"
                                         }`}>
                                             {option.badge}
                                         </span>
@@ -868,8 +868,8 @@ const Home = () => {
                         {...getRevealMotion(shouldAnimate)}
                         className="text-center mb-12"
                     >
-                        <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">What Our Clients Say</h2>
-                        <p className="text-white/50 text-lg">Join thousands of satisfied customers</p>
+                        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white mb-3">What Our Clients Say</h2>
+                        <p className="text-slate-600 dark:text-white/50 text-lg">Join thousands of satisfied customers</p>
                     </motion.div>
                     <div className="grid md:grid-cols-3 gap-6">
                         {testimonials.map((testimonial) => (
@@ -881,8 +881,8 @@ const Home = () => {
 
             <section className="relative z-10 py-20 bg-gradient-to-r from-blue-600 via-violet-600 to-purple-600 overflow-hidden">
                 <div className="absolute inset-0 opacity-20">
-                    <div className="absolute top-0 left-1/4 w-72 h-72 bg-white rounded-full blur-3xl" />
-                    <div className="absolute bottom-0 right-1/4 w-56 h-56 bg-white rounded-full blur-3xl" />
+                    <div className="absolute top-0 left-1/4 w-72 h-72 bg-white dark:bg-white rounded-full blur-3xl" />
+                    <div className="absolute bottom-0 right-1/4 w-56 h-56 bg-white dark:bg-white rounded-full blur-3xl" />
                 </div>
                 <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 leading-tight">Ready to Get Started?</h2>
@@ -890,7 +890,7 @@ const Home = () => {
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link
                             to="/register"
-                            className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-base hover:shadow-2xl hover:scale-105 transition-all duration-200"
+                            className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-base hover:shadow-2xl hover:scale-105 transition-all duration-200 dark:bg-white dark:text-blue-600"
                         >
                             Post a Project
                         </Link>
@@ -904,7 +904,7 @@ const Home = () => {
                 </div>
             </section>
 
-            <footer className="relative z-10 bg-[#0a0f1a] py-12 border-t border-white/5">
+            <footer className="relative z-10 bg-slate-950 py-12 border-t border-white/5">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
                         {[

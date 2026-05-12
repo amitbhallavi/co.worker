@@ -13,18 +13,33 @@ import { updateProjectAmount } from "../features/project/projectSlice"
 
 const BASE_URL = import.meta.env.VITE_API_URL || ""
 
+const getEntityId = (entity) => entity?._id || entity?.id || entity
+
+const idsMatch = (left, right) => {
+    const leftId = getEntityId(left)
+    const rightId = getEntityId(right)
+    return Boolean(leftId && rightId && String(leftId) === String(rightId))
+}
+
+const getCollectionCount = (source, countKey) => {
+    if (Array.isArray(source)) return source.length
+    const count = Number(countKey)
+    return Number.isFinite(count) ? count : 0
+}
+
 // ── Status colors ──────────────────────────────────────────
 const STATUS_COLORS = {
-    "Pending": "text-amber-600 bg-amber-50 border border-amber-200",
-    "pending": "text-amber-600 bg-amber-50 border border-amber-200",
-    "Accepted": "text-emerald-700 bg-emerald-50 border border-emerald-200",
-    "accepted": "text-emerald-700 bg-emerald-50 border border-emerald-200",
-    "Rejected": "text-rose-600 bg-rose-50 border border-rose-200",
-    "rejected": "text-rose-600 bg-rose-50 border border-rose-200",
-    "in-progress": "text-blue-700 bg-blue-50 border border-blue-200",
-    "completed": "text-green-700 bg-green-50 border border-green-200",
-    "Completed": "text-green-700 bg-green-50 border border-green-200",
+    "Pending": "text-amber-700 bg-amber-50 border border-amber-200 dark:text-amber-200 dark:bg-amber-400/10 dark:border-amber-300/20",
+    "pending": "text-amber-700 bg-amber-50 border border-amber-200 dark:text-amber-200 dark:bg-amber-400/10 dark:border-amber-300/20",
+    "Accepted": "text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-200 dark:bg-emerald-400/10 dark:border-emerald-300/20",
+    "accepted": "text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-200 dark:bg-emerald-400/10 dark:border-emerald-300/20",
+    "Rejected": "text-rose-700 bg-rose-50 border border-rose-200 dark:text-rose-200 dark:bg-rose-400/10 dark:border-rose-300/20",
+    "rejected": "text-rose-700 bg-rose-50 border border-rose-200 dark:text-rose-200 dark:bg-rose-400/10 dark:border-rose-300/20",
+    "in-progress": "text-blue-700 bg-blue-50 border border-blue-200 dark:text-blue-200 dark:bg-blue-400/10 dark:border-blue-300/20",
+    "completed": "text-green-700 bg-green-50 border border-green-200 dark:text-green-200 dark:bg-green-400/10 dark:border-green-300/20",
+    "Completed": "text-green-700 bg-green-50 border border-green-200 dark:text-green-200 dark:bg-green-400/10 dark:border-green-300/20",
 }
+const STATUS_FALLBACK = "text-slate-600 bg-slate-100 border border-slate-200 dark:text-white/65 dark:bg-white/[0.06] dark:border-white/10"
 
 // ── Project Detail + Bids Modal ────────────────────────────
 const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => {
@@ -134,12 +149,12 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                 />
             )}
 
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+            <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/80 p-0 backdrop-blur-sm sm:items-center sm:p-4"
                 onClick={e => e.target === e.currentTarget && onClose()}>
-                <div className="modal-in bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl overflow-hidden">
+                <div className="modal-in w-full overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20 dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/50 sm:max-w-3xl sm:rounded-3xl">
 
                     <div className="flex justify-center pt-3 pb-1 sm:hidden">
-                        <div className="w-10 h-1 rounded-full bg-zinc-300" />
+                        <div className="h-1 w-10 rounded-full bg-slate-300 dark:bg-white/25" />
                     </div>
 
                     {/* Header */}
@@ -155,7 +170,7 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                             </div>
                         </div>
                         <div className="flex items-center gap-3 flex-wrap">
-                            <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${STATUS_COLORS[project.status] || "text-gray-600 bg-gray-100"}`}>
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${STATUS_COLORS[project.status] || STATUS_FALLBACK}`}>
                                 {project.status}
                             </span>
                             <span className="text-xs text-blue-100">{bids.length} bid{bids.length !== 1 ? 's' : ''} received</span>
@@ -169,11 +184,13 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex border-b border-zinc-100">
+                    <div className="grid grid-cols-2 gap-2 border-b border-slate-200 bg-slate-100 p-2 dark:border-slate-800 dark:bg-slate-900">
                         {[{ id: "details", label: "📋 Details" }, { id: "bids", label: `💼 Bids (${bids.length})` }].map(t => (
                             <button key={t.id} onClick={() => setActiveView(t.id)}
-                                className={`flex-1 py-3 text-sm font-bold transition-all border-b-2 cursor-pointer border-none bg-transparent
-                                    ${activeView === t.id ? "border-blue-500 text-blue-600 bg-blue-50/50" : "border-transparent text-zinc-500 hover:text-zinc-800"}`}>
+                                className={`cursor-pointer rounded-2xl border px-3 py-3 text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50
+                                    ${activeView === t.id
+                                        ? "border-transparent bg-white text-blue-700 shadow-sm dark:bg-blue-600 dark:text-white dark:shadow-blue-500/20"
+                                        : "border-transparent bg-transparent text-slate-500 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"}`}>
                                 {t.label}
                             </button>
                         ))}
@@ -181,55 +198,55 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
 
                     {/* Details Tab */}
                     {activeView === "details" && (
-                        <div className="px-5 py-4 space-y-3 max-h-[55vh] overflow-y-auto">
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        <div className="max-h-[58vh] space-y-4 overflow-y-auto px-5 py-5">
+                            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900">
+                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-bold text-white">
                                     {initials}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-zinc-900 text-sm">{project.user?.name || '—'}</p>
-                                    <p className="text-zinc-500 text-xs truncate">{project.user?.email || '—'}</p>
+                                    <p className="text-sm font-bold text-slate-950 dark:text-slate-100">{project.user?.name || '—'}</p>
+                                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">{project.user?.email || '—'}</p>
                                 </div>
-                                <span className="text-xs text-zinc-400 font-medium shrink-0">Client</span>
+                                <span className="shrink-0 text-xs font-medium text-slate-400 dark:text-slate-400">Client</span>
                             </div>
 
                             <div className="grid grid-cols-2 gap-2.5">
                                 {[
                                     { label: 'Budget', value: project.budget ? `₹${Number(project.budget).toLocaleString('en-IN')}` : '—', color: 'text-emerald-700' },
-                                    { label: 'Duration', value: project.duration ? `${project.duration} days` : '—', color: 'text-zinc-900' },
+                                    { label: 'Duration', value: project.duration ? `${project.duration} days` : '—', color: 'text-slate-900 dark:text-slate-100' },
                                     { label: 'Category', value: project.category || '—', color: 'text-blue-700' },
-                                    { label: 'Posted', value: project.createdAt ? new Date(project.createdAt).toLocaleDateString('en-IN') : '—', color: 'text-zinc-900' },
+                                    { label: 'Posted', value: project.createdAt ? new Date(project.createdAt).toLocaleDateString('en-IN') : '—', color: 'text-slate-900 dark:text-slate-100' },
                                 ].map(item => (
-                                    <div key={item.label} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">{item.label}</p>
-                                        <p className={`text-sm font-black ${item.color} truncate`}>{item.value}</p>
+                                    <div key={item.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900">
+                                        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">{item.label}</p>
+                                        <p className={`truncate text-sm font-black ${item.color} dark:text-cyan-200`}>{item.value}</p>
                                     </div>
                                 ))}
                             </div>
 
                             {project.description && (
-                                <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-100">
-                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Description</p>
-                                    <p className="text-sm text-zinc-600 leading-relaxed">{project.description}</p>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-700 dark:bg-slate-900">
+                                    <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Description</p>
+                                    <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{project.description}</p>
                                 </div>
                             )}
 
                             {techList.length > 0 && (
                                 <div>
-                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">Technologies</p>
+                                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">Technologies</p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {techList.map((tech, i) => (
-                                            <span key={i} className="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-0.5 rounded-full">{tech}</span>
+                                            <span key={i} className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-cyan-400/30 dark:bg-slate-900 dark:text-cyan-200">{tech}</span>
                                         ))}
                                     </div>
                                 </div>
                             )}
 
                             {acceptedBid && !isEscrowed && !isPaid && (
-                                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3">
+                                <div className="flex flex-col items-center gap-3 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50 p-4 dark:border-blue-300/20 dark:from-blue-500/10 dark:to-cyan-400/10 sm:flex-row">
                                     <div className="flex-1">
-                                        <p className="text-sm font-black text-blue-900">🎉 Bid Accepted!</p>
-                                        <p className="text-xs text-blue-600 mt-0.5">Pay now to lock funds in escrow and start the project.</p>
+                                        <p className="text-sm font-black text-blue-900 dark:text-blue-100">🎉 Bid Accepted!</p>
+                                        <p className="mt-0.5 text-xs text-blue-600 dark:text-blue-200/70">Pay now to lock funds in escrow and start the project.</p>
                                     </div>
                                     <button onClick={() => setPayProject(project)}
                                         className="shrink-0 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black text-sm rounded-xl hover:shadow-lg hover:scale-105 transition-all cursor-pointer border-none">
@@ -239,10 +256,10 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                             )}
 
                             {isEscrowed && !isPaid && (
-                                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3">
+                                <div className="flex flex-col items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-300/20 dark:bg-amber-400/10 sm:flex-row">
                                     <div className="flex-1">
-                                        <p className="text-sm font-black text-amber-800">🔒 Payment in Escrow</p>
-                                        <p className="text-xs text-amber-700 mt-0.5">Mark complete when you're satisfied with the work.</p>
+                                        <p className="text-sm font-black text-amber-800 dark:text-amber-100">🔒 Payment in Escrow</p>
+                                        <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-100/70">Mark complete when you're satisfied with the work.</p>
                                     </div>
                                     <button onClick={() => handleMarkComplete(project._id)}
                                         disabled={!!completingId}
@@ -256,10 +273,10 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                             )}
 
                             {isPaid && (
-                                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
+                                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center dark:border-emerald-300/20 dark:bg-emerald-400/10">
                                     <p className="text-2xl mb-1">🎊</p>
-                                    <p className="text-sm font-black text-emerald-700">Project Completed!</p>
-                                    <p className="text-xs text-emerald-600 mt-0.5">Payment released to the freelancer.</p>
+                                    <p className="text-sm font-black text-emerald-700 dark:text-emerald-100">Project Completed!</p>
+                                    <p className="mt-0.5 text-xs text-emerald-600 dark:text-emerald-100/70">Payment released to the freelancer.</p>
                                 </div>
                             )}
                         </div>
@@ -271,16 +288,16 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                             {bidsLoading ? (
                                 <div className="flex flex-col items-center justify-center py-14">
                                     <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-3" />
-                                    <p className="text-sm text-zinc-500">Loading bids...</p>
+                                    <p className="text-sm text-slate-500 dark:text-white/55">Loading bids...</p>
                                 </div>
                             ) : bids.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-14 text-center px-6">
                                     <p className="text-4xl mb-3">💼</p>
-                                    <p className="font-bold text-zinc-700 text-base mb-1">No bids yet</p>
-                                    <p className="text-zinc-400 text-sm">Freelancers haven't applied yet.</p>
+                                    <p className="mb-1 text-base font-bold text-slate-700 dark:text-white">No bids yet</p>
+                                    <p className="text-sm text-slate-400 dark:text-white/45">Freelancers haven't applied yet.</p>
                                 </div>
                             ) : (
-                                <div className="divide-y divide-zinc-100">
+                                <div className="divide-y divide-slate-100 dark:divide-white/10">
                                     {bids.map((bid, i) => {
                                         const fl = bid.freelancer
                                         const fname = fl?.user?.name || fl?.name || 'Freelancer'
@@ -292,7 +309,7 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                                         const bidAccepted = bid.status === "Accepted" || bid.status === "accepted"
 
                                         return (
-                                            <div key={bid._id || i} className="px-5 py-4 hover:bg-zinc-50 transition">
+                                            <div key={bid._id || i} className="px-5 py-4 transition hover:bg-slate-50 dark:hover:bg-white/[0.04]">
                                                 <div className="flex items-start gap-3">
                                                     <div className="flex-shrink-0">
                                                         {fPic
@@ -302,26 +319,26 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                            <p className="font-bold text-zinc-900 text-sm">{fname}</p>
-                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_COLORS[bid.status] || "text-gray-600 bg-gray-100 border-gray-200"}`}>
+                                                            <p className="text-sm font-bold text-slate-950 dark:text-white">{fname}</p>
+                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_COLORS[bid.status] || STATUS_FALLBACK}`}>
                                                                 {bid.status || 'Pending'}
                                                             </span>
                                                         </div>
-                                                        <p className="text-zinc-500 text-xs truncate">{femail}</p>
-                                                        {fl?.category && <p className="text-blue-600 text-xs font-medium mt-0.5">{fl.category}</p>}
-                                                        {fl?.experience && <p className="text-zinc-400 text-xs">{fl.experience} yrs experience</p>}
+                                                        <p className="truncate text-xs text-slate-500 dark:text-white/50">{femail}</p>
+                                                        {fl?.category && <p className="mt-0.5 text-xs font-medium text-blue-600 dark:text-cyan-300">{fl.category}</p>}
+                                                        {fl?.experience && <p className="text-xs text-slate-400 dark:text-white/40">{fl.experience} yrs experience</p>}
                                                     </div>
                                                     <div className="text-right flex-shrink-0">
                                                         <p className="text-lg font-black text-emerald-600">₹{bid.amount ? Number(bid.amount).toLocaleString('en-IN') : '—'}</p>
-                                                        <p className="text-[10px] text-zinc-400">bid amount</p>
-                                                        {bid.createdAt && <p className="text-[10px] text-zinc-400 mt-0.5">{new Date(bid.createdAt).toLocaleDateString('en-IN')}</p>}
+                                                        <p className="text-[10px] text-slate-400 dark:text-white/40">bid amount</p>
+                                                        {bid.createdAt && <p className="mt-0.5 text-[10px] text-slate-400 dark:text-white/40">{new Date(bid.createdAt).toLocaleDateString('en-IN')}</p>}
                                                     </div>
                                                 </div>
 
                                                 <div className="flex items-center gap-2 mt-3 flex-wrap">
                                                     {fId && (
                                                         <Link to={`/profile/${fId}`} onClick={onClose}
-                                                            className="px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white transition-all no-underline">
+                                                            className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600 no-underline transition-all hover:bg-blue-600 hover:text-white dark:border-blue-300/20 dark:bg-blue-400/10 dark:text-cyan-200 dark:hover:bg-blue-500 dark:hover:text-white">
                                                             👤 View Profile
                                                         </Link>
                                                     )}
@@ -335,7 +352,7 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                                                             onClick={() => handleBidStatus(bid._id, btn.status)}
                                                             disabled={isUpd || bid.status === btn.status}
                                                             className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all
-                                                                ${bid.status === btn.status ? btn.active + ' cursor-default' : 'bg-white text-zinc-600 border-zinc-200 ' + btn.hover + ' cursor-pointer'}
+                                                                ${bid.status === btn.status ? btn.active + ' cursor-default' : 'bg-white text-slate-600 border-slate-200 dark:bg-white/[0.04] dark:text-white/65 dark:border-white/10 ' + btn.hover + ' cursor-pointer'}
                                                                 ${isUpd ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                                             {isUpd ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" /> : btn.label}
                                                         </button>
@@ -360,7 +377,7 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                                                     )}
 
                                                     {isPaid && bidAccepted && (
-                                                        <span className="px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                                        <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:border-emerald-300/20 dark:bg-emerald-400/10 dark:text-emerald-200">
                                                             🎊 Paid
                                                         </span>
                                                     )}
@@ -373,13 +390,13 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                         </div>
                     )}
 
-                    <div className="px-5 py-4 border-t border-zinc-100 flex gap-3">
+                    <div className="flex gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-900">
                         <button onClick={onClose}
-                            className="flex-1 py-2.5 bg-zinc-100 text-zinc-700 font-bold text-sm rounded-xl hover:bg-zinc-200 transition cursor-pointer border-none">
+                            className="flex-1 cursor-pointer rounded-2xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
                             Close
                         </button>
                         <button onClick={() => setActiveView(activeView === 'bids' ? 'details' : 'bids')}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm rounded-xl hover:shadow-lg transition cursor-pointer border-none">
+                            className="flex-1 cursor-pointer rounded-2xl border-none bg-gradient-to-r from-blue-600 to-cyan-500 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition hover:-translate-y-0.5">
                             {activeView === 'bids' ? '📋 View Details' : `💼 View Bids (${bids.length})`}
                         </button>
                     </div>
@@ -391,30 +408,30 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
 
 // ── Mobile project card ────────────────────────────────────
 const MobileProjectCard = ({ bid, i, onView }) => (
-    <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-4 flex flex-col gap-3 fade-up"
+    <div className="fade-up flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/[0.04]"
         style={{ animationDelay: `${i * 60}ms` }}>
         <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-                <p className="font-bold text-zinc-900 text-sm leading-snug">{bid.title}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">{bid.category}</p>
+                <p className="text-sm font-bold leading-snug text-slate-950 dark:text-white">{bid.title}</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-white/50">{bid.category}</p>
             </div>
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${STATUS_COLORS[bid.status] || "text-gray-600 bg-gray-100"}`}>
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${STATUS_COLORS[bid.status] || STATUS_FALLBACK}`}>
                 {bid.status}
             </span>
         </div>
         <div className="flex items-center justify-between text-xs">
             <div className="flex gap-4">
                 <div>
-                    <p className="text-zinc-400 mb-0.5">Budget</p>
+                    <p className="mb-0.5 text-slate-400 dark:text-white/40">Budget</p>
                     <p className="font-bold text-emerald-600">₹{bid.budget ? Number(bid.budget).toLocaleString('en-IN') : '—'}</p>
                 </div>
                 <div>
-                    <p className="text-zinc-400 mb-0.5">Posted</p>
-                    <p className="font-medium text-zinc-600">{bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('en-IN') : 'N/A'}</p>
+                    <p className="mb-0.5 text-slate-400 dark:text-white/40">Posted</p>
+                    <p className="font-medium text-slate-600 dark:text-white/60">{bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('en-IN') : 'N/A'}</p>
                 </div>
             </div>
             <button onClick={() => onView(bid)}
-                className="px-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-600 hover:text-white transition-all cursor-pointer border-none">
+                className="cursor-pointer rounded-xl border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-bold text-blue-600 transition-all hover:bg-blue-600 hover:text-white dark:border-blue-300/20 dark:bg-blue-400/10 dark:text-cyan-200 dark:hover:bg-blue-500 dark:hover:text-white">
                 View ↗
             </button>
         </div>
@@ -474,12 +491,12 @@ const RegularUser = () => {
     }, [bidAccepted, navigate])
 
     const myProjects = Array.isArray(listedProjects)
-        ? listedProjects.filter(p => p.user?._id === user?._id)
+        ? listedProjects.filter(p => idsMatch(p.user, user?._id))
         : []
 
     if (!user) return (
-        <div className="min-h-screen flex items-center justify-center">
-            <p className="text-zinc-500">Please login first.</p>
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-[#020817]">
+            <p className="text-slate-500 dark:text-white/55">Please login first.</p>
         </div>
     )
 
@@ -489,8 +506,12 @@ const RegularUser = () => {
 
     const handleRefresh = () => dispatch(getProjects())
 
+    const followingCount = getCollectionCount(user?.following, user?.followingCount)
+    const followersCount = getCollectionCount(user?.followers, user?.followersCount)
+    const blogCount = getCollectionCount(user?.blogs, user?.blogCount)
+
     return (
-        <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <div className="min-h-screen bg-slate-50 dark:bg-[#020817]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <style>{`
                 ::-webkit-scrollbar{width:4px}
                 ::-webkit-scrollbar-thumb{background:#3B7FF5;border-radius:9px}
@@ -532,7 +553,7 @@ const RegularUser = () => {
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-60" />
                 </div>
                 <div className="max-w-5xl mx-auto px-4 sm:px-6">
-                    <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4 -mt-10 sm:-mt-12 md:-mt-14 relative z-10 pb-5 border-b border-zinc-100">
+                    <div className="relative z-10 flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-white/10 sm:-mt-12 sm:flex-row sm:items-end sm:gap-4 md:-mt-14 -mt-10">
                         <div className="relative shrink-0 self-start sm:self-auto">
                             <img src={user?.profilePic || "https://i.pravatar.cc/150"}
                                 className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl ring-4 ring-white shadow-xl object-cover" alt="avatar" />
@@ -547,17 +568,17 @@ const RegularUser = () => {
                                 </h1>
                                 {isFreelancer
                                     ? <span className="text-xs font-bold bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-2.5 py-0.5 rounded-full">Freelancer ✦</span>
-                                    : <span className="text-xs font-bold bg-zinc-100 text-zinc-600 px-2.5 py-0.5 rounded-full border border-zinc-200">Member</span>
+                                    : <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[0.08] dark:text-white/65">Member</span>
                                 }
                             </div>
                             <p className="text-white text-xs sm:text-sm mb-1">{user?.email} · India 🇮🇳</p>
-                            <p className="text-zinc-400 text-xs mb-1.5">Id: {user?._id}</p>
-                            <p className="text-zinc-900 text-xs sm:text-sm max-w-lg hidden sm:block">
+                            <p className="mb-1.5 text-xs text-slate-400 dark:text-white/40">Id: {user?._id}</p>
+                            <p className="hidden max-w-lg text-xs text-slate-900 dark:text-white/60 sm:block sm:text-sm">
                                 Tech enthusiast and blogger. I love discovering talented freelancers and working on exciting new ideas.
                             </p>
                             <div className="flex flex-wrap gap-1.5 mt-2">
                                 {["Blogging", "Startups", "Product"].map(tag => (
-                                    <span key={tag} className="text-xs bg-zinc-100 text-zinc-900 px-2.5 py-0.5 rounded-full font-medium border border-zinc-200">{tag}</span>
+                                    <span key={tag} className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-900 dark:border-white/10 dark:bg-white/[0.08] dark:text-white/70">{tag}</span>
                                 ))}
                             </div>
                         </div>
@@ -588,16 +609,16 @@ const RegularUser = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
                     {[
                         { label: "Projects", value: myProjects.length, icon: "📋" },
-                        { label: "Following", value: "183", icon: "👥" },
-                        { label: "Followers", value: "2.1K", icon: "❤️" },
-                        { label: "Blogs", value: "0", icon: "📝" },
+                        { label: "Following", value: followingCount, icon: "👥" },
+                        { label: "Followers", value: followersCount, icon: "❤️" },
+                        { label: "Blogs", value: blogCount, icon: "📝" },
                     ].map((s, i) => (
                         <div key={s.label}
-                            className="bg-white rounded-2xl border border-zinc-100 shadow-sm sm:shadow-md p-3 sm:p-4 text-center fade-up"
+                            className="fade-up rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-sm dark:border-white/10 dark:bg-white/[0.04] sm:p-4 sm:shadow-md"
                             style={{ animationDelay: `${i * 60}ms` }}>
                             <p className="text-lg sm:text-xl mb-1">{s.icon}</p>
-                            <p className="text-xl sm:text-2xl font-black text-zinc-900">{s.value}</p>
-                            <p className="text-zinc-500 text-[11px] sm:text-xs mt-0.5 font-medium">{s.label}</p>
+                            <p className="text-xl font-black text-slate-950 dark:text-white sm:text-2xl">{s.value}</p>
+                            <p className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-white/45 sm:text-xs">{s.label}</p>
                         </div>
                     ))}
                 </div>
@@ -605,7 +626,7 @@ const RegularUser = () => {
 
             {/* Tabs */}
             <div className="max-w-5xl mx-auto px-4 sm:px-6">
-                <div className="flex gap-0.5 border-b border-zinc-200 mb-5">
+                <div className="mb-5 flex gap-0.5 border-b border-slate-200 dark:border-white/10">
                     {[
                         { id: "bids", label: "My Projects" },
                         ...(myProjects.filter(p => p.freelancer && (p.status === "accepted" || p.status === "in-progress")).length > 0
@@ -615,7 +636,7 @@ const RegularUser = () => {
                     ].map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                             className={`px-4 sm:px-5 py-3 text-xs sm:text-sm font-bold transition-all border-b-2 -mb-px border-none bg-transparent cursor-pointer
-                                ${activeTab === tab.id ? "border-blue-500 text-blue-600" : "border-transparent text-zinc-500 hover:text-zinc-800"}`}>
+                                ${activeTab === tab.id ? "border-blue-500 text-blue-600 dark:text-cyan-300" : "border-transparent text-slate-500 hover:text-slate-800 dark:text-white/45 dark:hover:text-white"}`}>
                             {tab.label}
                         </button>
                     ))}
@@ -636,8 +657,8 @@ const RegularUser = () => {
 
                         <div className="flex items-start sm:items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-base sm:text-lg font-black text-zinc-900" style={{ fontFamily: "'Playfair Display',serif" }}>My Posted Projects</h2>
-                                <p className="text-zinc-500 text-xs mt-0.5">{myProjects.length} projects listed</p>
+                                <h2 className="text-base font-black text-slate-950 dark:text-white sm:text-lg" style={{ fontFamily: "'Playfair Display',serif" }}>My Posted Projects</h2>
+                                <p className="mt-0.5 text-xs text-slate-500 dark:text-white/45">{myProjects.length} projects listed</p>
                             </div>
                             <Link to="/browse-projects">
                                 <button className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-xs sm:text-sm rounded-xl hover:shadow-lg transition shadow whitespace-nowrap border-none cursor-pointer">
@@ -647,9 +668,9 @@ const RegularUser = () => {
                         </div>
 
                         {myProjects.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-16 sm:py-20 bg-white rounded-2xl border border-dashed border-zinc-200">
+                            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 dark:border-white/10 dark:bg-white/[0.04] sm:py-20">
                                 <p className="text-4xl sm:text-5xl mb-3">📋</p>
-                                <p className="text-zinc-500 font-semibold text-sm">No projects posted yet.</p>
+                                <p className="text-sm font-semibold text-slate-500 dark:text-white/55">No projects posted yet.</p>
                                 <Link to="/browse-projects">
                                     <button className="mt-4 px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm rounded-xl transition border-none cursor-pointer">
                                         Browse Projects
@@ -663,8 +684,8 @@ const RegularUser = () => {
                                         <MobileProjectCard key={bid._id} bid={bid} i={i} onView={setSelectedProject} />
                                     ))}
                                 </div>
-                                <div className="hidden md:block bg-white rounded-2xl border border-zinc-100 shadow-md overflow-hidden">
-                                    <div className="grid grid-cols-12 px-5 py-3 bg-zinc-50 border-b border-zinc-100 text-xs font-bold text-zinc-400 uppercase tracking-wide">
+                                <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md dark:border-white/10 dark:bg-white/[0.04] md:block">
+                                    <div className="grid grid-cols-12 border-b border-slate-100 bg-slate-50 px-5 py-3 text-xs font-bold uppercase tracking-wide text-slate-400 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/40">
                                         <div className="col-span-3">Title</div>
                                         <div className="col-span-2">Category</div>
                                         <div className="col-span-2">Client</div>
@@ -675,21 +696,21 @@ const RegularUser = () => {
                                     </div>
                                     {myProjects.map((bid, i) => (
                                         <div key={bid._id}
-                                            className="grid grid-cols-12 px-5 py-4 items-center hover:bg-zinc-50 transition border-b border-zinc-100 last:border-0 fade-up"
+                                            className="fade-up grid grid-cols-12 items-center border-b border-slate-100 px-5 py-4 transition last:border-0 hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/[0.04]"
                                             style={{ animationDelay: `${i * 60}ms` }}>
-                                            <div className="col-span-3 min-w-0 pr-2"><p className="font-bold text-zinc-900 text-sm truncate">{bid.title}</p></div>
-                                            <div className="col-span-2 min-w-0 pr-2"><p className="text-xs text-zinc-600 font-medium truncate">{bid.category}</p></div>
-                                            <div className="col-span-2 min-w-0 pr-2"><p className="text-xs text-zinc-600 font-medium truncate">{bid.user?.name || '—'}</p></div>
+                                            <div className="col-span-3 min-w-0 pr-2"><p className="truncate text-sm font-bold text-slate-950 dark:text-white">{bid.title}</p></div>
+                                            <div className="col-span-2 min-w-0 pr-2"><p className="truncate text-xs font-medium text-slate-600 dark:text-white/60">{bid.category}</p></div>
+                                            <div className="col-span-2 min-w-0 pr-2"><p className="truncate text-xs font-medium text-slate-600 dark:text-white/60">{bid.user?.name || '—'}</p></div>
                                             <div className="col-span-2"><p className="text-xs font-bold text-emerald-600 whitespace-nowrap">₹{bid.budget ? Number(bid.budget).toLocaleString('en-IN') : '—'}</p></div>
                                             <div className="col-span-1">
-                                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[bid.status] || "text-gray-600 bg-gray-100"}`}>{bid.status}</span>
+                                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[bid.status] || STATUS_FALLBACK}`}>{bid.status}</span>
                                             </div>
-                                            <div className="col-span-1 text-center text-xs text-zinc-400 whitespace-nowrap">
+                                            <div className="col-span-1 whitespace-nowrap text-center text-xs text-slate-400 dark:text-white/40">
                                                 {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString('en-IN') : 'N/A'}
                                             </div>
                                             <div className="col-span-1 flex justify-center">
                                                 <button onClick={() => setSelectedProject(bid)}
-                                                    className="px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all cursor-pointer">
+                                                    className="cursor-pointer rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600 transition-all hover:border-blue-600 hover:bg-blue-600 hover:text-white dark:border-blue-300/20 dark:bg-blue-400/10 dark:text-cyan-200 dark:hover:bg-blue-500 dark:hover:text-white">
                                                     View
                                                 </button>
                                             </div>
@@ -721,10 +742,10 @@ const RegularUser = () => {
                 {activeTab === "assigned" && (
                     <div className="pb-12">
                         {myProjects.filter(p => p.freelancer && (p.status === "accepted" || p.status === "in-progress")).length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-16 sm:py-20 bg-white rounded-2xl border border-dashed border-zinc-200">
+                            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 dark:border-white/10 dark:bg-white/[0.04] sm:py-20">
                                 <p className="text-4xl sm:text-5xl mb-3">👥</p>
-                                <p className="text-zinc-500 font-semibold text-sm">No assigned freelancers yet.</p>
-                                <p className="text-zinc-400 text-xs mt-2">Accept bids to assign freelancers to your projects.</p>
+                                <p className="text-sm font-semibold text-slate-500 dark:text-white/55">No assigned freelancers yet.</p>
+                                <p className="mt-2 text-xs text-slate-400 dark:text-white/40">Accept bids to assign freelancers to your projects.</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
@@ -741,7 +762,7 @@ const RegularUser = () => {
 
                                     return (
                                         <div key={project._id}
-                                            className="bg-white rounded-2xl border border-emerald-100 shadow-md p-5 sm:p-6 hover:shadow-lg transition fade-up"
+                                            className="fade-up rounded-2xl border border-emerald-100 bg-white p-5 shadow-md transition hover:shadow-lg dark:border-emerald-300/20 dark:bg-white/[0.04] sm:p-6"
                                             style={{ animationDelay: `${i * 60}ms` }}>
                                             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-4 pb-4 border-b border-emerald-100">
                                                 {/* Freelancer Card */}
@@ -753,19 +774,19 @@ const RegularUser = () => {
                                                         }
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-bold text-zinc-900 text-base">{fName}</p>
-                                                        <p className="text-zinc-500 text-sm truncate">{fEmail}</p>
+                                                        <p className="text-base font-bold text-slate-950 dark:text-white">{fName}</p>
+                                                        <p className="truncate text-sm text-slate-500 dark:text-white/50">{fEmail}</p>
                                                         {freelancer?.category && <p className="text-emerald-600 text-xs font-bold mt-1">Category: {freelancer.category}</p>}
-                                                        {freelancer?.experience && <p className="text-zinc-400 text-xs">Experience: {freelancer.experience} years</p>}
+                                                        {freelancer?.experience && <p className="text-xs text-slate-400 dark:text-white/40">Experience: {freelancer.experience} years</p>}
                                                     </div>
                                                 </div>
 
                                                 {/* Project Status */}
                                                 <div className="flex flex-col gap-2">
                                                     <div className="text-right">
-                                                        <p className="text-xs text-zinc-400 uppercase font-bold tracking-wide mb-1">Project</p>
-                                                        <p className="font-bold text-zinc-900 text-sm mb-1.5">{project.title}</p>
-                                                        <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${STATUS_COLORS[project.status] || "text-gray-600 bg-gray-100"}`}>
+                                                        <p className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-white/40">Project</p>
+                                                        <p className="mb-1.5 text-sm font-bold text-slate-950 dark:text-white">{project.title}</p>
+                                                        <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${STATUS_COLORS[project.status] || STATUS_FALLBACK}`}>
                                                             {project.status}
                                                         </span>
                                                     </div>
@@ -830,9 +851,9 @@ const RegularUser = () => {
                 {/* ── Saved Tab ── */}
                 {activeTab === "saved" && (
                     <div className="pb-12">
-                        <div className="flex flex-col items-center justify-center py-16 sm:py-20 bg-white rounded-2xl border border-dashed border-zinc-200">
+                        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 dark:border-white/10 dark:bg-white/[0.04] sm:py-20">
                             <p className="text-4xl sm:text-5xl mb-3">🔖</p>
-                            <p className="text-zinc-500 font-semibold text-sm">No saved projects yet.</p>
+                            <p className="text-sm font-semibold text-slate-500 dark:text-white/55">No saved projects yet.</p>
                             <Link to="/browse-projects">
                                 <button className="mt-4 px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm rounded-xl transition border-none cursor-pointer">
                                     Browse Projects
@@ -845,44 +866,47 @@ const RegularUser = () => {
 
             {/* Edit Profile Modal */}
             {editProfile && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-                    <div className="modal-in bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg overflow-hidden">
-                        <div className="flex justify-center pt-3 pb-1 sm:hidden"><div className="w-10 h-1 rounded-full bg-zinc-300" /></div>
-                        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-zinc-100 bg-zinc-50">
-                            <h2 className="font-black text-zinc-900 text-base" style={{ fontFamily: "'Playfair Display',serif" }}>Edit Profile</h2>
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/75 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+                    <div className="modal-in w-full overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20 dark:border-white/10 dark:bg-[#0f172a] dark:shadow-black/40 sm:max-w-xl sm:rounded-3xl">
+                        <div className="flex justify-center pt-3 pb-1 sm:hidden"><div className="h-1 w-10 rounded-full bg-slate-300 dark:bg-white/25" /></div>
+                        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-5 dark:border-white/10 dark:bg-white/[0.04] sm:px-6">
+                            <div>
+                                <h2 className="text-xl font-black text-slate-950 dark:text-white" style={{ fontFamily: "'Playfair Display',serif" }}>Edit Profile</h2>
+                                <p className="mt-1 text-sm text-slate-500 dark:text-white/55">Keep your regular user profile clean and current.</p>
+                            </div>
                             <button onClick={() => setEditProfile(false)}
-                                className="w-8 h-8 rounded-xl bg-zinc-200 hover:bg-zinc-300 transition flex items-center justify-center text-zinc-600 font-bold text-sm border-none cursor-pointer">✕</button>
+                                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border-none bg-slate-200 text-sm font-bold text-slate-600 transition hover:bg-slate-300 hover:text-slate-900 dark:bg-white/10 dark:text-white/65 dark:hover:bg-white/15 dark:hover:text-white">✕</button>
                         </div>
-                        <div className="px-5 sm:px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
+                        <div className="max-h-[65vh] space-y-5 overflow-y-auto px-5 py-6 sm:px-6">
                             <div className="flex items-center gap-4">
-                                <img src={user?.profilePic || "https://i.pravatar.cc/150"} alt="Profile" className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ring-2 ring-blue-300 object-cover" />
-                                <button className="px-4 py-2 bg-zinc-100 text-zinc-700 font-bold text-xs rounded-xl hover:bg-zinc-200 transition border-none cursor-pointer">Change Photo</button>
+                                <img src={user?.profilePic || "https://i.pravatar.cc/150"} alt="Profile" className="h-16 w-16 rounded-2xl object-cover ring-2 ring-blue-300 dark:ring-cyan-300/40 sm:h-20 sm:w-20" />
+                                <button className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.1]">Change Photo</button>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-bold text-zinc-600 uppercase tracking-wide mb-1.5">Full Name</label>
-                                    <input defaultValue={user?.name} className="w-full px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
+                                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-white/50">Full Name</label>
+                                    <input defaultValue={user?.name} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-white/10 dark:bg-white/[0.05] dark:text-white dark:placeholder:text-white/35 dark:focus:border-cyan-300/50 dark:focus:ring-cyan-400/20" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-zinc-600 uppercase tracking-wide mb-1.5">Email</label>
-                                    <input defaultValue={user?.email} className="w-full px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
+                                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-white/50">Email</label>
+                                    <input defaultValue={user?.email} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-white/10 dark:bg-white/[0.05] dark:text-white dark:placeholder:text-white/35 dark:focus:border-cyan-300/50 dark:focus:ring-cyan-400/20" />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-zinc-600 uppercase tracking-wide mb-1.5">Bio</label>
+                                <label className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-white/50">Bio</label>
                                 <textarea defaultValue="Tech enthusiast and blogger." rows={3}
-                                    className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none" />
+                                    className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-white/10 dark:bg-white/[0.05] dark:text-white dark:placeholder:text-white/35 dark:focus:border-cyan-300/50 dark:focus:ring-cyan-400/20" />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-zinc-600 uppercase tracking-wide mb-1.5">Location</label>
-                                <input defaultValue="Indore, India" className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
+                                <label className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-white/50">Location</label>
+                                <input defaultValue="Indore, India" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-white/10 dark:bg-white/[0.05] dark:text-white dark:placeholder:text-white/35 dark:focus:border-cyan-300/50 dark:focus:ring-cyan-400/20" />
                             </div>
                         </div>
-                        <div className="px-5 sm:px-6 py-4 border-t border-zinc-100 flex gap-3">
+                        <div className="flex gap-3 border-t border-slate-100 bg-slate-50/70 px-5 py-4 dark:border-white/10 dark:bg-white/[0.03] sm:px-6">
                             <button onClick={() => setEditProfile(false)}
-                                className="flex-1 py-2.5 bg-zinc-100 text-zinc-700 font-bold text-sm rounded-xl hover:bg-zinc-200 transition border-none cursor-pointer">Cancel</button>
+                                className="flex-1 cursor-pointer rounded-2xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/75 dark:hover:bg-white/[0.1]">Cancel</button>
                             <button onClick={() => setEditProfile(false)}
-                                className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm rounded-xl hover:opacity-90 cursor-pointer transition border-none">Save Changes ✦</button>
+                                className="flex-1 cursor-pointer rounded-2xl border-none bg-gradient-to-r from-blue-600 to-cyan-500 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition hover:-translate-y-0.5">Save Changes ✦</button>
                         </div>
                     </div>
                 </div>

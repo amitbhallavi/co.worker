@@ -1,13 +1,174 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import axios from 'axios'
-import { ArrowLeft, MapPin, Clock, Award, CheckCircle2, AlertCircle, Loader } from 'lucide-react'
+import {
+    ArrowLeft,
+    AlertCircle,
+    Award,
+    Briefcase,
+    Calendar,
+    CheckCircle2,
+    Clock,
+    CreditCard,
+    IndianRupee,
+    Loader,
+    Lock,
+    MessageCircle,
+    RefreshCw,
+    Send,
+    ShieldCheck,
+    Tag,
+    User,
+    XCircle,
+} from 'lucide-react'
 import LoaderGradient from '../components/LoaderGradient'
 import PaymentModal from '../components/Paymentmodal'
 
-const BASE_URL = import.meta.env.VITE_API_URL || ""
+const BASE_URL = import.meta.env.VITE_API_URL || ''
+
+const formatCurrency = (value = 0) => `₹${Number(value || 0).toLocaleString('en-IN')}`
+
+const formatDate = (value) => (
+    value
+        ? new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+        : 'Not available'
+)
+
+const getInitials = (name = '') => {
+    const initials = name
+        .split(' ')
+        .map(part => part[0])
+        .join('')
+        .slice(0, 2)
+
+    return initials || 'NA'
+}
+
+const getTechnologies = (value = '') => (
+    value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean)
+)
+
+const STATUS_CONFIG = {
+    pending: {
+        label: 'Pending',
+        icon: Clock,
+        badge: 'border-slate-200 bg-slate-50 text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/70',
+        panel: 'border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.05]',
+    },
+    accepted: {
+        label: 'Pending Payment',
+        icon: CreditCard,
+        badge: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100',
+        panel: 'border-amber-200 bg-amber-50 dark:border-amber-300/20 dark:bg-amber-300/10',
+    },
+    'in-progress': {
+        label: 'In Progress',
+        icon: RefreshCw,
+        badge: 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-300/20 dark:bg-purple-400/10 dark:text-purple-100',
+        panel: 'border-purple-200 bg-purple-50 dark:border-purple-300/20 dark:bg-purple-400/10',
+    },
+    completed: {
+        label: 'Completed',
+        icon: CheckCircle2,
+        badge: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-300/20 dark:bg-emerald-400/10 dark:text-emerald-100',
+        panel: 'border-emerald-200 bg-emerald-50 dark:border-emerald-300/20 dark:bg-emerald-400/10',
+    },
+    rejected: {
+        label: 'Rejected',
+        icon: XCircle,
+        badge: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-300/20 dark:bg-rose-400/10 dark:text-rose-100',
+        panel: 'border-rose-200 bg-rose-50 dark:border-rose-300/20 dark:bg-rose-400/10',
+    },
+}
+
+const PAYMENT_CONFIG = {
+    pending: {
+        label: 'Payment Started',
+        description: 'Razorpay order exists, but payment is not verified yet.',
+        icon: CreditCard,
+        badge: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100',
+    },
+    escrow: {
+        label: 'In Escrow',
+        description: 'Client payment is secured. It can be released after approval.',
+        icon: Lock,
+        badge: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-300/20 dark:bg-blue-400/10 dark:text-blue-100',
+    },
+    released: {
+        label: 'Released',
+        description: 'Payment has been released to the freelancer wallet.',
+        icon: CheckCircle2,
+        badge: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-300/20 dark:bg-emerald-400/10 dark:text-emerald-100',
+    },
+    none: {
+        label: 'No Payment Record',
+        description: 'Escrow has not been created for this project yet.',
+        icon: AlertCircle,
+        badge: 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60',
+    },
+}
+
+const getStatusConfig = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.pending
+const getPaymentConfig = (status) => PAYMENT_CONFIG[status] || PAYMENT_CONFIG.none
+
+const InfoCell = ({ label, value, icon }) => {
+    const InfoIcon = icon
+
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.05]">
+            <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-white/35">
+                <InfoIcon size={15} />
+                {label}
+            </p>
+            <p className="mt-2 text-lg font-black text-slate-950 dark:text-white">{value}</p>
+        </div>
+    )
+}
+
+const PersonPanel = ({ title, person, tone = 'blue', action }) => {
+    const name = person?.name || 'Unknown'
+    const email = person?.email || 'No email available'
+    const image = person?.profilePic
+    const toneClass = tone === 'emerald'
+        ? 'from-emerald-500 to-teal-400 shadow-emerald-500/20'
+        : 'from-blue-500 to-cyan-400 shadow-blue-500/20'
+
+    return (
+        <section>
+            <h2 className="mb-4 text-xl font-black text-slate-950 dark:text-white">{title}</h2>
+            <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/[0.05] sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-4">
+                    <div className={`flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br ${toneClass} text-lg font-black text-white shadow-lg`}>
+                        {image ? (
+                            <img src={image} alt={name} className="h-full w-full object-cover" />
+                        ) : (
+                            getInitials(name)
+                        )}
+                    </div>
+                    <div className="min-w-0">
+                        <p className="flex items-center gap-2 text-lg font-black text-slate-950 dark:text-white">
+                            <User size={17} />
+                            <span className="truncate">{name}</span>
+                        </p>
+                        <p className="truncate text-sm text-slate-500 dark:text-white/45">{email}</p>
+                        {person?.category && (
+                            <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-300">{person.category}</p>
+                        )}
+                        {person?.experience !== undefined && person?.experience !== null && (
+                            <p className="text-sm text-slate-500 dark:text-white/45">{person.experience} years experience</p>
+                        )}
+                    </div>
+                </div>
+                {action}
+            </div>
+        </section>
+    )
+}
 
 const ProjectDetailPage = () => {
     const { id } = useParams()
@@ -15,32 +176,46 @@ const ProjectDetailPage = () => {
     const { user } = useSelector(s => s.auth)
 
     const [project, setProject] = useState(null)
+    const [payment, setPayment] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [updating, setUpdating] = useState(false)
+    const [releasing, setReleasing] = useState(false)
     const [payProject, setPayProject] = useState(null)
 
     useEffect(() => {
         const fetchProject = async () => {
             setLoading(true)
             setError(null)
+            setPayment(null)
+
             try {
                 const response = await axios.get(
                     `${BASE_URL}/api/project/details/${id}`,
                     { headers: { authorization: `Bearer ${user?.token}` } }
                 )
-                
-                const projectData = response.data
 
-                if (!projectData) {
-                    throw new Error("Project not found")
+                if (!response.data) {
+                    throw new Error('Project not found')
                 }
 
-                setProject(projectData)
+                setProject(response.data)
+
+                try {
+                    const paymentResponse = await axios.get(
+                        `${BASE_URL}/api/payment/project/${id}`,
+                        { headers: { authorization: `Bearer ${user?.token}` } }
+                    )
+                    setPayment(paymentResponse.data)
+                } catch (paymentError) {
+                    if (paymentError.response?.status !== 404) {
+                        console.warn('Payment lookup failed:', paymentError.response?.data || paymentError.message)
+                    }
+                }
             } catch (err) {
-                console.error("❌ Error fetching project:", err)
-                setError(err.response?.data?.message || err.message || "Failed to load project details")
-                toast.error("Failed to load project details")
+                console.error('Error fetching project:', err)
+                setError(err.response?.data?.message || err.message || 'Failed to load project details')
+                toast.error('Failed to load project details')
             } finally {
                 setLoading(false)
             }
@@ -60,37 +235,67 @@ const ProjectDetailPage = () => {
                 { headers: { authorization: `Bearer ${user?.token}` } }
             )
 
-            setProject(prev => ({
-                ...prev,
-                status: newStatus
-            }))
-
-            toast.success(`✅ Project marked as ${newStatus}`)
+            setProject(prev => ({ ...prev, status: newStatus }))
+            toast.success(newStatus === 'completed' ? 'Submitted for client review' : `Project marked as ${newStatus}`)
         } catch (err) {
-            console.error("❌ Error updating status:", err)
-            toast.error(err.response?.data?.message || "Failed to update status")
+            console.error('Error updating status:', err)
+            toast.error(err.response?.data?.message || 'Failed to update status')
         } finally {
             setUpdating(false)
         }
     }
 
+    const handleReleasePayment = async () => {
+        setReleasing(true)
+        try {
+            const response = await axios.post(
+                `${BASE_URL}/api/payment/release/${id}`,
+                {},
+                { headers: { authorization: `Bearer ${user?.token}` } }
+            )
+
+            setPayment(response.data.payment)
+            setProject(prev => ({ ...prev, status: 'completed' }))
+            toast.success('Payment released to freelancer wallet')
+        } catch (err) {
+            console.error('Error releasing payment:', err)
+            toast.error(err.response?.data?.message || 'Failed to release payment')
+        } finally {
+            setReleasing(false)
+        }
+    }
+
+    const technologies = useMemo(
+        () => getTechnologies(project?.technology || ''),
+        [project?.technology]
+    )
+
     if (loading) return <LoaderGradient />
 
-    if (error) {
+    if (error || !project) {
         return (
-            <div className="min-h-screen bg-slate-50 pt-20 pb-12">
-                <div className="max-w-4xl mx-auto px-4">
-                    <button onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6 font-medium">
-                        <ArrowLeft size={18} /> Go Back
+            <div className="min-h-screen bg-[#f6f9fc] pt-24 pb-14 text-slate-950 dark:bg-[#020617] dark:text-white">
+                <div className="mx-auto max-w-4xl px-4">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-blue-600 transition hover:text-blue-700 dark:text-cyan-300 dark:hover:text-cyan-200"
+                    >
+                        <ArrowLeft size={18} />
+                        Go back
                     </button>
-                    <div className="bg-white rounded-2xl border border-red-200 p-8 text-center">
-                        <AlertCircle className="w-16 h-16 mx-auto text-red-500 mb-4" />
-                        <h1 className="text-2xl font-bold text-red-600 mb-2">Error Loading Project</h1>
-                        <p className="text-slate-600 mb-6">{error}</p>
-                        <button onClick={() => navigate('/assigned-projects')}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                            Back to Projects
+                    <div className="rounded-[28px] border border-rose-200 bg-white p-8 text-center shadow-xl shadow-slate-200/60 dark:border-rose-300/20 dark:bg-white/[0.04] dark:shadow-none">
+                        <AlertCircle className="mx-auto mb-4 h-14 w-14 text-rose-500" />
+                        <h1 className="text-2xl font-black text-slate-950 dark:text-white">
+                            {error ? 'Error loading project' : 'Project not found'}
+                        </h1>
+                        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-white/50">
+                            {error || 'This project is not available anymore.'}
+                        </p>
+                        <button
+                            onClick={() => navigate('/assigned-projects')}
+                            className="mt-6 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
+                        >
+                            Back to projects
                         </button>
                     </div>
                 </div>
@@ -98,262 +303,257 @@ const ProjectDetailPage = () => {
         )
     }
 
-    if (!project) {
-        return (
-            <div className="min-h-screen bg-slate-50 pt-20 pb-12">
-                <div className="max-w-4xl mx-auto px-4">
-                    <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
-                        <p className="text-slate-600">Project not found</p>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
+    const status = getStatusConfig(project.status)
+    const StatusIcon = status.icon
+    const paymentStatus = payment?.status || 'none'
+    const paymentInfo = getPaymentConfig(paymentStatus)
+    const PaymentIcon = paymentInfo.icon
     const isFreelancer = project.freelancer?.user?._id === user?._id
     const isClient = project.user?._id === user?._id
-
-    const statusColors = {
-        pending: { bg: "bg-gray-100", text: "text-gray-700", label: "⏳ Pending" },
-        accepted: { bg: "bg-amber-100", text: "text-amber-700", label: "⏳ Pending Payment" },
-        "in-progress": { bg: "bg-purple-100", text: "text-purple-700", label: "🔄 In Progress" },
-        completed: { bg: "bg-emerald-100", text: "text-emerald-700", label: "✅ Completed" },
-        rejected: { bg: "bg-red-100", text: "text-red-700", label: "❌ Rejected" },
-    }
-
-    const currentStatus = statusColors[project.status] || statusColors.pending
+    const amount = payment?.totalAmount || project.finalAmount || project.budget
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pt-20 pb-12">
-            {/* ── Payment Modal ── */}
+        <div className="relative min-h-screen overflow-hidden bg-[#f6f9fc] pt-24 pb-16 text-slate-950 dark:bg-[#020617] dark:text-white" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[360px] border-b border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#eaf6ff_55%,rgba(246,249,252,0)_100%)] dark:border-white/10 dark:bg-[linear-gradient(180deg,#071427_0%,#06101f_58%,rgba(2,6,23,0)_100%)]" />
+
             {payProject && (
                 <PaymentModal
                     project={payProject}
                     onClose={() => setPayProject(null)}
                     onPaymentDone={() => {
                         setPayProject(null)
-                        // Reload project data
                         window.location.reload()
                     }}
                 />
             )}
 
-            <div className="max-w-4xl mx-auto px-4">
-                {/* Back Button */}
-                <button onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6 font-medium transition">
-                    <ArrowLeft size={18} /> Go Back
+            <main className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-blue-600 transition hover:text-blue-700 dark:text-cyan-300 dark:hover:text-cyan-200"
+                >
+                    <ArrowLeft size={18} />
+                    Go back
                 </button>
 
-                {/* Main Card */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
-                    {/* Header */}
-                    <div className={`${currentStatus.bg} px-6 sm:px-8 py-5 border-b border-slate-200`}>
-                        <div className="flex items-center justify-between gap-4 mb-3">
-                            <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{project.title}</h1>
-                            <span className={`${currentStatus.bg} ${currentStatus.text} px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap`}>
-                                {currentStatus.label}
-                            </span>
-                        </div>
-                        <p className="text-slate-600">{project.description}</p>
-                    </div>
+                <article className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-2xl shadow-slate-200/70 dark:border-white/10 dark:bg-white/[0.045] dark:shadow-none">
+                    <header className="border-b border-slate-200 bg-white px-6 py-7 dark:border-white/10 dark:bg-white/[0.035] sm:px-8">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="min-w-0">
+                                <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black ${status.badge}`}>
+                                    <StatusIcon size={14} />
+                                    {status.label}
+                                </span>
+                                <h1 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                                    {project.title}
+                                </h1>
+                                <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 dark:text-white/60">
+                                    {project.description}
+                                </p>
+                            </div>
 
-                    {/* Content */}
-                    <div className="p-6 sm:p-8 space-y-8">
-                        {/* Project Details */}
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-900 mb-4">Project Details</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                {[
-                                    { label: "Budget", value: `₹${project.budget?.toLocaleString() || '—'}`, icon: "💰" },
-                                    { label: "Duration", value: `${project.duration || '—'} days`, icon: <Clock size={18} /> },
-                                    { label: "Category", value: project.category || '—', icon: "📂" },
-                                    { label: "Posted", value: project.createdAt ? new Date(project.createdAt).toLocaleDateString('en-IN') : '—', icon: "📅" },
-                                    { label: "Level", value: project.level || 'Any', icon: <Award size={18} /> },
-                                    { label: "Status", value: currentStatus.label, icon: "📊" },
-                                ].map((item, i) => (
-                                    <div key={i} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                                        <p className="text-xs text-slate-500 uppercase font-bold mb-1">
-                                            {typeof item.icon === 'string' ? item.icon : ''} {item.label}
-                                        </p>
-                                        <p className="text-lg font-bold text-slate-900">{item.value}</p>
-                                    </div>
-                                ))}
+                            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-right dark:border-white/10 dark:bg-white/[0.05]">
+                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-white/35">Project value</p>
+                                <p className="mt-2 text-3xl font-black text-emerald-600 dark:text-emerald-300">{formatCurrency(amount)}</p>
                             </div>
                         </div>
+                    </header>
 
-                        {/* Technologies */}
-                        {project.technology && (
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900 mb-4">Technologies</h2>
+                    <div className="space-y-9 p-6 sm:p-8">
+                        <section>
+                            <h2 className="mb-4 text-xl font-black text-slate-950 dark:text-white">Project details</h2>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                <InfoCell label="Budget" value={formatCurrency(project.budget)} icon={IndianRupee} />
+                                <InfoCell label="Duration" value={`${project.duration || 0} days`} icon={Clock} />
+                                <InfoCell label="Category" value={project.category || 'General'} icon={Tag} />
+                                <InfoCell label="Posted" value={formatDate(project.createdAt)} icon={Calendar} />
+                                <InfoCell label="Level" value={project.level || 'Any'} icon={Award} />
+                                <InfoCell label="Status" value={status.label} icon={StatusIcon} />
+                            </div>
+                        </section>
+
+                        {technologies.length > 0 && (
+                            <section>
+                                <h2 className="mb-4 text-xl font-black text-slate-950 dark:text-white">Technologies</h2>
                                 <div className="flex flex-wrap gap-2">
-                                    {project.technology.split(',').map((tech, i) => (
-                                        <span key={i} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                                            {tech.trim()}
+                                    {technologies.map(tech => (
+                                        <span
+                                            key={tech}
+                                            className="rounded-full border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-black text-blue-700 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-200"
+                                        >
+                                            {tech}
                                         </span>
                                     ))}
                                 </div>
-                            </div>
+                            </section>
                         )}
 
-                        {/* Client Details */}
                         {project.user && (
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900 mb-4">Client Details</h2>
-                                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 flex items-start gap-4">
-                                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex-shrink-0 flex items-center justify-center">
-                                        {project.user.profilePic ? (
-                                            <img src={project.user.profilePic} alt={project.user.name} className="w-full h-full rounded-lg object-cover" />
-                                        ) : (
-                                            <span className="text-white font-bold text-xl">
-                                                {project.user.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-lg font-bold text-slate-900">{project.user.name}</p>
-                                        <p className="text-slate-600 text-sm">{project.user.email}</p>
-                                        {isFreelancer && (
-                                            <Link to={`/chat/${project.user._id}`}
-                                                className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm no-underline">
-                                                💬 Message Client
-                                            </Link>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                            <PersonPanel
+                                title="Client"
+                                person={project.user}
+                                action={isFreelancer && (
+                                    <Link
+                                        to={`/chat/${project.user._id}`}
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white no-underline transition hover:bg-blue-700"
+                                    >
+                                        <MessageCircle size={17} />
+                                        Message client
+                                    </Link>
+                                )}
+                            />
                         )}
 
-                        {/* Freelancer Details (if assigned) */}
                         {project.freelancer && (
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900 mb-4">Assigned Freelancer</h2>
-                                <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200 flex items-start gap-4">
-                                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex-shrink-0 flex items-center justify-center">
-                                        {project.freelancer?.user?.profilePic ? (
-                                            <img src={project.freelancer.user.profilePic} alt={project.freelancer.user.name} className="w-full h-full rounded-lg object-cover" />
-                                        ) : (
-                                            <span className="text-white font-bold text-xl">
-                                                {project.freelancer?.user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-lg font-bold text-slate-900">{project.freelancer?.user?.name}</p>
-                                        <p className="text-slate-600 text-sm">{project.freelancer?.user?.email}</p>
-                                        {project.freelancer?.category && (
-                                            <p className="text-emerald-600 text-sm font-medium mt-1">Category: {project.freelancer.category}</p>
-                                        )}
-                                        {project.freelancer?.experience && (
-                                            <p className="text-slate-600 text-sm">Experience: {project.freelancer.experience} years</p>
-                                        )}
-                                        {isClient && (
-                                            <Link to={`/chat/${project.freelancer?.user?._id}`}
-                                                className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium text-sm no-underline">
-                                                💬 Message Freelancer
-                                            </Link>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                            <PersonPanel
+                                title="Assigned freelancer"
+                                tone="emerald"
+                                person={{
+                                    ...(project.freelancer?.user || {}),
+                                    category: project.freelancer?.category,
+                                    experience: project.freelancer?.experience,
+                                }}
+                                action={isClient && (
+                                    <Link
+                                        to={`/chat/${project.freelancer?.user?._id}`}
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white no-underline transition hover:bg-emerald-700"
+                                    >
+                                        <MessageCircle size={17} />
+                                        Message freelancer
+                                    </Link>
+                                )}
+                            />
                         )}
 
-                        {/* Payment Status */}
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-900 mb-4">Payment Status</h2>
-                            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-slate-600 font-medium">Payment Status</p>
-                                        <p className="text-2xl font-bold text-slate-900 mt-1">
-                                            {project.paymentStatus === 'escrowed' && '🔒 In Escrow'}
-                                            {project.paymentStatus === 'released' && '✅ Released'}
-                                            {project.paymentStatus === 'pending' && '⏳ Pending'}
-                                            {!project.paymentStatus && '—'}
+                        <section>
+                            <h2 className="mb-4 text-xl font-black text-slate-950 dark:text-white">Payment status</h2>
+                            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+                                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/[0.05]">
+                                    <div className="flex flex-wrap items-start justify-between gap-4">
+                                        <div>
+                                            <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black ${paymentInfo.badge}`}>
+                                                <PaymentIcon size={14} />
+                                                {paymentInfo.label}
+                                            </span>
+                                            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-white/55">{paymentInfo.description}</p>
+                                        </div>
+                                        <ShieldCheck className="text-slate-300 dark:text-white/20" size={30} />
+                                    </div>
+                                </div>
+                                <div className="rounded-3xl border border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-white/[0.04]">
+                                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-white/35">Escrow amount</p>
+                                    <p className="mt-2 text-3xl font-black text-emerald-600 dark:text-emerald-300">{formatCurrency(amount)}</p>
+                                    {payment?.platformFee !== undefined && (
+                                        <p className="mt-2 text-xs font-semibold text-slate-500 dark:text-white/45">
+                                            Platform fee: {formatCurrency(payment.platformFee)}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </section>
+
+                        {isFreelancer && (
+                            <section>
+                                <h2 className="mb-4 text-xl font-black text-slate-950 dark:text-white">Freelancer action</h2>
+                                {project.status === 'accepted' && (
+                                    <div className={`rounded-3xl border p-5 ${getStatusConfig('accepted').panel}`}>
+                                        <p className="font-bold text-amber-800 dark:text-amber-100">Payment is still pending.</p>
+                                        <p className="mt-1 text-sm text-amber-700/80 dark:text-amber-100/70">
+                                            Do not start delivery until escrow is active.
                                         </p>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-sm text-slate-600 font-medium">Amount</p>
-                                        <p className="text-2xl font-bold text-emerald-600 mt-1">₹{project.budget?.toLocaleString()}</p>
+                                )}
+
+                                {project.status === 'in-progress' && (
+                                    <button
+                                        onClick={() => handleStatusUpdate('completed')}
+                                        disabled={updating}
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        {updating ? (
+                                            <>
+                                                <Loader size={18} className="animate-spin" />
+                                                Submitting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send size={18} />
+                                                Submit work for client review
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+
+                                {project.status === 'completed' && (
+                                    <div className={`rounded-3xl border p-5 ${getStatusConfig('completed').panel}`}>
+                                        <p className="font-black text-emerald-800 dark:text-emerald-100">
+                                            {paymentStatus === 'released' ? 'Payment released' : 'Submitted for client review'}
+                                        </p>
+                                        <p className="mt-1 text-sm text-emerald-700/80 dark:text-emerald-100/70">
+                                            {paymentStatus === 'released'
+                                                ? 'The payout is now in your wallet flow.'
+                                                : 'Client approval is still needed before escrow release.'}
+                                        </p>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Status Update Buttons (Freelancer) */}
-                        {isFreelancer && (
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900 mb-4">Update Status</h2>
-                                <div className="space-y-3">
-                                    {project.status === 'accepted' && (
-                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                            <p className="text-sm text-amber-700 font-medium mb-3">
-                                                ⏳ Waiting for client to complete payment before you can start work.
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {project.status === 'in-progress' && (
-                                        <button
-                                            onClick={() => handleStatusUpdate('completed')}
-                                            disabled={updating}
-                                            className="w-full py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
-                                            {updating ? (
-                                                <>
-                                                    <Loader size={18} className="animate-spin" />
-                                                    Updating...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle2 size={20} />
-                                                    ✅ Mark as Completed
-                                                </>
-                                            )}
-                                        </button>
-                                    )}
-
-                                    {project.status === 'completed' && (
-                                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center">
-                                            <p className="text-emerald-700 font-bold">🎉 Project Completed!</p>
-                                            <p className="text-emerald-600 text-sm mt-1">Payment has been released to your wallet.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                                )}
+                            </section>
                         )}
 
-                        {/* Status Update Buttons (Client) */}
                         {isClient && (
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900 mb-4">Client Actions</h2>
-                                <div className="space-y-3">
-                                    {project.status === 'accepted' && project.paymentStatus !== 'escrowed' && (
-                                        <button
-                                            onClick={() => setPayProject(project)}
-                                            className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 cursor-pointer border-none">
-                                            💳 Pay Now to Start Project
-                                        </button>
-                                    )}
+                            <section>
+                                <h2 className="mb-4 text-xl font-black text-slate-950 dark:text-white">Client action</h2>
+                                {project.status === 'accepted' && paymentStatus !== 'escrow' && paymentStatus !== 'released' && (
+                                    <button
+                                        onClick={() => setPayProject(project)}
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/25"
+                                    >
+                                        <CreditCard size={18} />
+                                        Pay now to start project
+                                    </button>
+                                )}
 
-                                    {project.paymentStatus === 'escrowed' && project.status === 'in-progress' && (
-                                        <button
-                                            className="w-full py-3 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2 cursor-pointer border-none">
-                                            👀 Review Work & Approve
-                                        </button>
-                                    )}
+                                {project.status === 'in-progress' && paymentStatus === 'escrow' && (
+                                    <div className={`rounded-3xl border p-5 ${getStatusConfig('in-progress').panel}`}>
+                                        <p className="font-black text-purple-800 dark:text-purple-100">Work is in progress.</p>
+                                        <p className="mt-1 text-sm text-purple-700/80 dark:text-purple-100/70">
+                                            Release payment only after the freelancer submits finished work.
+                                        </p>
+                                    </div>
+                                )}
 
-                                    {project.paymentStatus === 'released' && project.status === 'completed' && (
-                                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center">
-                                            <p className="text-emerald-700 font-bold">✅ Payment Released</p>
-                                            <p className="text-emerald-600 text-sm mt-1">Freelancer has been paid for this project.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                                {project.status === 'completed' && paymentStatus === 'escrow' && (
+                                    <button
+                                        onClick={handleReleasePayment}
+                                        disabled={releasing}
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        {releasing ? (
+                                            <>
+                                                <Loader size={18} className="animate-spin" />
+                                                Releasing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle2 size={18} />
+                                                Release escrow payment
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+
+                                {paymentStatus === 'released' && (
+                                    <div className={`rounded-3xl border p-5 ${getStatusConfig('completed').panel}`}>
+                                        <p className="font-black text-emerald-800 dark:text-emerald-100">Payment released.</p>
+                                        <p className="mt-1 text-sm text-emerald-700/80 dark:text-emerald-100/70">
+                                            This project is complete and the freelancer has been paid.
+                                        </p>
+                                    </div>
+                                )}
+                            </section>
                         )}
                     </div>
-                </div>
-            </div>
+                </article>
+            </main>
         </div>
     )
 }

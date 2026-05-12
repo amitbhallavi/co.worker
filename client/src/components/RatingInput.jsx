@@ -84,8 +84,8 @@ const RatingInput = ({
             onClick={() => setSelectedRating(i + 1)}
             onMouseEnter={() => setHoverRating(i + 1)}
             onMouseLeave={() => setHoverRating(0)}
-            className={`text-5xl transition-all transform hover:scale-110 ${
-                i < displayRating ? 'text-yellow-400 drop-shadow-md' : 'text-gray-300'
+            className={`border-none bg-transparent text-5xl transition-all hover:scale-110 ${
+                i < displayRating ? 'text-yellow-400 drop-shadow-md' : 'text-gray-300 dark:text-white/20'
             }`}
         >
             ⭐
@@ -93,16 +93,17 @@ const RatingInput = ({
     ))
 
     return (
-        <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-900/15 dark:border-white/10 dark:bg-[#0f172a] dark:shadow-black/30">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-900">
+                <h3 className="text-xl font-bold text-slate-950 dark:text-white">
                     {mode === 'edit' ? 'Edit Your Review' : 'Write a Review'}
                 </h3>
                 {onCancel && (
                     <button
+                        type="button"
                         onClick={onCancel}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="rounded-xl border-none bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800 dark:bg-white/10 dark:text-white/60 dark:hover:bg-white/15 dark:hover:text-white"
                     >
                         <X size={20} />
                     </button>
@@ -112,7 +113,7 @@ const RatingInput = ({
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Star Selector */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-white/75">
                         Your Rating {displayRating > 0 && `(${displayRating}/5)`}
                     </label>
                     <div className="flex gap-3">{stars}</div>
@@ -123,7 +124,7 @@ const RatingInput = ({
 
                 {/* Review Textarea */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-white/75">
                         Your Review
                     </label>
                     <textarea
@@ -131,14 +132,14 @@ const RatingInput = ({
                         onChange={(e) => setReviewText(e.target.value)}
                         placeholder="Share your experience... (minimum 20 characters)"
                         rows="5"
-                        className={`w-full px-4 py-3 rounded-lg border-2 transition-colors focus:outline-none resize-none ${
+                        className={`w-full resize-none rounded-xl border px-4 py-3 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:outline-none focus:ring-2 dark:text-white dark:placeholder:text-white/35 ${
                             errors.review
-                                ? 'border-red-300 focus:border-red-500 bg-red-50'
-                                : 'border-gray-200 focus:border-blue-500 bg-gray-50'
+                                ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200 dark:border-red-400/40 dark:bg-red-500/10 dark:focus:ring-red-400/20'
+                                : 'border-slate-200 bg-slate-50 focus:border-blue-500 focus:ring-blue-100 dark:border-white/10 dark:bg-white/[0.05] dark:focus:border-cyan-300/50 dark:focus:ring-cyan-400/20'
                         }`}
                     />
                     <div className="flex justify-between mt-2">
-                        <p className={`text-xs ${errors.review ? 'text-red-500' : 'text-gray-500'}`}>
+                        <p className={`text-xs ${errors.review ? 'text-red-500 dark:text-red-300' : 'text-slate-500 dark:text-white/45'}`}>
                             {errors.review || `${reviewText.length} characters`}
                         </p>
                         {reviewText.length >= 20 && (
@@ -149,8 +150,8 @@ const RatingInput = ({
 
                 {/* Error Message */}
                 {error && errorMsg && (
-                    <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-                        <p className="text-sm text-red-700">{errorMsg}</p>
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-400/20 dark:bg-red-500/10">
+                        <p className="text-sm text-red-700 dark:text-red-200">{errorMsg}</p>
                     </div>
                 )}
 
@@ -159,7 +160,7 @@ const RatingInput = ({
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2.5 rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-blue-600 to-cyan-500 py-2.5 font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 disabled:shadow-none"
                     >
                         {loading ? (
                             <>
@@ -176,7 +177,7 @@ const RatingInput = ({
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="px-6 py-2.5 border-2 border-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                            className="rounded-xl border border-slate-200 px-6 py-2.5 font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:bg-white/[0.08]"
                         >
                             Cancel
                         </button>

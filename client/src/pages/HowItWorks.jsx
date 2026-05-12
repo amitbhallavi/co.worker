@@ -55,19 +55,21 @@ const AnimatedStats = ({ inView }) => {
         <div
           key={s.label}
           className={`
-            bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3.5 text-center
-            hover:bg-white/10 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-400
+            bg-white border border-slate-200 rounded-2xl px-4 py-3.5 text-center shadow-sm
+            hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-0.5
+            dark:bg-white/5 dark:backdrop-blur-sm dark:border-white/10 dark:shadow-none dark:hover:bg-white/10 dark:hover:border-white/20
+            transition-all duration-400
             ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
           `}
           style={{ transitionDelay: `${i * 100}ms` }}
         >
           <div className="flex items-center justify-center gap-1.5 mb-1">
             <span className="text-base">{s.icon}</span>
-            <span className="text-lg sm:text-xl font-extrabold text-white">
+            <span className="text-lg sm:text-xl font-extrabold text-slate-950 dark:text-white">
               {inView ? s.value : '0'}
             </span>
           </div>
-          <p className="text-[10px] sm:text-xs text-white/50 font-medium">{s.label}</p>
+          <p className="text-[10px] sm:text-xs text-slate-500 dark:text-white/50 font-medium">{s.label}</p>
         </div>
       ))}
     </div>
@@ -204,8 +206,8 @@ const StepCard = ({ step, index }) => {
         relative flex flex-col rounded-2xl p-6 transition-all duration-500
         ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
         ${hovered
-          ? 'bg-white/10 backdrop-blur-sm border border-white/20 shadow-2xl -translate-y-2'
-          : 'bg-white/5 backdrop-blur-sm border border-white/10'
+          ? 'bg-white border border-slate-300 shadow-2xl -translate-y-2 dark:bg-white/10 dark:backdrop-blur-sm dark:border-white/20'
+          : 'bg-white border border-slate-200 shadow-sm dark:bg-white/5 dark:backdrop-blur-sm dark:border-white/10 dark:shadow-none'
         }
       `}
       style={{ transitionDelay: `${index * 120}ms` }}
@@ -218,20 +220,20 @@ const StepCard = ({ step, index }) => {
         <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center text-xl shadow-lg`}>
           {step.icon}
         </div>
-        <span className={`text-3xl font-black text-white/10`}>{step.number}</span>
+        <span className="text-3xl font-black text-slate-200 dark:text-white/10">{step.number}</span>
       </div>
 
       {/* Content */}
-      <h3 className="text-lg font-extrabold text-white mb-0.5">{step.title}</h3>
+      <h3 className="text-lg font-extrabold text-slate-950 dark:text-white mb-0.5">{step.title}</h3>
       <p className={`text-xs font-semibold bg-gradient-to-r ${step.color} bg-clip-text text-transparent mb-3`}>
         {step.subtitle}
       </p>
-      <p className="text-sm text-white/60 leading-relaxed mb-4 flex-1">{step.desc}</p>
+      <p className="text-sm text-slate-600 dark:text-white/60 leading-relaxed mb-4 flex-1">{step.desc}</p>
 
       {/* Tips */}
       <ul className="space-y-1.5">
         {step.tips.map((tip) => (
-          <li key={tip} className="text-xs text-white/50 flex items-center gap-2">
+          <li key={tip} className="text-xs text-slate-500 dark:text-white/50 flex items-center gap-2">
             <span className={`w-1.5 h-1.5 rounded-full bg-gradient-to-r ${step.color} flex-shrink-0`} />
             {tip}
           </li>
@@ -262,20 +264,21 @@ const StepCard = ({ step, index }) => {
 // ══════════════════════════════════════════════════════════
 const EscrowFlow = ({ inView }) => (
   <div className={`
-    bg-gradient-to-br from-emerald-500/20 to-teal-500/20 backdrop-blur-sm border border-emerald-500/30 rounded-3xl p-8 sm:p-10
+    escrow-flow-panel border border-emerald-200 rounded-3xl p-8 sm:p-10 shadow-sm
+    dark:border-emerald-300/20 dark:shadow-none
     transition-all duration-700 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
   `}>
     {/* Header */}
     <div className="text-center mb-8">
-      <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-4 py-1.5 mb-4">
-        <span className="text-emerald-400 text-sm">🔒</span>
-        <span className="text-emerald-400 text-xs font-bold">How Escrow Works</span>
+      <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-full px-4 py-1.5 mb-4 dark:bg-emerald-400/10 dark:border-emerald-300/20">
+        <span className="text-emerald-600 dark:text-emerald-300 text-sm">🔒</span>
+        <span className="text-emerald-700 dark:text-emerald-300 text-xs font-bold">How Escrow Works</span>
       </div>
-      <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
+      <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-950 dark:text-white mb-2">
         Your Money is Always
         <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent"> Safe & Secure</span>
       </h3>
-      <p className="text-white/50 text-sm max-w-lg mx-auto">
+      <p className="text-slate-600 dark:text-white/50 text-sm max-w-lg mx-auto">
         We hold your payment in escrow until you approve the completed work. No risk, no surprises — guaranteed.
       </p>
     </div>
@@ -286,20 +289,22 @@ const EscrowFlow = ({ inView }) => (
         <div
           key={i}
           className={`
-            relative bg-white/5 border border-white/10 rounded-2xl p-5 text-center
-            hover:bg-white/10 hover:border-white/20 transition-all duration-300
+            relative bg-slate-50 border border-slate-200 rounded-2xl p-5 text-center
+            hover:bg-white hover:border-emerald-200 hover:shadow-sm
+            dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10 dark:hover:border-white/20 dark:hover:shadow-none
+            transition-all duration-300
             ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
           `}
           style={{ transitionDelay: `${400 + i * 100}ms` }}
         >
           {/* Step dot */}
-          <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center">
+          <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 flex items-center justify-center">
             <span className="text-[8px] font-bold text-white">{i + 1}</span>
           </div>
 
           <div className="text-3xl mb-2">{item.icon}</div>
-          <div className="text-sm font-bold text-white mb-1">{item.title}</div>
-          <div className="text-xs text-white/40">{item.sub}</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-white mb-1">{item.title}</div>
+          <div className="text-xs text-slate-500 dark:text-white/40">{item.sub}</div>
 
           {/* Connector */}
           {i < 3 && (
@@ -312,9 +317,9 @@ const EscrowFlow = ({ inView }) => (
     </div>
 
     {/* Bottom trust strip */}
-    <div className="flex flex-wrap justify-center gap-4 mt-6 pt-6 border-t border-white/10">
+    <div className="flex flex-wrap justify-center gap-4 mt-6 pt-6 border-t border-emerald-100 dark:border-white/10">
       {['✓ Razorpay Secured', '✓ Funds in Escrow', '✓ 100% Refund Policy', '✓ Instant Release'].map(t => (
-        <span key={t} className="text-xs text-emerald-300/70 font-medium">{t}</span>
+        <span key={t} className="text-xs text-emerald-600 dark:text-emerald-300/70 font-medium">{t}</span>
       ))}
     </div>
   </div>
@@ -329,15 +334,17 @@ const TrustGrid = ({ inView }) => (
       <div
         key={item.title}
         className={`
-          bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center
-          hover:bg-white/10 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300
+          bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm
+          hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-0.5
+          dark:bg-white/5 dark:backdrop-blur-sm dark:border-white/10 dark:shadow-none dark:hover:bg-white/10 dark:hover:border-white/20
+          transition-all duration-300
           ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
         `}
         style={{ transitionDelay: `${i * 80}ms` }}
       >
         <div className="text-2xl mb-2">{item.icon}</div>
-        <div className="text-xs font-bold text-white mb-1">{item.title}</div>
-        <div className="text-[10px] text-white/40 leading-relaxed">{item.desc}</div>
+        <div className="text-xs font-bold text-slate-900 dark:text-white mb-1">{item.title}</div>
+        <div className="text-[10px] text-slate-500 dark:text-white/40 leading-relaxed">{item.desc}</div>
       </div>
     ))}
   </div>
@@ -355,8 +362,8 @@ const FAQItem = ({ faq, index, isOpen, onToggle }) => {
       className={`
         border rounded-xl overflow-hidden transition-all duration-300
         ${isOpen
-          ? 'bg-white/10 backdrop-blur-sm border-white/20 shadow-lg'
-          : 'bg-white/5 backdrop-blur-sm border-white/10 hover:border-white/20'
+          ? 'bg-white border-slate-300 shadow-lg dark:bg-white/10 dark:backdrop-blur-sm dark:border-white/20'
+          : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm dark:bg-white/5 dark:backdrop-blur-sm dark:border-white/10 dark:hover:border-white/20 dark:shadow-none'
         }
         ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
       `}
@@ -366,18 +373,21 @@ const FAQItem = ({ faq, index, isOpen, onToggle }) => {
         onClick={onToggle}
         className="w-full flex items-center justify-between px-6 py-4 text-left cursor-pointer bg-transparent border-none"
       >
-        <span className="text-sm sm:text-base font-semibold text-white pr-4 leading-snug">{faq.q}</span>
+        <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white pr-4 leading-snug">{faq.q}</span>
         <span className={`
-          flex-shrink-0 w-7 h-7 rounded-full border border-white/20 flex items-center justify-center text-sm font-bold transition-all duration-300
-          ${isOpen ? 'bg-white/20 text-white rotate-45' : 'text-white/60 bg-white/5'}
+          flex-shrink-0 w-7 h-7 rounded-full border flex items-center justify-center text-sm font-bold transition-all duration-300
+          ${isOpen
+            ? 'bg-blue-50 border-blue-200 text-blue-600 rotate-45 dark:bg-white/20 dark:border-white/20 dark:text-white'
+            : 'bg-slate-50 border-slate-200 text-slate-500 dark:text-white/60 dark:bg-white/5 dark:border-white/20'
+          }
         `}>
           +
         </span>
       </button>
       {isOpen && (
         <div className="px-6 pb-5">
-          <div className="h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent mb-4" />
-          <p className="text-sm text-white/60 leading-relaxed">{faq.a}</p>
+          <div className="h-px bg-gradient-to-r from-slate-200 via-slate-100 to-transparent dark:from-white/10 dark:via-white/5 mb-4" />
+          <p className="text-sm text-slate-600 dark:text-white/60 leading-relaxed">{faq.a}</p>
         </div>
       )}
     </div>
@@ -417,16 +427,16 @@ const SuccessStory = ({ inView }) => {
       {stories.map((s, i) => (
         <div
           key={s.name}
-          className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 hover:border-white/20 transition-all duration-300"
+          className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:bg-slate-50 hover:border-slate-300 dark:bg-white/5 dark:backdrop-blur-sm dark:border-white/10 dark:shadow-none dark:hover:bg-white/10 dark:hover:border-white/20 transition-all duration-300"
           style={{ transitionDelay: `${i * 150}ms` }}
         >
           {/* Quote */}
-          <div className="text-3xl text-white/20 mb-3">"</div>
-          <p className="text-sm text-white/70 leading-relaxed italic mb-5">{s.text}</p>
+          <div className="text-3xl text-slate-300 dark:text-white/20 mb-3">"</div>
+          <p className="text-sm text-slate-600 dark:text-white/70 leading-relaxed italic mb-5">{s.text}</p>
 
           {/* Project badge */}
-          <div className={`inline-flex items-center gap-1.5 bg-gradient-to-r ${s.gradient} bg-opacity-20 border border-white/10 rounded-full px-3 py-1 mb-4`}>
-            <span className="text-xs font-bold text-white/80">{s.project}</span>
+          <div className={`inline-flex items-center gap-1.5 bg-gradient-to-r ${s.gradient} border border-transparent rounded-full px-3 py-1 mb-4`}>
+            <span className="text-xs font-bold text-white">{s.project}</span>
           </div>
 
           {/* Author */}
@@ -435,8 +445,8 @@ const SuccessStory = ({ inView }) => {
               {s.avatar}
             </div>
             <div>
-              <div className="text-sm font-bold text-white">{s.name}</div>
-              <div className="text-xs text-white/40">{s.role}</div>
+              <div className="text-sm font-bold text-slate-900 dark:text-white">{s.name}</div>
+              <div className="text-xs text-slate-500 dark:text-white/40">{s.role}</div>
             </div>
             <div className="ml-auto flex gap-0.5">
               {Array.from({ length: s.rating }).map((_, i) => (
@@ -465,7 +475,7 @@ const HowItWorks = () => {
   const steps = activeTab === 'client' ? CLIENT_STEPS : FREELANCER_STEPS
 
   return (
-    <div className="min-h-screen bg-slate-950" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div className="min-h-screen bg-[#f5f7fb] text-slate-900 dark:bg-slate-950 dark:text-white" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <style>{`
         @keyframes fadeUp   { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
         @keyframes ping2    { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.2);opacity:0} }
@@ -480,7 +490,7 @@ const HowItWorks = () => {
       `}</style>
 
       {/* ══ HERO ══════════════════════════════════════════════ */}
-      <div className="relative bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 overflow-hidden">
+      <div className="relative bg-[linear-gradient(180deg,#f8fafc_0%,#eef6ff_100%)] dark:bg-gradient-to-br dark:from-slate-900 dark:via-blue-950 dark:to-slate-900 overflow-hidden">
         {/* Background grid */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
@@ -504,21 +514,22 @@ const HowItWorks = () => {
 
           {/* Live badge */}
           <div className={`
-            inline-flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full px-5 py-2 mb-8 shadow-lg
+            inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-5 py-2 mb-8 shadow-sm
+            dark:bg-white/5 dark:backdrop-blur-md dark:border-white/10 dark:shadow-lg
             transition-all duration-700 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
             <span className="relative flex w-2.5 h-2.5 flex-shrink-0">
               <span className="absolute inset-0 rounded-full bg-emerald-400" style={{ animation: 'ping2 2s ease infinite' }} />
               <span className="relative rounded-full bg-emerald-400 w-2.5 h-2.5" />
             </span>
-            <span className="text-xs sm:text-sm text-white/70 font-semibold">
+            <span className="text-xs sm:text-sm text-slate-600 dark:text-white/70 font-semibold">
               Trusted by 50,000+ professionals worldwide
             </span>
           </div>
 
           {/* Headline */}
           <h1 className={`
-            text-4xl sm:text-6xl font-extrabold text-white leading-tight mb-5 transition-all duration-700 delay-100
+            text-4xl sm:text-6xl font-extrabold text-slate-950 dark:text-white leading-tight mb-5 transition-all duration-700 delay-100
             ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
             {activeTab === 'client' ? (
@@ -542,7 +553,7 @@ const HowItWorks = () => {
 
           {/* Sub */}
           <p className={`
-            text-base sm:text-lg text-white/50 max-w-xl mx-auto mb-8 leading-relaxed transition-all duration-700 delay-200
+            text-base sm:text-lg text-slate-600 dark:text-white/50 max-w-xl mx-auto mb-8 leading-relaxed transition-all duration-700 delay-200
             ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
             {activeTab === 'client'
@@ -556,7 +567,7 @@ const HowItWorks = () => {
             flex justify-center mb-8 transition-all duration-700 delay-300
             ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
           `}>
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-1 flex gap-1 shadow-xl">
+            <div className="bg-white border border-slate-200 rounded-2xl p-1 flex gap-1 shadow-xl dark:bg-white/5 dark:backdrop-blur-sm dark:border-white/10">
               {[
                 { key: 'client', label: '👔 Hire Talent', sub: 'I\'m a client' },
                 { key: 'freelancer', label: '💻 Find Work', sub: 'I\'m a freelancer' },
@@ -569,11 +580,11 @@ const HowItWorks = () => {
                     flex flex-col items-center gap-0.5 min-w-[140px]
                     ${activeTab === t.key
                       ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/30'
-                      : 'text-white/50 hover:text-white hover:bg-white/5'
+                      : 'text-slate-600 hover:text-slate-950 hover:bg-slate-50 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/5'
                     }
                   `}>
                   <span>{t.label}</span>
-                  <span className={`text-[10px] font-medium ${activeTab === t.key ? 'text-blue-100' : 'text-white/30'}`}>
+                  <span className={`text-[10px] font-medium ${activeTab === t.key ? 'text-blue-100' : 'text-slate-400 dark:text-white/30'}`}>
                     {t.sub}
                   </span>
                 </button>
@@ -588,7 +599,7 @@ const HowItWorks = () => {
         {/* Wave divider */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-            <path d="M0 60V0C240 40 480 60 720 40C960 20 1200 40 1440 0V60H0Z" fill="#020617" />
+            <path className="fill-[#f5f7fb] dark:fill-[#020617]" d="M0 60V0C240 40 480 60 720 40C960 20 1200 40 1440 0V60H0Z" />
           </svg>
         </div>
       </div>
@@ -601,14 +612,14 @@ const HowItWorks = () => {
           <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 mb-4">
             <span className="text-blue-400 text-xs font-bold uppercase tracking-wider">Step-by-Step Guide</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white mb-3">
             {activeTab === 'client' ? (
               <>How <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Clients</span> Hire</>
             ) : (
               <>How <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">Freelancers</span> Earn</>
             )}
           </h2>
-          <p className="text-white/40 text-sm max-w-lg mx-auto">
+          <p className="text-slate-600 dark:text-white/40 text-sm max-w-lg mx-auto">
             {activeTab === 'client'
               ? 'From posting to payment — every step designed to be simple, safe, and fast.'
               : 'From profile to payout — every step built to help you earn more, faster.'
@@ -636,11 +647,11 @@ const HowItWorks = () => {
             <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 mb-4">
               <span className="text-violet-400 text-xs font-bold uppercase tracking-wider">Success Stories</span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-950 dark:text-white mb-2">
               Real People.
               <span className="bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent"> Real Results.</span>
             </h3>
-            <p className="text-white/40 text-sm">Hear from freelancers and clients who made it happen</p>
+            <p className="text-slate-600 dark:text-white/40 text-sm">Hear from freelancers and clients who made it happen</p>
           </div>
           <SuccessStory inView={escrowInView} />
         </div>
@@ -648,8 +659,8 @@ const HowItWorks = () => {
         {/* Trust Grid */}
         <div className="mb-20">
           <div className="text-center mb-8">
-            <h3 className="text-xl font-extrabold text-white mb-1">Built on Trust & Safety</h3>
-            <p className="text-sm text-white/40">Every transaction protected by escrow and our dedicated team</p>
+            <h3 className="text-xl font-extrabold text-slate-950 dark:text-white mb-1">Built on Trust & Safety</h3>
+            <p className="text-sm text-slate-600 dark:text-white/40">Every transaction protected by escrow and our dedicated team</p>
           </div>
           <TrustGrid inView={escrowInView} />
         </div>
@@ -660,11 +671,11 @@ const HowItWorks = () => {
             <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-full px-4 py-1.5 mb-4">
               <span className="text-amber-400 text-xs font-bold uppercase tracking-wider">FAQ</span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-950 dark:text-white mb-2">
               Frequently Asked
               <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent"> Questions</span>
             </h3>
-            <p className="text-white/40 text-sm">Everything you need to know before getting started</p>
+            <p className="text-slate-600 dark:text-white/40 text-sm">Everything you need to know before getting started</p>
           </div>
           <div className="space-y-3">
             {FAQS.map((faq, i) => (
@@ -681,7 +692,7 @@ const HowItWorks = () => {
       </div>
 
       {/* ══ BOTTOM CTA ════════════════════════════════════════ */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 py-16 sm:py-24 px-4 relative overflow-hidden">
+      <div className="bg-[linear-gradient(180deg,#f8fafc_0%,#eef6ff_100%)] dark:bg-gradient-to-r dark:from-slate-900 dark:via-blue-950 dark:to-slate-900 py-16 sm:py-24 px-4 relative overflow-hidden border-t border-slate-200 dark:border-white/5">
         {/* Glow */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full opacity-20"
@@ -689,14 +700,14 @@ const HowItWorks = () => {
         </div>
 
         <div className="relative max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white mb-4 leading-tight">
             {activeTab === 'client' ? (
               <>Ready to Hire<br /><span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"> for Free?</span></>
             ) : (
               <>Ready to Start<br /><span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent"> Your Journey?</span></>
             )}
           </h2>
-          <p className="text-white/50 text-sm sm:text-base mb-8 max-w-lg mx-auto">
+          <p className="text-slate-600 dark:text-white/50 text-sm sm:text-base mb-8 max-w-lg mx-auto">
             {activeTab === 'client'
               ? 'Join 50,000+ clients who\'ve hired top freelancers without paying a single rupee upfront.'
               : 'Start free today. Build your profile, win your first project, and see where it takes you.'
@@ -712,7 +723,7 @@ const HowItWorks = () => {
             </button>
             <button
               onClick={() => navigate('/pricing')}
-              className="px-8 py-4 rounded-2xl font-bold text-sm border-2 border-white/20 text-white hover:bg-white/10 transition-all duration-200 cursor-pointer"
+              className="px-8 py-4 rounded-2xl font-bold text-sm border-2 border-slate-200 text-slate-700 bg-white hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 cursor-pointer dark:border-white/20 dark:text-white dark:bg-transparent dark:hover:bg-white/10"
             >
               View Pricing
             </button>
@@ -721,7 +732,7 @@ const HowItWorks = () => {
           {/* Trust strip */}
           <div className="flex flex-wrap justify-center gap-5 mt-8">
             {['✓ Free to join', '✓ Escrow protected', '✓ Zero upfront fees', '✓ Cancel anytime'].map(t => (
-              <span key={t} className="text-xs text-white/30 font-medium">{t}</span>
+              <span key={t} className="text-xs text-slate-500 dark:text-white/30 font-medium">{t}</span>
             ))}
           </div>
         </div>
