@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react"
 import { useSelector } from "react-redux"
-import axios from "axios"
 import { toast } from "react-toastify"
+import API from "../features/api/axiosInstance"
+import { buildAuthConfig } from "../features/api/apiHelpers"
 
 // ── Status badge ───────────────────────────────────────────
 const Badge = ({ status }) => {
@@ -36,11 +37,11 @@ const AdminPayments = () => {
     const [filterStatus, setFilterStatus] = useState("")
 
     const fetchPayments = useCallback(async () => {
+        if (!token) return
+
         setLoading(true)
         try {
-            const res = await axios.get(`/api/payment/all`, {
-                headers: { authorization: `Bearer ${token}` },
-            })
+            const res = await API.get("/api/payment/all", buildAuthConfig(token))
             setPayments(Array.isArray(res.data) ? res.data : res.data.payments || [])
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to load payments")
@@ -48,11 +49,11 @@ const AdminPayments = () => {
     }, [token])
 
     const fetchWithdrawals = useCallback(async () => {
+        if (!token) return
+
         setLoading(true)
         try {
-            const res = await axios.get(`/api/wallet/admin/withdrawals`, {
-                headers: { authorization: `Bearer ${token}` },
-            })
+            const res = await API.get("/api/wallet/admin/withdrawals", buildAuthConfig(token))
             setWithdrawals(Array.isArray(res.data) ? res.data : res.data.withdrawals || [])
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to load withdrawals")
@@ -70,10 +71,11 @@ const AdminPayments = () => {
         try {
             const payment = payments.find(p => p._id === paymentId)
             if (!payment) throw new Error("Payment not found")
-            await axios.post(
-                `/api/payment/release/${payment.project}`,
+            const projectId = payment.project?._id || payment.project
+            await API.post(
+                `/api/payment/release/${projectId}`,
                 {},
-                { headers: { authorization: `Bearer ${token}` } }
+                buildAuthConfig(token)
             )
             toast.success("Escrow released to freelancer!")
             fetchPayments()
@@ -86,10 +88,10 @@ const AdminPayments = () => {
     const handleApprove = async (id) => {
         setActionId(id)
         try {
-            await axios.put(
+            await API.put(
                 `/api/wallet/admin/withdrawals/${id}`,
                 { status: "approved", adminNote: "Approved by admin" },
-                { headers: { authorization: `Bearer ${token}` } }
+                buildAuthConfig(token)
             )
             toast.success("Withdrawal approved!")
             fetchWithdrawals()
@@ -102,10 +104,10 @@ const AdminPayments = () => {
     const handleReject = async (id) => {
         setActionId(id)
         try {
-            await axios.put(
+            await API.put(
                 `/api/wallet/admin/withdrawals/${id}`,
                 { status: "rejected", adminNote: "Rejected by admin" },
-                { headers: { authorization: `Bearer ${token}` } }
+                buildAuthConfig(token)
             )
             toast.success("Withdrawal rejected, amount refunded.")
             fetchWithdrawals()
