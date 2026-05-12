@@ -32,11 +32,120 @@ const getPaymentTotal = async (startDate, endDate) => {
   return result[0] || { total: 0, count: 0 }
 }
 
+const getAllUsersData = () => User.find().select("-password").lean()
+
+const getAllProjectsData = async () => {
+  const projects = await Project.find()
+    .populate("user", "name email profilePic")
+    .populate(adminFreelancerPopulate)
+    .populate("selectedBid")
+    .sort({ createdAt: -1 })
+    .lean()
+
+  const projectIds = projects.map(project => project._id)
+  const bids = await Bid.find({ project: { $in: projectIds } })
+    .populate(adminFreelancerPopulate)
+    .lean()
+
+  return projects.map(project => ({
+    ...project,
+    bids: bids.filter(bid => bid.project?.toString() === project._id.toString()),
+  }))
+}
+
+const getAllBidsData = () => Bid.find()
+  .populate(adminFreelancerPopulate)
+  .populate({ path: "project", select: "title budget user status", populate: { path: "user", select: "name email" } })
+  .sort({ createdAt: -1 })
+  .lean()
+
+const getDashboardStatsData = async () => {
+  const [totalUsers, totalFreelancers, totalProjects, totalBids, totalPayments, successfulPayments, creditAgg, revenueAgg] =
+    await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ isFreelancer: true }),
+      Project.countDocuments(),
+      Bid.countDocuments(),
+      Payment.countDocuments(),
+      Payment.countDocuments({ status: { $in: ["escrow", "released"] } }),
+      User.aggregate([{ $group: { _id: null, total: { $sum: "$credits" } } }]),
+      Payment.aggregate([
+        { $match: { status: { $in: ["escrow", "released"] } } },
+        { $group: { _id: null, total: { $sum: "$platformFee" } } },
+      ]),
+    ])
+
+  return {
+    totalUsers,
+    totalFreelancers,
+    totalProjects,
+    totalBids,
+    totalCredits: creditAgg[0]?.total || 0,
+    totalRevenue: revenueAgg[0]?.total || 0,
+    totalPayments,
+    successfulPayments,
+  }
+}
+
+const getMonthlyAnalyticsData = async () => {
+  const monthsData = []
+
+  for (let i = 11; i >= 0; i--) {
+    const { start: startDate, end: endDate } = toMonthlyRange(i)
+
+    const [bidsCount, projectsCount, usersCount, freelancersCount, paymentStats] = await Promise.all([
+      Bid.countDocuments({
+        createdAt: { $gte: startDate, $lte: endDate }
+      }),
+      Project.countDocuments({
+        createdAt: { $gte: startDate, $lte: endDate }
+      }),
+      User.countDocuments({
+        createdAt: { $gte: startDate, $lte: endDate }
+      }),
+      User.countDocuments({
+        isFreelancer: true,
+        createdAt: { $gte: startDate, $lte: endDate }
+      }),
+      getPaymentTotal(startDate, endDate),
+    ])
+
+    monthsData.push({
+      month: startDate.toLocaleString('en-US', { month: 'short', year: 'numeric' }),
+      bids: bidsCount,
+      projects: projectsCount,
+      revenue: paymentStats.total,
+      users: usersCount,
+      freelancers: freelancersCount,
+    })
+  }
+
+  return {
+    months: monthsData.map(m => m.month.split(' ')[0]),
+    bids: monthsData.map(m => m.bids),
+    projects: monthsData.map(m => m.projects),
+    revenue: monthsData.map(m => m.revenue),
+    userGrowth: monthsData.map(m => m.users),
+    freelancers: monthsData.map(m => m.freelancers),
+    chartData: monthsData
+  }
+}
+
+const getRecentPaymentsData = () => Payment.find()
+  .populate("project", "title budget")
+  .populate("client", "name email")
+  .populate("freelancer", "name email")
+  .sort({ createdAt: -1 })
+  .limit(10)
+  .lean()
+
+const getPlatformSettingsData = () => PlatformSettings.getInstance()
+
 // ─── GET ALL USERS ────────────────────────────────────────────────────────────
 
 const getAllUsers = async (req, res) => {
   try {
-    const allUsers = await User.find().select("-password").lean()
+    const allUsers = await getAllUsersData()
     res.status(200).json(allUsers)
   } catch (err) {
     res.status(500)
@@ -87,24 +196,8 @@ const deleteUser = async (req, res) => {
 
 const getAllProjects = async (req, res) => {
   try {
-    const projects = await Project.find()
-      .populate("user", "name email profilePic")
-      .populate(adminFreelancerPopulate)
-      .populate("selectedBid")
-      .sort({ createdAt: -1 })
-      .lean()
-
-    const projectIds = projects.map(project => project._id)
-    const bids = await Bid.find({ project: { $in: projectIds } })
-      .populate(adminFreelancerPopulate)
-      .lean()
-
-    const projectsWithBids = projects.map(project => ({
-      ...project,
-      bids: bids.filter(bid => bid.project?.toString() === project._id.toString()),
-    }))
-
-    res.status(200).json(projectsWithBids)
+    const projects = await getAllProjectsData()
+    res.status(200).json(projects)
   } catch (err) {
     res.status(500)
     throw new Error("Server error fetching projects")
@@ -137,11 +230,7 @@ const updateProject = async (req, res) => {
 // ─── GET ALL BIDS ─────────────────────────────────────────────────────────────
 const getAllBids = async (req, res) => {
   try {
-    const bids = await Bid.find()
-      .populate(adminFreelancerPopulate)
-      .populate({ path: "project", select: "title budget user status", populate: { path: "user", select: "name email" } })
-      .sort({ createdAt: -1 })
-      .lean()
+    const bids = await getAllBidsData()
     res.status(200).json(bids)
   } catch (err) {
     res.status(500)
@@ -174,34 +263,8 @@ const updateBid = async (req, res) => {
 // ─── DASHBOARD STATS ──────────────────────────────────────────────────────────
 const getDashboardStats = async (req, res) => {
   try {
-    const [totalUsers, totalFreelancers, totalProjects, totalBids, totalPayments, successfulPayments, creditAgg, revenueAgg] =
-      await Promise.all([
-        User.countDocuments(),
-        User.countDocuments({ isFreelancer: true }),
-        Project.countDocuments(),
-        Bid.countDocuments(),
-        Payment.countDocuments(),
-        Payment.countDocuments({ status: { $in: ["escrow", "released"] } }),
-        User.aggregate([{ $group: { _id: null, total: { $sum: "$credits" } } }]),
-        Payment.aggregate([
-          { $match: { status: { $in: ["escrow", "released"] } } },
-          { $group: { _id: null, total: { $sum: "$platformFee" } } },
-        ]),
-      ])
-
-    const totalCredits = creditAgg[0]?.total || 0
-    const totalRevenue = revenueAgg[0]?.total || 0
-
-    res.status(200).json({
-      totalUsers,
-      totalFreelancers,
-      totalProjects,
-      totalBids,
-      totalCredits,
-      totalRevenue,
-      totalPayments,
-      successfulPayments,
-    })
+    const stats = await getDashboardStatsData()
+    res.status(200).json(stats)
   } catch (err) {
     res.status(500)
     throw new Error("Server error fetching stats")
@@ -211,48 +274,8 @@ const getDashboardStats = async (req, res) => {
 // ─── MONTHLY ANALYTICS (Real-time data aggregation) ──────────────────────────
 const getMonthlyAnalytics = async (req, res) => {
   try {
-    const monthsData = []
-
-    // Generate data for last 12 months
-    for (let i = 11; i >= 0; i--) {
-      const { start: startDate, end: endDate } = toMonthlyRange(i)
-
-      const [bidsCount, projectsCount, usersCount, freelancersCount, paymentStats] = await Promise.all([
-        Bid.countDocuments({
-          createdAt: { $gte: startDate, $lte: endDate }
-        }),
-        Project.countDocuments({
-          createdAt: { $gte: startDate, $lte: endDate }
-        }),
-        User.countDocuments({
-          createdAt: { $gte: startDate, $lte: endDate }
-        }),
-        User.countDocuments({
-          isFreelancer: true,
-          createdAt: { $gte: startDate, $lte: endDate }
-        }),
-        getPaymentTotal(startDate, endDate),
-      ])
-
-      monthsData.push({
-        month: startDate.toLocaleString('en-US', { month: 'short', year: 'numeric' }),
-        bids: bidsCount,
-        projects: projectsCount,
-        revenue: paymentStats.total,
-        users: usersCount,
-        freelancers: freelancersCount,
-      })
-    }
-
-    res.status(200).json({
-      months: monthsData.map(m => m.month.split(' ')[0]),
-      bids: monthsData.map(m => m.bids),
-      projects: monthsData.map(m => m.projects),
-      revenue: monthsData.map(m => m.revenue),
-      userGrowth: monthsData.map(m => m.users),
-      freelancers: monthsData.map(m => m.freelancers),
-      chartData: monthsData
-    })
+    const analytics = await getMonthlyAnalyticsData()
+    res.status(200).json(analytics)
   } catch (err) {
     res.status(500)
     throw new Error("Server error fetching monthly analytics")
@@ -262,14 +285,7 @@ const getMonthlyAnalytics = async (req, res) => {
 // ─── PAYMENT TRANSACTIONS (Real-time payments list) ──────────────────────────
 const getRecentPayments = async (req, res) => {
   try {
-    const payments = await Payment.find()
-      .populate("project", "title budget")
-      .populate("client", "name email")
-      .populate("freelancer", "name email")
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .lean()
-
+    const payments = await getRecentPaymentsData()
     res.status(200).json(payments)
   } catch (err) {
     res.status(500)
@@ -280,7 +296,7 @@ const getRecentPayments = async (req, res) => {
 // ─── GET PLATFORM SETTINGS (Persistent toggles) ────────────────────────────
 const getPlatformSettings = async (req, res) => {
   try {
-    const settings = await PlatformSettings.getInstance()
+    const settings = await getPlatformSettingsData()
     res.status(200).json(settings)
   } catch (err) {
     res.status(500)
@@ -305,7 +321,44 @@ const updatePlatformSettings = async (req, res) => {
   }
 }
 
+// ─── DASHBOARD SNAPSHOT ──────────────────────────────────────────────────────
+const getDashboardSnapshot = async (req, res) => {
+  try {
+    const [
+      users,
+      projects,
+      bids,
+      stats,
+      monthlyAnalytics,
+      recentPayments,
+      platformSettings,
+    ] = await Promise.all([
+      getAllUsersData(),
+      getAllProjectsData(),
+      getAllBidsData(),
+      getDashboardStatsData(),
+      getMonthlyAnalyticsData(),
+      getRecentPaymentsData(),
+      getPlatformSettingsData(),
+    ])
+
+    res.status(200).json({
+      users,
+      projects,
+      bids,
+      stats,
+      monthlyAnalytics,
+      recentPayments,
+      platformSettings,
+    })
+  } catch (err) {
+    res.status(500)
+    throw new Error("Server error fetching admin dashboard")
+  }
+}
+
 const adminController = {
+  getDashboardSnapshot,
   getAllUsers,
   updateUser,
   deleteUser,

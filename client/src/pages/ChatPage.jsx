@@ -563,6 +563,8 @@ const ChatPageContent = ({ user }) => {
         if (!user?.token) return
 
         const sock = initSocket(user.token)
+        if (!sock) return
+
         socketRef.current = sock
 
         // Clean listeners before attaching to avoid duplicates

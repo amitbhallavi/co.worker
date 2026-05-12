@@ -103,6 +103,7 @@ const DEFAULT_PLATFORM_TOGGLES = {
 
 // ─── MONTHS (for chart labels) ────────────────────────────────────────────────
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+const ADMIN_REFRESH_INTERVAL_MS = 120000
 
 const normalizeStatus = (status) => String(status || "").trim().toLowerCase()
 const statusIs = (status, ...matches) => matches.map(normalizeStatus).includes(normalizeStatus(status))
@@ -415,6 +416,7 @@ const AdminDashboard = () => {
     { id: 2, msg: "Dashboard data loaded", time: "Just now", type: "success" },
   ])
   const refreshTimerRef = useRef(null)
+  const refreshInFlightRef = useRef(false)
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const pushActivity = useCallback((msg, type = "info") => {
@@ -422,7 +424,12 @@ const AdminDashboard = () => {
   }, [setActivity])
 
   const refreshAdminData = useCallback(() => {
-    dispatch(refreshAdminDashboard())
+    if (refreshInFlightRef.current) return
+
+    refreshInFlightRef.current = true
+    Promise.resolve(dispatch(refreshAdminDashboard())).finally(() => {
+      refreshInFlightRef.current = false
+    })
   }, [dispatch])
 
   const scheduleAdminRefresh = useCallback(() => {
@@ -539,7 +546,7 @@ const AdminDashboard = () => {
   // a backend path has not yet been wired to emit a dashboard event.
   useEffect(() => {
     if (!user?.isAdmin) return
-    const intervalId = window.setInterval(refreshAdminData, 30000)
+    const intervalId = window.setInterval(refreshAdminData, ADMIN_REFRESH_INTERVAL_MS)
     return () => window.clearInterval(intervalId)
   }, [refreshAdminData, user?.isAdmin])
 

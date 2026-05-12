@@ -8,6 +8,11 @@ const authHeader = (token) => ({
     headers: { Authorization: `Bearer ${token}` },
 })
 
+const fetchDashboardSnapshot = async (token) => {
+    const res = await API.get(`${BASE}/dashboard`, authHeader(token))
+    return res.data
+}
+
 // ── Users ─────────────────────────────────────────────────────────────────────
 const fetchAllUsers = async (token) => {
     const res = await API.get(`${BASE}/users`, authHeader(token))
@@ -86,6 +91,7 @@ const updatePlatformSettings = async (token, settings) => {
 }
 
 const adminService = {
+    fetchDashboardSnapshot,
     fetchAllUsers,
     updateUser,
     deleteUser,

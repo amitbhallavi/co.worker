@@ -8,6 +8,7 @@ import axios from "axios"
 import SubscriptionCheckout from "../components/SubscriptionCheckout"
 import { activateClientPlan } from "../features/client/clientSlice"
 import { PLANS as SUBSCRIPTION_PLANS } from "../config/planFeatures"
+import { getApiBaseUrl } from "../features/api/apiConfig"
 
 const MotionPanel = motion.div
 const HOME_PENDING_CHECKOUT_KEY = "coworker.homePendingCheckout"
@@ -510,7 +511,7 @@ const Home = () => {
         const fetchData = async () => {
             try {
                 const [freelancersRes] = await Promise.all([
-                    axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5050"}/api/freelancer?limit=8`),
+                    axios.get(`${getApiBaseUrl()}/api/freelancer?limit=8`),
                 ])
                 setFreelancers(freelancersRes.data?.freelancers || freelancersRes.data || [])
             } catch (err) {

@@ -2,8 +2,12 @@ import io from "socket.io-client"
 import { toast } from "react-toastify"
 import store from "../features/store"
 import { updateCredits } from "../features/auth/authSlice"
+import { getSocketBaseUrl } from "../features/api/apiConfig"
 
 let socket = null
+let socketAuthToken = null
+let connectionErrorLogged = false
+let socketDisabledLogged = false
 const shouldLogSocket = import.meta.env.DEV && import.meta.env.VITE_DEBUG_SOCKET === "true"
 
 const logSocket = (...args) => {
@@ -31,6 +35,7 @@ const paymentToastHandlers = {
 
 const attachConnectionListeners = () => {
     socket.on("connect", () => {
+        connectionErrorLogged = false
         logSocket("[Socket] Connected:", socket?.id)
     })
 
@@ -39,7 +44,12 @@ const attachConnectionListeners = () => {
     })
 
     socket.on("connect_error", (error) => {
-        console.error("[Socket] Connection error:", error.message)
+        if (!shouldLogSocket && connectionErrorLogged) {
+            return
+        }
+
+        connectionErrorLogged = true
+        console.warn("[Socket] Connection error:", error.message)
     })
 }
 
@@ -114,17 +124,33 @@ const attachNotificationListeners = () => {
 }
 
 export const initSocket = (token) => {
-    if (socket) {
+    if (socket && socketAuthToken === token) {
         return socket
     }
 
-    const url = import.meta.env.VITE_API_URL || "http://localhost:5050"
+    if (socket) {
+        disconnect()
+    }
+
+    const url = getSocketBaseUrl()
+    if (!url) {
+        if (!socketDisabledLogged) {
+            socketDisabledLogged = true
+            console.warn("[Socket] Disabled: set VITE_API_URL to your backend URL in production.")
+        }
+        return null
+    }
+
+    socketAuthToken = token || null
     socket = io(url, {
         auth: token ? { token } : undefined,
+        transports: ["websocket", "polling"],
+        withCredentials: true,
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 5,
+        reconnectionDelayMax: 8000,
+        reconnectionAttempts: 3,
+        timeout: 8000,
     })
 
     attachConnectionListeners()
@@ -193,5 +219,7 @@ export const disconnect = () => {
     if (socket) {
         socket.disconnect()
         socket = null
+        socketAuthToken = null
+        connectionErrorLogged = false
     }
 }

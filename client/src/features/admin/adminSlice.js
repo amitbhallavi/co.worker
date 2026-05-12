@@ -199,33 +199,7 @@ export const refreshAdminDashboard = createAsyncThunk(
     async (_, thunkAPI) => {
         try {
             const token = thunkAPI.getState().auth.user.token
-            const [
-                users,
-                projects,
-                bids,
-                stats,
-                monthlyAnalytics,
-                recentPayments,
-                platformSettings,
-            ] = await Promise.all([
-                adminService.fetchAllUsers(token),
-                adminService.fetchAllProjects(token),
-                adminService.fetchAllBids(token),
-                adminService.fetchStats(token),
-                adminService.fetchMonthlyAnalytics(token),
-                adminService.fetchRecentPayments(token),
-                adminService.fetchPlatformSettings(token),
-            ])
-
-            return {
-                users,
-                projects,
-                bids,
-                stats,
-                monthlyAnalytics,
-                recentPayments,
-                platformSettings,
-            }
+            return await adminService.fetchDashboardSnapshot(token)
         } catch (error) {
             return thunkAPI.rejectWithValue(errMsg(error))
         }

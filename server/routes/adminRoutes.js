@@ -6,6 +6,8 @@ const router = express.Router()
 
 router.use(protect.forAdmin)
 
+router.get("/dashboard", adminController.getDashboardSnapshot)
+
 router.get("/users", adminController.getAllUsers)
 router.put("/users/:uid", adminController.updateUser)
 router.delete("/users/:uid", adminController.deleteUser)

@@ -6,6 +6,7 @@ import cors from "cors"
 import "colors"
 import rateLimit from "express-rate-limit"
 import connectDB from "./config/dbConfig.js"
+import { corsOptions } from "./config/cors.js"
 import authRoutes from "./routes/authRoutes.js"
 import adminRoutes from "./routes/adminRoutes.js"
 import freelancerRoutes from "./routes/freelancerRoutes.js"
@@ -52,25 +53,7 @@ global.io = io
 
 connectDB()
 
-app.use(
-    cors({
-        origin: function (origin, callback) {
-            const allowedOrigins = [
-                'http://localhost:5173',
-                'https://co-worker-pro.vercel.app',
-                'https://coworkers.live',
-                'https://www.coworkers.live',
-            ]
-            // Allow requests with no origin (mobile apps, Postman)
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true)
-            } else {
-                callback(new Error('Not allowed by CORS'))
-            }
-        },
-        credentials: true,
-    })
-)
+app.use(cors(corsOptions))
 
 
 scheduleJob("0 * * * *", "Running escrow release check...", () => PaymentController.runEscrowReleaseCron())
