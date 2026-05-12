@@ -22,11 +22,11 @@ const MotionButton = motion.button
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const ACCENT = 'from-blue-500 to-cyan-400'
 const ACCENT_BG = 'bg-gradient-to-r from-blue-500 to-cyan-400'
-const CARD = 'bg-white/[0.03] border border-white/10 backdrop-blur-sm'
-const CARD_HOVER = 'hover:border-white/20 hover:bg-white/[0.05]'
-const TEXT_1 = 'text-white'
-const TEXT_2 = 'text-white/60'
-const TEXT_3 = 'text-white/35'
+const CARD = 'bg-slate-50/40 border border-slate-200 backdrop-blur-sm dark:bg-white/[0.03] dark:border-white/10'
+const CARD_HOVER = 'hover:border-slate-300 hover:bg-slate-50/60 dark:hover:border-white/20 dark:hover:bg-white/[0.05]'
+const TEXT_1 = 'text-slate-900 dark:text-white'
+const TEXT_2 = 'text-slate-600 dark:text-white/60'
+const TEXT_3 = 'text-slate-500 dark:text-white/35'
 
 // fade-up variant used across sections
 const fadeUp = (delay = 0) => ({
@@ -87,20 +87,20 @@ const HeroBanner = memo(function HeroBanner({
 
     return (
         <section
-            className="relative overflow-hidden px-4 pb-12 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pb-14"
-            style={{ background: 'linear-gradient(135deg,#020617 0%,#0c1a3a 55%,#020617 100%)' }}
+            className="relative overflow-hidden px-4 pb-12 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pb-14 bg-gradient-to-b from-slate-50 to-white dark:bg-gradient-to-b dark:from-[#020617] dark:to-slate-900"
+            style={{}}
         >
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
                 <div
-                    className="absolute -right-12 top-0 h-72 w-72 rounded-full opacity-25"
+                    className="absolute -right-12 top-0 h-72 w-72 rounded-full opacity-10 dark:opacity-25"
                     style={{ background: 'radial-gradient(circle,#38bdf855 0%,transparent 68%)' }}
                 />
                 <div
-                    className="absolute -bottom-20 left-0 h-64 w-64 rounded-full opacity-20"
+                    className="absolute -bottom-20 left-0 h-64 w-64 rounded-full opacity-10 dark:opacity-20"
                     style={{ background: 'radial-gradient(circle,#8b5cf655 0%,transparent 68%)' }}
                 />
                 <div
-                    className="absolute inset-0 opacity-[0.04]"
+                    className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]"
                     style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px)', backgroundSize: '48px 48px' }}
                 />
             </div>
@@ -108,11 +108,11 @@ const HeroBanner = memo(function HeroBanner({
             <div className="relative z-10 mx-auto max-w-5xl">
                 <MotionDiv
                     {...getReveal(0, reducedMotion)}
-                    className="rounded-[32px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_24px_80px_-40px_rgba(59,130,246,0.45)] backdrop-blur-xl sm:p-7 lg:p-8"
+                    className="rounded-[32px] border border-slate-200 bg-white/60 shadow-lg dark:border-white/10 dark:bg-white/[0.05] dark:shadow-[0_24px_80px_-40px_rgba(59,130,246,0.45)] p-5 backdrop-blur-xl sm:p-7 lg:p-8"
                 >
                     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr),320px] lg:items-end">
                         <div className="min-w-0">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-200">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200">
                                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
                                 {isOwnProfile ? 'Freelancer dashboard view' : 'Available for work'}
                             </div>
@@ -122,7 +122,7 @@ const HeroBanner = memo(function HeroBanner({
                                     <img
                                         src={profileUser.profilePic}
                                         alt={profileUser?.name || 'Freelancer'}
-                                        className="h-24 w-24 rounded-[28px] object-cover ring-4 ring-white/10 shadow-2xl"
+                                        className="h-24 w-24 rounded-[28px] object-cover ring-4 ring-slate-200 shadow-2xl dark:ring-white/10"
                                     />
                                 ) : (
                                     <div className={`flex h-24 w-24 items-center justify-center rounded-[28px] ${ACCENT_BG} text-3xl font-black text-white shadow-2xl`}>
@@ -131,13 +131,13 @@ const HeroBanner = memo(function HeroBanner({
                                 )}
 
                                 <div className="min-w-0">
-                                    <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
+                                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl lg:text-5xl">
                                         {profileUser?.name || 'Freelancer'}
                                     </h1>
-                                    <p className="mt-2 text-sm font-semibold text-cyan-200 sm:text-base">
+                                    <p className="mt-2 text-sm font-semibold text-blue-600 dark:text-cyan-200 sm:text-base">
                                         {profile?.category || 'Independent freelancer'}
                                     </p>
-                                    <p className="mt-3 max-w-2xl text-sm leading-7 text-white/65 sm:text-base">
+                                    <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-white/65 sm:text-base">
                                         {profile?.description || 'This profile needs a sharper summary. Add proof of work, clearer positioning, and stronger category focus.'}
                                     </p>
                                 </div>
@@ -145,7 +145,7 @@ const HeroBanner = memo(function HeroBanner({
 
                             <div className="mt-5 flex flex-wrap gap-2.5">
                                 {heroFacts.map((fact) => (
-                                    <span key={fact} className="rounded-full border border-white/10 bg-white/[0.05] px-3.5 py-2 text-xs font-semibold text-white/70">
+                                    <span key={fact} className="rounded-full border border-slate-200 bg-slate-100/50 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/70">
                                         {fact}
                                     </span>
                                 ))}
@@ -162,7 +162,7 @@ const HeroBanner = memo(function HeroBanner({
                                         </Link>
                                         <Link
                                             to="/assigned-projects"
-                                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-semibold text-white/75 no-underline transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-slate-100/50 px-5 py-3 text-sm font-semibold text-slate-700 no-underline transition hover:border-slate-400 hover:bg-slate-200/50 hover:text-slate-900 dark:border-white/10 dark:bg-white/[0.05] dark:px-5 dark:py-3 dark:text-white/75 dark:hover:border-white/20 dark:hover:bg-white/[0.08] dark:hover:text-white"
                                         >
                                             View Assigned Work
                                         </Link>
@@ -182,12 +182,12 @@ const HeroBanner = memo(function HeroBanner({
 
                         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                             {heroStats.map((stat) => (
-                                <div key={stat.label} className="rounded-[24px] border border-white/10 bg-black/20 p-4 backdrop-blur-sm">
+                                <div key={stat.label} className="rounded-[24px] border border-slate-200 bg-slate-100/40 p-4 backdrop-blur-sm dark:border-white/10 dark:bg-black/20">
                                     <div className={`inline-flex rounded-full bg-gradient-to-r ${stat.tone} px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-white`}>
                                         {stat.label}
                                     </div>
-                                    <div className="mt-4 text-3xl font-black tracking-tight text-white">{stat.value}</div>
-                                    <div className="mt-1 text-sm text-white/45">
+                                    <div className="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{stat.value}</div>
+                                    <div className="mt-1 text-sm text-slate-600 dark:text-white/45">
                                         {stat.label === 'Portfolio'
                                             ? 'Visible proof of work'
                                             : stat.label === 'Assigned'
@@ -214,13 +214,13 @@ const Avatar = memo(function Avatar({ profileUser, size = 'lg' }) {
         <div className="relative flex-shrink-0">
             {profileUser?.profilePic ? (
                 <img src={profileUser.profilePic} alt={profileUser.name}
-                    className={`${dim} rounded-2xl object-cover ring-2 ring-white/10 shadow-2xl`} />
+                    className={`${dim} rounded-2xl object-cover ring-2 ring-slate-200 shadow-2xl dark:ring-white/10`} />
             ) : (
                 <div className={`${dim} rounded-2xl ${ACCENT_BG} flex items-center justify-center ${txt} font-bold text-white shadow-2xl`}>
                     {profileUser?.name?.[0] || 'F'}
                 </div>
             )}
-            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-[#020617] shadow-lg shadow-emerald-400/40" />
+            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white dark:border-[#020617] shadow-lg shadow-emerald-400/40" />
         </div>
     )
 })
@@ -241,7 +241,7 @@ const InfoRow = memo(function InfoRow({ icon, text }) {
     if (!text) return null
     return (
         <div className={`flex items-center gap-2.5 text-[13px] ${CARD} rounded-lg px-3 py-2`}>
-            <span className="text-blue-400 flex-shrink-0">{icon}</span>
+            <span className="text-blue-500 dark:text-blue-400 flex-shrink-0">{icon}</span>
             <span className={`${TEXT_2} truncate`}>{text}</span>
         </div>
     )
@@ -426,7 +426,10 @@ const SkillsSection = memo(function SkillsSection({ skills, reducedMotion }) {
     if (list.length === 0) return null
 
     // alternate between two subtle tints
-    const tints = ['bg-blue-500/10 text-blue-300 border-blue-500/20', 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20']
+    const tints = [
+        'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20',
+        'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-500/20'
+    ]
 
     return (
         <MotionDiv {...getReveal(0.2, reducedMotion)} className={`${CARD} rounded-2xl p-5 sm:p-6`}>
@@ -451,7 +454,7 @@ const PortfolioCard = memo(function PortfolioCard({ project, index, reducedMotio
             whileHover={reducedMotion ? undefined : { y: -4 }}
             className={`${CARD} ${CARD_HOVER} rounded-2xl overflow-hidden group transition-all duration-300 cursor-default`}
         >
-            <div className="relative h-44 overflow-hidden bg-gradient-to-br from-blue-500/5 to-cyan-500/5">
+            <div className="relative h-44 overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-500/5 dark:to-cyan-500/5">
                 {project.projectImage ? (
                     <img src={project.projectImage} alt="project"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -460,7 +463,7 @@ const PortfolioCard = memo(function PortfolioCard({ project, index, reducedMotio
                     <div className="w-full h-full flex items-center justify-center text-4xl opacity-30">🖼</div>
                 )}
                 {/* subtle overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#020617]/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 dark:from-[#020617]/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
             <div className="p-4">
                 <p className={`text-[13px] ${TEXT_2} leading-relaxed mb-3 line-clamp-3`}>
@@ -480,9 +483,9 @@ const PortfolioCard = memo(function PortfolioCard({ project, index, reducedMotio
 // ─── Assigned Project Card ─────────────────────────────────────────────────────
 const AssignedProjectCard = memo(function AssignedProjectCard({ project, index, reducedMotion }) {
     const statusMap = {
-        'accepted': { bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/25', label: '💳 Pending Payment' },
-        'in-progress': { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'border-blue-500/25', label: '🔄 In Progress' },
-        'completed': { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/25', label: '✅ Completed' },
+        'accepted': { bg: 'bg-amber-100 dark:bg-amber-500/15', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-500/25', label: '💳 Pending Payment' },
+        'in-progress': { bg: 'bg-blue-100 dark:bg-blue-500/15', text: 'text-blue-700 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-500/25', label: '🔄 In Progress' },
+        'completed': { bg: 'bg-emerald-100 dark:bg-emerald-500/15', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-500/25', label: '✅ Completed' },
     }
     const s = statusMap[project.status] || statusMap['accepted']
 
@@ -491,10 +494,10 @@ const AssignedProjectCard = memo(function AssignedProjectCard({ project, index, 
             {...getReveal(index * 0.07, reducedMotion)}
         >
             <Link to="/assigned-projects"
-                className={`group block p-5 rounded-xl ${CARD} ${CARD_HOVER} hover:border-emerald-500/30 transition-all duration-300 no-underline`}>
+                className={`group block p-5 rounded-xl ${CARD} ${CARD_HOVER} hover:border-emerald-300 dark:hover:border-emerald-500/30 transition-all duration-300 no-underline`}>
                 <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex-1 min-w-0">
-                        <h4 className={`font-semibold ${TEXT_1} text-sm mb-1 truncate group-hover:text-emerald-400 transition-colors`}>
+                        <h4 className={`font-semibold ${TEXT_1} text-sm mb-1 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors`}>
                             {project.title}
                         </h4>
                         <p className={`text-xs ${TEXT_3} line-clamp-2`}>{project.description}</p>
@@ -503,11 +506,11 @@ const AssignedProjectCard = memo(function AssignedProjectCard({ project, index, 
                         {s.label}
                     </span>
                 </div>
-                <div className={`flex items-center justify-between pt-3 border-t border-white/[0.06]`}>
+                <div className={`flex items-center justify-between pt-3 border-t border-slate-200 dark:border-white/[0.06]`}>
                     <span className={`text-xs ${TEXT_3} flex items-center gap-1.5`}>
                         <Award size={12} /> {project.client?.name || 'Client'}
                     </span>
-                    <span className="text-sm font-bold text-emerald-400">₹{project.budget}</span>
+                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">₹{project.budget}</span>
                 </div>
             </Link>
         </MotionDiv>
@@ -518,13 +521,13 @@ const AssignedProjectCard = memo(function AssignedProjectCard({ project, index, 
 const Section = memo(function Section({ title, badge, icon, delay = 0, children, reducedMotion }) {
     return (
         <MotionDiv {...getReveal(delay, reducedMotion)} className={`${CARD} rounded-2xl overflow-hidden`}>
-            <div className="px-5 sm:px-6 pt-5 pb-4 sm:pt-6 flex items-center justify-between border-b border-white/[0.06]">
+            <div className="px-5 sm:px-6 pt-5 pb-4 sm:pt-6 flex items-center justify-between border-b border-slate-200 dark:border-white/[0.06]">
                 <h3 className={`text-base font-semibold ${TEXT_1} flex items-center gap-2.5`}>
                     {icon && <span className="opacity-70">{icon}</span>}
                     {title}
                 </h3>
                 {badge && (
-                    <span className={`text-xs ${TEXT_3} bg-white/[0.04] px-2.5 py-1 rounded-full border border-white/[0.06]`}>
+                    <span className={`text-xs ${TEXT_3} bg-slate-100 dark:bg-white/[0.04] px-2.5 py-1 rounded-full border border-slate-200 dark:border-white/[0.06]`}>
                         {badge}
                     </span>
                 )}
@@ -604,7 +607,7 @@ const FreelancerProfile = () => {
     const works = freelancer?.previousWorks || []
 
     return (
-        <div className="min-h-screen bg-[#020617]" style={{ fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif" }}>
+        <div className="min-h-screen bg-white dark:bg-[#020617]" style={{ fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif" }}>
             <style>{`
                 * { box-sizing: border-box }
                 .line-clamp-2 { display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden }
