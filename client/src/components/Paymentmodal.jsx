@@ -4,6 +4,10 @@ import { toast } from "react-toastify"
 import { createOrder, verifyPayment, releaseEscrow } from "../features/wallet/walletSlice"
 import { loadRazorpayCheckout } from "../utils/loadRazorpay"
 
+const TEST_MODE_MAX_AMOUNT = Number(import.meta.env.VITE_RAZORPAY_TEST_MAX_AMOUNT || 50000)
+const isTestLimitEnabled = import.meta.env.DEV && Number.isFinite(TEST_MODE_MAX_AMOUNT) && TEST_MODE_MAX_AMOUNT > 0
+const fmt = (value = 0) => `₹${Number(value || 0).toLocaleString("en-IN")}`
+
 const PaymentModal = ({ project, onClose, onPaymentDone }) => {
     const dispatch = useDispatch()
     const { user } = useSelector(s => s.auth)
@@ -12,16 +16,27 @@ const PaymentModal = ({ project, onClose, onPaymentDone }) => {
 
     if (!project) return null
 
-    const amount = project.selectedBid?.amount || project.finalAmount || 0
+    const projectId = project._id || project.id || project.project?._id || project.project
+    const amount = Number(project.selectedBid?.amount ?? project.finalAmount ?? project.amount ?? 0)
     const fee = amount < 5000 ? 11 : amount < 15000 ? 19 : amount < 30000 ? 21 : 24
     const flAmount = amount - fee
+    const exceedsTestLimit = isTestLimitEnabled && amount > TEST_MODE_MAX_AMOUNT
+    const canPay = Boolean(projectId) && amount > 0 && !exceedsTestLimit
+    const testLimitMessage = `Razorpay test mode blocks payments above ${fmt(TEST_MODE_MAX_AMOUNT)}. Use a smaller test bid or live Razorpay keys.`
 
     const handlePay = async () => {
-        let RazorpayCheckout
-        try {
-            RazorpayCheckout = await loadRazorpayCheckout()
-        } catch (error) {
-            toast.error(error.message)
+        if (!projectId) {
+            toast.error("Project ID missing. Refresh and try again.")
+            return
+        }
+
+        if (!amount || amount <= 0) {
+            toast.error("Accepted bid amount missing. Accept a valid bid before payment.")
+            return
+        }
+
+        if (exceedsTestLimit) {
+            toast.error(testLimitMessage)
             return
         }
 
@@ -29,10 +44,19 @@ const PaymentModal = ({ project, onClose, onPaymentDone }) => {
 
         let orderData
         try {
-            const res = await dispatch(createOrder({ projectId: project._id })).unwrap()
+            const res = await dispatch(createOrder({ projectId })).unwrap()
             orderData = res
         } catch (err) {
-            toast.error(err)
+            toast.error(typeof err === "string" ? err : "Could not create payment order")
+            setStep("confirm")
+            return
+        }
+
+        let RazorpayCheckout
+        try {
+            RazorpayCheckout = await loadRazorpayCheckout()
+        } catch (error) {
+            toast.error(error.message)
             setStep("confirm")
             return
         }
@@ -75,7 +99,7 @@ const PaymentModal = ({ project, onClose, onPaymentDone }) => {
     const handleRelease = async () => {
         setStep("releasing")
         try {
-            await dispatch(releaseEscrow(project._id)).unwrap()
+            await dispatch(releaseEscrow(projectId)).unwrap()
             toast.success("Payment released to freelancer! ✅")
             setStep("released")
             setTimeout(() => {
@@ -115,9 +139,9 @@ const PaymentModal = ({ project, onClose, onPaymentDone }) => {
                 <div className="px-5 py-4 space-y-3">
                     <div className="bg-gray-50 rounded-2xl p-4 space-y-2 border border-gray-100">
                         {[
-                            ["Final Price (Accepted Bid)", `₹${amount.toLocaleString("en-IN")}`, "text-gray-900"],
-                            ["Platform Fee", `-₹${fee}`, "text-rose-500"],
-                            ["Freelancer Receives", `₹${flAmount.toLocaleString("en-IN")}`, "text-emerald-600 font-black"],
+                            ["Final Price (Accepted Bid)", fmt(amount), "text-gray-900"],
+                            ["Platform Fee", `-${fmt(fee)}`, "text-rose-500"],
+                            ["Freelancer Receives", fmt(flAmount), "text-emerald-600 font-black"],
                         ].map(([k, v, c]) => (
                             <div key={k} className="flex justify-between text-sm">
                                 <span className="text-gray-500">{k}</span>
@@ -132,6 +156,12 @@ const PaymentModal = ({ project, onClose, onPaymentDone }) => {
                             <p className="font-bold">🔒 Escrow Protection</p>
                             <p>Your money is held securely by Co.Worker until the project is complete.</p>
                             <p>Release payment only after you are satisfied with the work.</p>
+                        </div>
+                    )}
+
+                    {exceedsTestLimit && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs font-semibold leading-5 text-amber-800">
+                            {testLimitMessage}
                         </div>
                     )}
 
@@ -159,7 +189,7 @@ const PaymentModal = ({ project, onClose, onPaymentDone }) => {
                     </button>
 
                     {step === "confirm" && (
-                        <button onClick={handlePay} disabled={loading}
+                        <button onClick={handlePay} disabled={loading || !canPay}
                             className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-sm rounded-xl hover:shadow-lg transition cursor-pointer border-none disabled:opacity-60">
                             {loading ? "..." : "💳 Pay Now"}
                         </button>

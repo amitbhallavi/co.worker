@@ -34,9 +34,9 @@ export const fetchMyWallet = createAsyncThunk("wallet/fetchMyWallet", async (_, 
     }
 })
 
-export const requestWithdrawal = createAsyncThunk("wallet/requestWithdrawal", async ({ amount, upiId }, thunkAPI) => {
+export const requestWithdrawal = createAsyncThunk("wallet/requestWithdrawal", async ({ amount, method, upiId, bankDetails }, thunkAPI) => {
     try {
-        return await walletService.requestWithdrawal({ amount, upiId }, getAuthToken(thunkAPI))
+        return await walletService.requestWithdrawal({ amount, method, upiId, bankDetails }, getAuthToken(thunkAPI))
     } catch (error) {
         return thunkAPI.rejectWithValue(getApiErrorMessage(error))
     }

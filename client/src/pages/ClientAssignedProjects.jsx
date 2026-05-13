@@ -108,9 +108,19 @@ function ProjectCard({ project, onPaymentClick }) {
     }
 
     const statusMessages = {
+        pending: "Waiting for project confirmation",
         accepted: "Awaiting your payment",
         "in-progress": "Freelancer is working",
         completed: "Ready for review",
+        rejected: "Assignment was rejected",
+    }
+
+    const statusLabels = {
+        pending: "Pending",
+        accepted: "Pending Payment",
+        "in-progress": "In Progress",
+        completed: "Completed",
+        rejected: "Rejected",
     }
 
     return (
@@ -118,7 +128,7 @@ function ProjectCard({ project, onPaymentClick }) {
             {/* Status Badge */}
             <div className={`${statusColors[project.status]} px-4 py-2 text-xs font-bold flex items-center gap-1`}>
                 <span>{statusIcons[project.status]}</span>
-                {project.status}
+                {statusLabels[project.status] || project.status}
             </div>
 
             {/* Content */}
@@ -151,7 +161,7 @@ function ProjectCard({ project, onPaymentClick }) {
 
                 {/* Status Message */}
                 <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:bg-white/[0.05] dark:text-white/60">
-                    {statusMessages[project.status]}
+                    {statusMessages[project.status] || "Status updated by freelancer"}
                 </div>
 
                 {/* Duration */}
@@ -176,9 +186,20 @@ function ProjectCard({ project, onPaymentClick }) {
                         </div>
                     )}
                     {project.status === "completed" && (
-                        <button className="w-full rounded bg-emerald-500 py-2 text-sm font-medium text-white transition hover:bg-emerald-600 dark:bg-emerald-500/90 dark:hover:bg-emerald-500">
+                        <Link
+                            to={`/project/${project._id}`}
+                            className="block w-full rounded bg-emerald-500 py-2 text-center text-sm font-medium text-white no-underline transition hover:bg-emerald-600 dark:bg-emerald-500/90 dark:hover:bg-emerald-500"
+                        >
                             ✅ Review & Approve
-                        </button>
+                        </Link>
+                    )}
+                    {(project.status === "pending" || project.status === "rejected") && (
+                        <Link
+                            to={`/project/${project._id}`}
+                            className="block w-full rounded border border-slate-200 bg-white py-2 text-center text-sm font-medium text-slate-700 no-underline transition hover:border-blue-300 hover:text-blue-600 dark:border-white/10 dark:bg-white/[0.05] dark:text-white/70 dark:hover:border-cyan-300/40 dark:hover:text-white"
+                        >
+                            View details
+                        </Link>
                     )}
                 </div>
             </div>

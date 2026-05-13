@@ -5,6 +5,64 @@ import Wallet from "../models/walletModel.js"
 import Withdrawal from "../models/withdrawalModel.js"
 
 const WITHDRAWAL_FEE = 19
+const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/i
+
+const clean = (value = "") => String(value).trim()
+
+const normalizeWithdrawalDetails = ({ method, upiId, bankDetails = {} }) => {
+    const withdrawalMethod = method === "bank" ? "bank" : "upi"
+
+    if (withdrawalMethod === "upi") {
+        const normalizedUpi = clean(upiId)
+        if (!normalizedUpi || !normalizedUpi.includes("@")) {
+            const error = new Error("Valid UPI ID is required")
+            error.statusCode = 400
+            throw error
+        }
+
+        return {
+            method: "upi",
+            upiId: normalizedUpi,
+            bankDetails: {},
+            description: `Withdrawal request - UPI: ${normalizedUpi}`,
+        }
+    }
+
+    const accountHolderName = clean(bankDetails.accountHolderName)
+    const accountNumber = clean(bankDetails.accountNumber)
+    const ifscCode = clean(bankDetails.ifscCode).toUpperCase()
+    const bankName = clean(bankDetails.bankName)
+
+    if (!accountHolderName) {
+        const error = new Error("Account holder name is required")
+        error.statusCode = 400
+        throw error
+    }
+
+    if (!/^\d{6,18}$/.test(accountNumber)) {
+        const error = new Error("Valid bank account number is required")
+        error.statusCode = 400
+        throw error
+    }
+
+    if (!IFSC_PATTERN.test(ifscCode)) {
+        const error = new Error("Valid IFSC code is required")
+        error.statusCode = 400
+        throw error
+    }
+
+    return {
+        method: "bank",
+        upiId: "",
+        bankDetails: {
+            accountHolderName,
+            accountNumber,
+            ifscCode,
+            bankName,
+        },
+        description: `Withdrawal request - Bank: ${bankName || ifscCode}`,
+    }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET MY WALLET
@@ -22,20 +80,18 @@ export const getMyWallet = asyncHandler(async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // REQUEST WITHDRAWAL
 // POST /api/wallet/withdraw
-// Body: { amount, upiId }
+// Body: { amount, method, upiId, bankDetails }
 // ─────────────────────────────────────────────────────────────────────────────
 export const requestWithdrawal = asyncHandler(async (req, res) => {
-    const { amount, upiId } = req.body
+    const { amount } = req.body
     const userId = req.user._id
 
     if (!amount || Number(amount) <= 0) {
         res.status(400)
         throw new Error("Amount must be greater than 0")
     }
-    if (!upiId || typeof upiId !== "string" || upiId.trim().length === 0) {
-        res.status(400)
-        throw new Error("Valid UPI ID is required")
-    }
+
+    const withdrawalDetails = normalizeWithdrawalDetails(req.body)
 
     const wallet = await Wallet.findOne({ user: userId })
     if (!wallet) {
@@ -60,7 +116,7 @@ export const requestWithdrawal = asyncHandler(async (req, res) => {
     wallet.transactions.push({
         type: "debit",
         amount: amt,
-        description: `Withdrawal request — UPI: ${upiId}`,
+        description: withdrawalDetails.description,
         status: "pending",
     })
     await wallet.save()
@@ -70,7 +126,9 @@ export const requestWithdrawal = asyncHandler(async (req, res) => {
         amount: amt,
         fee: WITHDRAWAL_FEE,
         finalAmount,
-        upiId,
+        method: withdrawalDetails.method,
+        upiId: withdrawalDetails.upiId,
+        bankDetails: withdrawalDetails.bankDetails,
     })
 
     res.status(201).json({

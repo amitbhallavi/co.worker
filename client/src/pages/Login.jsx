@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import LoginForm from '../components/auth/LoginForm'
@@ -45,6 +45,7 @@ const Login = () => {
     const { user, isLoading, isError, message } = useSelector((state) => state.auth)
     const dispatch = useDispatch()
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
 
     const [formData, setFormData] = useState({
         email: '',
@@ -113,6 +114,15 @@ const Login = () => {
             toast.error(serverError)
         }
     }, [serverError])
+
+    useEffect(() => {
+        const authError = searchParams.get('authError')
+
+        if (authError) {
+            toast.error(authError)
+            navigate('/login', { replace: true })
+        }
+    }, [navigate, searchParams])
 
     const handleForgotPassword = () => {
         toast.info("Password recovery isn't available yet. Please contact support for help.")

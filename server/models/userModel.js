@@ -5,23 +5,41 @@ const userSchema = new mongoose.Schema(
         name: {
             type: String,
             required: [true, "Please enter your name"],
+            trim: true,
         },
         email: {
             type: String,
             unique: true,
             required: [true, "Please enter your email"],
+            lowercase: true,
+            trim: true,
         },
         phone: {
             type: Number,
             unique: true,
-            required: [true, "Please enter your phone number"],
+            sparse: true,
         },
         profilePic: {
             type: String,
         },
         password: {
             type: String,
-            required: [true, "Please enter your password"],
+            select: false,
+        },
+        authProvider: {
+            type: String,
+            enum: ["local", "google", "github"],
+            default: "local",
+        },
+        googleId: {
+            type: String,
+            unique: true,
+            sparse: true,
+        },
+        githubId: {
+            type: String,
+            unique: true,
+            sparse: true,
         },
         isAdmin: {
             type: Boolean,

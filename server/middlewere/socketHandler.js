@@ -30,6 +30,7 @@ export const initSocket = (httpServer) => {
         const userId = socket.userId
         console.log(`[Socket] Connected: ${userId}`)
 
+        socket.join(`user_${userId}`)
         onlineUsers.set(userId, socket.id)
         io.emit("online_users", Array.from(onlineUsers.keys()))
 

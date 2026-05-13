@@ -20,11 +20,17 @@ const refreshProfile = async (token) => {
     return response.data
 }
 
+const completeOAuthLogin = async (token) => {
+    const profile = await refreshProfile(token)
+    return saveStoredUser({ ...profile, token })
+}
+
 const authService = {
     register,
     login,
     logout,
     refreshProfile,
+    completeOAuthLogin,
 }
 
 export default authService

@@ -2,8 +2,8 @@ import API from "../api/axiosInstance"
 import { buildAuthConfig } from "../api/apiHelpers"
 
 const PAYMENT_BASE = "/api/payment"
-const WALLET_BASE = "/api/payment/wallet"
-const ADMIN_BASE = "/api/payment/wallet/admin"
+const WALLET_BASE = "/api/wallet"
+const ADMIN_BASE = "/api/wallet/admin"
 
 const createOrder = async ({ projectId }, token) => {
     const response = await API.post(`${PAYMENT_BASE}/create-order`, { projectId }, buildAuthConfig(token))
@@ -25,8 +25,12 @@ const fetchWallet = async (token) => {
     return response.data
 }
 
-const requestWithdrawal = async ({ amount, upiId }, token) => {
-    const response = await API.post(`${WALLET_BASE}/withdraw`, { amount, upiId }, buildAuthConfig(token))
+const requestWithdrawal = async ({ amount, method, upiId, bankDetails }, token) => {
+    const response = await API.post(
+        `${WALLET_BASE}/withdraw`,
+        { amount, method, upiId, bankDetails },
+        buildAuthConfig(token)
+    )
     return response.data
 }
 

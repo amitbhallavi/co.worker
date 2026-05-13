@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
-import axios from 'axios'
+import API from '../features/api/axiosInstance'
+import { getSocket } from '../utils/socketManager'
 import {
     ArrowLeft,
     AlertCircle,
@@ -25,8 +26,6 @@ import {
 } from 'lucide-react'
 import LoaderGradient from '../components/LoaderGradient'
 import PaymentModal from '../components/Paymentmodal'
-
-const BASE_URL = import.meta.env.VITE_API_URL || ''
 
 const formatCurrency = (value = 0) => `₹${Number(value || 0).toLocaleString('en-IN')}`
 
@@ -85,6 +84,14 @@ const STATUS_CONFIG = {
         panel: 'border-rose-200 bg-rose-50 dark:border-rose-300/20 dark:bg-rose-400/10',
     },
 }
+
+const PROJECT_STATUS_OPTIONS = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'accepted', label: 'Accepted / pending payment' },
+    { value: 'in-progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'rejected', label: 'Rejected' },
+]
 
 const PAYMENT_CONFIG = {
     pending: {
@@ -182,6 +189,7 @@ const ProjectDetailPage = () => {
     const [updating, setUpdating] = useState(false)
     const [releasing, setReleasing] = useState(false)
     const [payProject, setPayProject] = useState(null)
+    const [selectedStatus, setSelectedStatus] = useState('')
 
     useEffect(() => {
         const fetchProject = async () => {
@@ -190,10 +198,7 @@ const ProjectDetailPage = () => {
             setPayment(null)
 
             try {
-                const response = await axios.get(
-                    `${BASE_URL}/api/project/details/${id}`,
-                    { headers: { authorization: `Bearer ${user?.token}` } }
-                )
+                const response = await API.get(`/api/project/details/${id}`)
 
                 if (!response.data) {
                     throw new Error('Project not found')
@@ -202,11 +207,8 @@ const ProjectDetailPage = () => {
                 setProject(response.data)
 
                 try {
-                    const paymentResponse = await axios.get(
-                        `${BASE_URL}/api/payment/project/${id}`,
-                        { headers: { authorization: `Bearer ${user?.token}` } }
-                    )
-                    setPayment(paymentResponse.data)
+                    const paymentResponse = await API.get(`/api/payment/project/${id}`)
+                    setPayment(paymentResponse.data || null)
                 } catch (paymentError) {
                     if (paymentError.response?.status !== 404) {
                         console.warn('Payment lookup failed:', paymentError.response?.data || paymentError.message)
@@ -226,20 +228,56 @@ const ProjectDetailPage = () => {
         }
     }, [id, user?.token])
 
+    useEffect(() => {
+        if (project?.status) {
+            setSelectedStatus(project.status)
+        }
+    }, [project?.status])
+
+    useEffect(() => {
+        const socket = getSocket()
+        if (!socket || !id) return undefined
+
+        const handleRealtimeStatus = (data) => {
+            if (String(data?.projectId) !== String(id)) return
+
+            setProject(prev => (
+                prev
+                    ? {
+                        ...prev,
+                        ...(data.project || {}),
+                        status: data.status || data.project?.status || prev.status,
+                    }
+                    : prev
+            ))
+
+            if (data.payment) {
+                setPayment(data.payment)
+            }
+        }
+
+        socket.on('status_update', handleRealtimeStatus)
+
+        return () => {
+            socket.off('status_update', handleRealtimeStatus)
+        }
+    }, [id])
+
     const handleStatusUpdate = async (newStatus) => {
+        if (!newStatus || newStatus === project?.status) return
+
         setUpdating(true)
         try {
-            await axios.put(
-                `${BASE_URL}/api/project/${id}`,
-                { status: newStatus },
-                { headers: { authorization: `Bearer ${user?.token}` } }
-            )
+            const response = await API.put(`/api/project/${id}`, { status: newStatus })
+            const updatedProject = response.data
 
-            setProject(prev => ({ ...prev, status: newStatus }))
-            toast.success(newStatus === 'completed' ? 'Submitted for client review' : `Project marked as ${newStatus}`)
+            setProject(updatedProject)
+            setSelectedStatus(updatedProject.status)
+            toast.success(`Project status changed to ${getStatusConfig(updatedProject.status).label}`)
         } catch (err) {
             console.error('Error updating status:', err)
             toast.error(err.response?.data?.message || 'Failed to update status')
+            setSelectedStatus(project?.status || '')
         } finally {
             setUpdating(false)
         }
@@ -248,11 +286,7 @@ const ProjectDetailPage = () => {
     const handleReleasePayment = async () => {
         setReleasing(true)
         try {
-            const response = await axios.post(
-                `${BASE_URL}/api/payment/release/${id}`,
-                {},
-                { headers: { authorization: `Bearer ${user?.token}` } }
-            )
+            const response = await API.post(`/api/payment/release/${id}`, {})
 
             setPayment(response.data.payment)
             setProject(prev => ({ ...prev, status: 'completed' }))
@@ -311,6 +345,14 @@ const ProjectDetailPage = () => {
     const isFreelancer = project.freelancer?.user?._id === user?._id
     const isClient = project.user?._id === user?._id
     const amount = payment?.totalAmount || project.finalAmount || project.budget
+    const statusChangeBlocked = isFreelancer
+        && project.status === 'accepted'
+        && paymentStatus !== 'escrow'
+        && paymentStatus !== 'released'
+    const canSaveStatus = isFreelancer
+        && !statusChangeBlocked
+        && selectedStatus
+        && selectedStatus !== project.status
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-[#f6f9fc] pt-24 pb-16 text-slate-950 dark:bg-[#020617] dark:text-white" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
@@ -455,6 +497,57 @@ const ProjectDetailPage = () => {
                         {isFreelancer && (
                             <section>
                                 <h2 className="mb-4 text-xl font-black text-slate-950 dark:text-white">Freelancer action</h2>
+                                <div className="mb-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/[0.05]">
+                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+                                        <label className="flex-1">
+                                            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-white/35">
+                                                Project status
+                                            </span>
+                                            <select
+                                                value={selectedStatus || project.status}
+                                                onChange={event => setSelectedStatus(event.target.value)}
+                                                disabled={updating || statusChangeBlocked}
+                                                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-950 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:border-white/10 dark:bg-white/[0.06] dark:text-white dark:focus:border-cyan-300/40 dark:focus:ring-cyan-400/10 dark:disabled:bg-white/[0.03] dark:disabled:text-white/30"
+                                            >
+                                                {PROJECT_STATUS_OPTIONS.map(option => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </label>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleStatusUpdate(selectedStatus)}
+                                            disabled={updating || !canSaveStatus}
+                                            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 dark:bg-white dark:text-slate-950 dark:hover:bg-cyan-100 dark:disabled:bg-white/10 dark:disabled:text-white/30"
+                                        >
+                                            {updating ? (
+                                                <>
+                                                    <Loader size={17} className="animate-spin" />
+                                                    Updating...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <RefreshCw size={17} />
+                                                    Update status
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    <p className="mt-3 text-xs font-semibold leading-5 text-slate-500 dark:text-white/45">
+                                        The client sees this project status in real time. Status changes do not reverse payment release.
+                                    </p>
+
+                                    {statusChangeBlocked && (
+                                        <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
+                                            Client payment is still pending. Wait for escrow before moving work to in-progress or completed.
+                                        </p>
+                                    )}
+                                </div>
+
                                 {project.status === 'accepted' && (
                                     <div className={`rounded-3xl border p-5 ${getStatusConfig('accepted').panel}`}>
                                         <p className="font-bold text-amber-800 dark:text-amber-100">Payment is still pending.</p>

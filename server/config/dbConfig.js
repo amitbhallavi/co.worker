@@ -2,6 +2,22 @@ import dotenv from "dotenv"
 dotenv.config()
 
 import mongoose from "mongoose"
+import User from "../models/userModel.js"
+
+const ensureUserOAuthIndexes = async () => {
+    const indexes = await User.collection.indexes()
+    const phoneIndex = indexes.find((index) => index.name === "phone_1")
+
+    if (phoneIndex && !phoneIndex.sparse) {
+        await User.collection.dropIndex("phone_1")
+    }
+
+    await Promise.all([
+        User.collection.createIndex({ phone: 1 }, { unique: true, sparse: true, name: "phone_1" }),
+        User.collection.createIndex({ googleId: 1 }, { unique: true, sparse: true, name: "googleId_1" }),
+        User.collection.createIndex({ githubId: 1 }, { unique: true, sparse: true, name: "githubId_1" }),
+    ])
+}
 
 const connectDB = async () => {
     try {
@@ -21,6 +37,7 @@ const connectDB = async () => {
         })
         
         console.log(`MongoDB Connected: ${connect.connection.name}`.bgGreen.black)
+        await ensureUserOAuthIndexes()
     } catch (error) {
         console.error(`MongoDB Failed: ${error.message}`.bgRed.black)
         console.error("Troubleshooting tips:")

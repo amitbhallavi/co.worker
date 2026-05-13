@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs"
 import { createAuthToken } from "../utils/auth.js"
 import { ensure } from "../utils/http.js"
 import { emitAdminDataChanged } from "../utils/adminRealtime.js"
+import { getOAuthRedirectUrl } from "../config/passport.js"
 
 const buildAuthResponse = (user) => ({
     _id: user.id,
@@ -10,6 +11,7 @@ const buildAuthResponse = (user) => ({
     email: user.email,
     phone: user.phone,
     profilePic: user.profilePic,
+    authProvider: user.authProvider,
     isAdmin: user.isAdmin,
     isFreelancer: user.isFreelancer,
     credits: user.credits,
@@ -21,8 +23,10 @@ const registerUser = async (req, res) => {
 
     ensure(name && email && phone && password, 400, "All fields are required")
 
+    const normalizedEmail = String(email).trim().toLowerCase()
+
     const existingUser = await User.findOne({
-        $or: [{ phone }, { email }],
+        $or: [{ phone }, { email: normalizedEmail }],
     })
 
     ensure(!existingUser, 409, "User already exists")
@@ -31,10 +35,11 @@ const registerUser = async (req, res) => {
 
     const user = await User.create({
         name,
-        email,
+        email: normalizedEmail,
         phone,
         password: hashedPassword,
         profilePic,
+        authProvider: "local",
     })
 
     ensure(user, 500, "Failed to create user")
@@ -49,8 +54,9 @@ const loginUser = async (req, res) => {
 
     ensure(email && password, 400, "Email and password are required")
 
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email: String(email).trim().toLowerCase() }).select("+password")
     ensure(user, 401, "Invalid credentials")
+    ensure(user.password, 401, "This account uses Google or GitHub sign-in. Use social login.")
 
     const isValidPassword = await bcrypt.compare(password, user.password)
     ensure(isValidPassword, 401, "Invalid credentials")
@@ -68,11 +74,26 @@ const getMe = async (req, res) => {
     res.json(user)
 }
 
+const oauthCallback = (req, res) => {
+    ensure(req.user, 401, "OAuth authentication failed")
+
+    res.redirect(getOAuthRedirectUrl("/oauth/callback", {
+        token: createAuthToken(req.user._id),
+    }))
+}
+
+const oauthFailure = (req, res, error) => {
+    const message = error?.message || "OAuth authentication failed"
+    res.redirect(getOAuthRedirectUrl("/login", { authError: message }))
+}
+
 const authController = {
     registerUser,
     loginUser,
     privateController,
     getMe,
+    oauthCallback,
+    oauthFailure,
 }
 
 export default authController

@@ -33,6 +33,14 @@ export const loginUser = createAsyncThunk("AUTH/LOGIN", async (formData, thunkAP
     }
 })
 
+export const completeOAuthLogin = createAsyncThunk("AUTH/OAUTH_CALLBACK", async (token, thunkAPI) => {
+    try {
+        return await authService.completeOAuthLogin(token)
+    } catch (error) {
+        return thunkAPI.rejectWithValue(getApiErrorMessage(error, "Social login failed"))
+    }
+})
+
 export const logoutUser = createAsyncThunk("AUTH/LOGOUT", async () => {
     authService.logout()
 })
@@ -119,6 +127,14 @@ const authSlice = createSlice({
                 state.user = action.payload
             })
             .addCase(loginUser.rejected, failRequest)
+
+            .addCase(completeOAuthLogin.pending, startRequest)
+            .addCase(completeOAuthLogin.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.user = action.payload
+            })
+            .addCase(completeOAuthLogin.rejected, failRequest)
 
             .addCase(logoutUser.fulfilled, (state) => {
                 lastRefreshRequestAt = 0

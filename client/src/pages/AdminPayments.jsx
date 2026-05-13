@@ -24,6 +24,20 @@ const Badge = ({ status }) => {
     )
 }
 
+const getWithdrawalMethodLabel = (withdrawal) => (
+    withdrawal?.method === "bank" ? "Bank account" : "UPI"
+)
+
+const getWithdrawalDestination = (withdrawal) => {
+    if (withdrawal?.method === "bank") {
+        const accountNumber = withdrawal.bankDetails?.accountNumber || ""
+        const maskedAccount = accountNumber ? `•••• ${accountNumber.slice(-4)}` : "Account"
+        return `${withdrawal.bankDetails?.bankName || "Bank"} · ${maskedAccount} · ${withdrawal.bankDetails?.ifscCode || "IFSC"}`
+    }
+
+    return withdrawal?.upiId || "UPI"
+}
+
 // ══════════════════════════════════════════════════════════
 const AdminPayments = () => {
     const { user } = useSelector(state => state.auth)
@@ -243,7 +257,7 @@ const AdminPayments = () => {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="bg-gray-50 border-b border-gray-100">
-                                            {["Freelancer", "Amount", "Fee", "Final Payout", "Method", "Status", "Requested", "Actions"].map(h => (
+                                            {["Freelancer", "Amount", "Fee", "Final Payout", "Destination", "Status", "Requested", "Actions"].map(h => (
                                                 <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wide whitespace-nowrap">{h}</th>
                                             ))}
                                         </tr>
@@ -259,9 +273,8 @@ const AdminPayments = () => {
                                                 <td className="px-4 py-3 text-rose-600">₹{w.fee}</td>
                                                 <td className="px-4 py-3 font-bold text-emerald-600">₹{w.finalAmount?.toLocaleString("en-IN")}</td>
                                                 <td className="px-4 py-3">
-                                                    <span className="text-xs font-semibold text-gray-700 capitalize">
-                                                        {w.bankDetails?.method === "upi" ? `📱 ${w.bankDetails.upiId || "UPI"}` : `🏦 ${w.bankDetails?.ifscCode || "Bank"}`}
-                                                    </span>
+                                                    <p className="text-xs font-bold text-gray-800">{getWithdrawalMethodLabel(w)}</p>
+                                                    <p className="max-w-[180px] truncate text-xs text-gray-400">{getWithdrawalDestination(w)}</p>
                                                 </td>
                                                 <td className="px-4 py-3"><Badge status={w.status} /></td>
                                                 <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">

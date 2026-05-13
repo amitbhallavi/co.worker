@@ -2,6 +2,7 @@ import io from "socket.io-client"
 import { toast } from "react-toastify"
 import store from "../features/store"
 import { updateCredits } from "../features/auth/authSlice"
+import { patchProjectStatus } from "../features/project/projectSlice"
 import { getSocketBaseUrl } from "../features/api/apiConfig"
 
 let socket = null
@@ -91,6 +92,7 @@ const attachNotificationListeners = () => {
 
     socket.on("status_update", (data) => {
         logSocket("[Socket] Project status updated:", data)
+        store.dispatch(patchProjectStatus(data))
         toast.info(`Project status: ${data.status}`, createToastConfig("top-right", 4000))
     })
 

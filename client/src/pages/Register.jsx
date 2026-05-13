@@ -184,14 +184,8 @@ const Register = () => {
 
     return (
         <LoginLayout
-            desktopBadge="Trusted onboarding"
-            desktopTitle="Create your next opportunity"
-            desktopDescription="Set up your account once and step into a marketplace built for secure hiring, smooth collaboration, and premium freelance workflows."
-            desktopCtaText="Already have an account?"
-            desktopCtaTo="/login"
-            mobileBadge="Fast onboarding"
             mobileTitle="Create your account"
-            mobileDescription="Start with a polished, secure signup flow that gets you into Co.worker without friction."
+            mobileDescription="Start working with clients and freelancers in one secure workspace"
         >
             <RegisterForm
                 formData={formData}

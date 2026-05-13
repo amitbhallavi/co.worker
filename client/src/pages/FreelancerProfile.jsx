@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, memo } from 'react'
 import {
     MapPin, Briefcase, Clock, MessageCircle, Heart, Share2,
     CheckCircle, Mail, Phone, Zap, Award, Star, ExternalLink,
-    ChevronRight,
+    ChevronRight, Wallet, IndianRupee, Landmark,
 } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
@@ -15,6 +15,7 @@ import { getOrCreateConversation } from '../features/ChatsAndMessages/chatSlice'
 import { getSocket } from '../utils/socketManager'
 import RatingSummary from '../components/RatingSummary'
 import { motion, useReducedMotion } from 'framer-motion'
+import { fetchMyWallet, fetchMyWithdrawals } from '../features/wallet/walletSlice'
 
 const MotionDiv = motion.div
 const MotionButton = motion.button
@@ -545,6 +546,82 @@ const EmptyPortfolio = () => (
     </div>
 )
 
+const formatMoney = (value = 0) => `₹${Number(value || 0).toLocaleString('en-IN')}`
+
+const WalletSnapshot = memo(function WalletSnapshot({ wallet, withdrawals = [], loading, reducedMotion }) {
+    const available = Number(wallet?.balance || 0)
+    const pending = Number(wallet?.pendingBalance || 0)
+    const recentWithdrawals = withdrawals.slice(0, 2)
+    const canWithdraw = available > 19
+
+    return (
+        <MotionDiv {...getReveal(0.22, reducedMotion)} className={`${CARD} rounded-2xl overflow-hidden`}>
+            <div className="border-b border-slate-200 px-5 py-4 dark:border-white/[0.06] sm:px-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 text-white">
+                            <Wallet size={20} />
+                        </div>
+                        <div>
+                            <h3 className={`text-base font-semibold ${TEXT_1}`}>Freelancer wallet</h3>
+                            <p className={`text-xs ${TEXT_3}`}>Withdraw by UPI or bank account</p>
+                        </div>
+                    </div>
+                    <Link
+                        to="/freelancer/wallet"
+                        className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold no-underline transition ${
+                            canWithdraw
+                                ? 'bg-gradient-to-r from-emerald-600 to-cyan-500 text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/20'
+                                : `${CARD} ${TEXT_2} hover:border-slate-300 dark:hover:border-white/20`
+                        }`}
+                    >
+                        <Landmark size={16} />
+                        {canWithdraw ? 'Withdraw funds' : 'Open wallet'}
+                    </Link>
+                </div>
+            </div>
+
+            <div className="grid gap-3 p-5 sm:grid-cols-3 sm:p-6">
+                {[
+                    { label: 'Withdrawable', value: available, icon: <IndianRupee size={18} />, tone: 'from-emerald-500 to-teal-400' },
+                    { label: 'Pending clearance', value: pending, icon: <Clock size={18} />, tone: 'from-amber-500 to-orange-400' },
+                    { label: 'Total in wallet', value: available + pending, icon: <Award size={18} />, tone: 'from-blue-500 to-cyan-400' },
+                ].map(item => (
+                    <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                        <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${item.tone} text-white`}>
+                            {item.icon}
+                        </div>
+                        <p className={`text-xl font-black ${TEXT_1}`}>{loading ? '...' : formatMoney(item.value)}</p>
+                        <p className={`mt-1 text-[10px] font-bold uppercase tracking-[0.16em] ${TEXT_3}`}>{item.label}</p>
+                    </div>
+                ))}
+            </div>
+
+            {recentWithdrawals.length > 0 && (
+                <div className="border-t border-slate-200 px-5 py-4 dark:border-white/[0.06] sm:px-6">
+                    <div className="mb-3 flex items-center justify-between">
+                        <p className={`text-xs font-bold uppercase tracking-[0.18em] ${TEXT_3}`}>Recent withdrawals</p>
+                        <Link to="/freelancer/wallet" className="text-xs font-bold text-blue-600 no-underline dark:text-cyan-200">View all</Link>
+                    </div>
+                    <div className="space-y-2">
+                        {recentWithdrawals.map(withdrawal => (
+                            <div key={withdrawal._id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-white/[0.045]">
+                                <div className="min-w-0">
+                                    <p className={`truncate text-sm font-bold ${TEXT_1}`}>{formatMoney(withdrawal.amount)}</p>
+                                    <p className={`text-xs ${TEXT_3}`}>{withdrawal.method === 'bank' ? 'Bank account' : withdrawal.upiId || 'UPI'}</p>
+                                </div>
+                                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold capitalize text-slate-600 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60">
+                                    {withdrawal.status}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </MotionDiv>
+    )
+})
+
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT — all logic unchanged
 // ══════════════════════════════════════════════════════════════════════════════
@@ -556,6 +633,7 @@ const FreelancerProfile = () => {
 
     const { freelancer, freelancerLoading, freelancerError, freelancerErrorMessage } = useSelector(s => s.freelancer)
     const { assignedProjects } = useSelector(s => s.project)
+    const { wallet, withdrawals, loading: walletLoading } = useSelector(s => s.wallet)
 
     const [isSaved, setIsSaved] = useState(false)
     const [msgLoading, setMsgLoading] = useState(false)
@@ -566,6 +644,12 @@ const FreelancerProfile = () => {
     useEffect(() => { if (id) dispatch(getFreelancer(id)) }, [dispatch, id])
     useEffect(() => { if (freelancerError && freelancerErrorMessage) toast.error(freelancerErrorMessage) }, [freelancerError, freelancerErrorMessage])
     useEffect(() => { if (isOwnProfile) dispatch(getAssignedProjects()) }, [isOwnProfile, dispatch])
+    useEffect(() => {
+        if (isOwnProfile) {
+            dispatch(fetchMyWallet())
+            dispatch(fetchMyWithdrawals())
+        }
+    }, [isOwnProfile, dispatch])
 
     useEffect(() => {
         if (isOwnProfile) {
@@ -641,6 +725,15 @@ const FreelancerProfile = () => {
                     onSave={() => setIsSaved(v => !v)}
                     reducedMotion={reducedMotion}
                 />
+
+                {isOwnProfile && (
+                    <WalletSnapshot
+                        wallet={wallet}
+                        withdrawals={withdrawals}
+                        loading={walletLoading}
+                        reducedMotion={reducedMotion}
+                    />
+                )}
 
                 {/* Skills */}
                 <SkillsSection skills={profile?.skills} reducedMotion={reducedMotion} />

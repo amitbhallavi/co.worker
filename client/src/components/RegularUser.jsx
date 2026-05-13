@@ -85,9 +85,9 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                 const otherBids = bids.filter(b => b._id !== bidId && (b.status === "Pending" || b.status === "pending"))
                 for (const bid of otherBids) {
                     try {
-                        await axios.put(
+                        await axios.post(
                             `${BASE_URL}/api/project/${bid._id}`,
-                            { status: "Rejected" },
+                            { status: "rejected" },
                             { headers: { authorization: `Bearer ${token}` } }
                         )
                     } catch (e) {
@@ -99,7 +99,7 @@ const ProjectModal = ({ project, onClose, token, onRefresh, onBidAccepted }) => 
                 toast.info("Please complete payment to start work")
                 onBidAccepted?.(response?.data?.project)
             } else {
-                response = await axios.put(`${BASE_URL}/api/project/${bidId}`, { status }, {
+                response = await axios.post(`${BASE_URL}/api/project/${bidId}`, { status }, {
                     headers: { authorization: `Bearer ${token}` }
                 })
                 toast.success(`Bid marked as ${status}!`)

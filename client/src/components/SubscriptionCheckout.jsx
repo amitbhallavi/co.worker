@@ -31,6 +31,10 @@ const isIncludedFeature = (key, value) => {
     return value !== false && value !== null && value !== undefined
 }
 
+const CHECKOUT_BLOCKER_HINT = "Razorpay checkout can fail when browser extensions block its security scripts. Disable ad blockers for this site if payment does not open or complete."
+
+const formatAmount = (value) => Number(value || 0).toLocaleString("en-IN")
+
 const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
     const dispatch = useDispatch()
     const navigate = useNavigate()
@@ -40,9 +44,20 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
     const { user } = useSelector((s) => s.auth)
 
     const plan = PLANS[planId]
+    const hasValidPlanType = planType === "monthly" || planType === "yearly"
+    const amount = plan && hasValidPlanType
+        ? Number(planType === "monthly" ? plan.monthlyPrice : plan.yearlyPrice)
+        : 0
+    const isFree = Boolean(plan && hasValidPlanType && amount === 0)
+    const isProcessing = loading || orderLoading
 
     const handleFreeUpgrade = useCallback(async () => {
         try {
+            if (!planId) {
+                toast.error("Selected subscription plan is invalid")
+                return
+            }
+
             setLoading(true)
             await dispatch(
                 createSubscriptionOrder({
@@ -81,11 +96,8 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                 return
             }
 
-            let RazorpayCheckout
-            try {
-                RazorpayCheckout = await loadRazorpayCheckout()
-            } catch (error) {
-                toast.error(error.message)
+            if (!plan || !hasValidPlanType) {
+                toast.error("Selected subscription plan is invalid")
                 return
             }
 
@@ -107,6 +119,15 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                 return
             }
 
+            let RazorpayCheckout
+            try {
+                RazorpayCheckout = await loadRazorpayCheckout()
+            } catch (error) {
+                toast.error(error.message || "Payment gateway could not load")
+                setLoading(false)
+                return
+            }
+
             if (!orderResult?.orderId || !orderResult?.razorpayKeyId) {
                 console.error("❌ Invalid order response fields:", {
                     hasOrderId: !!orderResult?.orderId,
@@ -124,14 +145,21 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                 return
             }
 
+            const payableAmount = Number(orderResult.amount)
+            if (!Number.isFinite(payableAmount) || payableAmount <= 0) {
+                toast.error("Invalid payment amount from server")
+                setLoading(false)
+                return
+            }
+
             const options = {
                 key: orderResult.razorpayKeyId,
-                amount: orderResult.amount * 100, // Convert ₹ to paise
+                amount: payableAmount * 100, // Convert ₹ to paise
                 currency: "INR",
                 name: "Co.worker",
                 description: `Upgrade to ${plan.name} - ${planType}`,
                 order_id: orderResult.orderId,
-                
+
                 handler: async (response) => {
                     try {
                         await dispatch(
@@ -155,28 +183,30 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                         const errorMsg = typeof verifyErr === "string" ? verifyErr : verifyErr?.message || "Payment verification failed"
                         console.error("❌ Verification failed:", verifyErr)
                         toast.error(errorMsg)
+                    } finally {
+                        setLoading(false)
                     }
                 },
-                
+
                 modal: {
                     ondismiss: () => {
                         setLoading(false)
                     }
                 },
-                
+
                 prefill: {
                     name: user?.name || "",
                     email: user?.email || "",
                     contact: user?.phone || "",
                 },
-                
+
                 theme: {
                     color: "#3B7FF5",
                 },
             }
 
             const razorpayInstance = new RazorpayCheckout(options)
-            
+
             razorpayInstance.on("payment.failed", (response) => {
                 const errorMsg = response?.error?.description || "Payment failed"
                 console.error("❌ Payment failed:", response)
@@ -185,7 +215,6 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
             })
 
             razorpayInstance.open()
-            setLoading(false)
 
         } catch (err) {
             const errorMsg = typeof err === "string" ? err : err?.message || "Failed to process payment"
@@ -196,9 +225,6 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
     }
 
     if (!isOpen) return null
-
-    const amount = planType === "monthly" ? plan.monthlyPrice : plan.yearlyPrice
-    const isFree = amount === 0
 
     return (
         <>
@@ -214,7 +240,7 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 p-6 dark:border-white/10 dark:bg-white/[0.03]">
                         <h2 className="text-2xl font-bold text-slate-950 dark:text-white">
-                            Upgrade to {plan?.name}
+                            Upgrade to {plan?.name || "Plan"}
                         </h2>
                         <button
                             onClick={onClose}
@@ -232,7 +258,7 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                             <div className="flex items-start justify-between mb-3">
                                 <div>
                                     <h3 className="font-bold text-slate-950 text-lg dark:text-white">
-                                        {plan?.name} Plan
+                                        {plan?.name || "Unavailable"} Plan
                                     </h3>
                                     <p className="text-sm text-slate-500 mt-1 dark:text-slate-400">
                                         {planType === "monthly"
@@ -251,11 +277,10 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                                 {Object.entries(plan?.features || {}).map(([key, value]) => (
                                     <div
                                         key={key}
-                                        className={`flex items-center gap-2 text-sm ${
-                                            isIncludedFeature(key, value)
+                                        className={`flex items-center gap-2 text-sm ${isIncludedFeature(key, value)
                                                 ? "text-slate-700 dark:text-slate-200"
                                                 : "text-slate-400 dark:text-slate-500"
-                                        }`}
+                                            }`}
                                     >
                                         <span className={isIncludedFeature(key, value) ? "text-emerald-500 dark:text-emerald-300" : "text-slate-400 dark:text-slate-500"}>
                                             {isIncludedFeature(key, value) ? "✓" : "×"}
@@ -270,10 +295,26 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                         {!isFree && (
                             <div className="text-center">
                                 <div className="text-4xl font-bold text-slate-950 dark:text-white">
-                                    ₹{amount}
+                                    ₹{formatAmount(amount)}
                                 </div>
                                 <p className="text-sm text-slate-500 mt-2 dark:text-slate-400">
                                     {planType === "monthly" ? "per month" : "per year"}
+                                </p>
+                            </div>
+                        )}
+
+                        {!isFree && plan && hasValidPlanType && (
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-400/20 dark:bg-amber-950/30">
+                                <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-100">
+                                    {CHECKOUT_BLOCKER_HINT}
+                                </p>
+                            </div>
+                        )}
+
+                        {(!plan || !hasValidPlanType) && (
+                            <div className="rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-400/20 dark:bg-red-950/40">
+                                <p className="text-sm text-red-700 dark:text-red-200">
+                                    Selected subscription plan is invalid. Close this checkout and choose a plan again.
                                 </p>
                             </div>
                         )}
@@ -288,18 +329,20 @@ const SubscriptionCheckout = ({ isOpen, onClose, planId, planType }) => {
                         {/* Action Button */}
                         <button
                             onClick={isFree ? handleFreeUpgrade : handlePaymentClick}
-                            disabled={loading || orderLoading}
+                            disabled={isProcessing || !plan || !hasValidPlanType}
                             className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-bold py-3 rounded-xl transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 dark:shadow-cyan-950/30"
                         >
-                            {loading || orderLoading ? (
+                            {isProcessing ? (
                                 <>
                                     <Loader className="animate-spin" size={18} />
                                     Processing...
                                 </>
+                            ) : !plan || !hasValidPlanType ? (
+                                "Plan unavailable"
                             ) : isFree ? (
                                 "Activate Free Plan"
                             ) : (
-                                `Pay ₹${amount}`
+                                `Pay ₹${formatAmount(amount)}`
                             )}
                         </button>
 

@@ -176,9 +176,11 @@ const AssignedProjects = () => {
 
     const stats = useMemo(() => ({
         total: projects.length,
+        pending: projects.filter(p => p.status === 'pending').length,
         pendingPayment: projects.filter(p => p.status === 'accepted').length,
         inProgress: projects.filter(p => p.status === 'in-progress').length,
         completed: projects.filter(p => p.status === 'completed').length,
+        rejected: projects.filter(p => p.status === 'rejected').length,
     }), [projects])
 
     const normalizedQuery = query.trim().toLowerCase()
@@ -187,9 +189,11 @@ const AssignedProjects = () => {
         return projects.filter(project => {
             const matchesStatus =
                 filter === 'all'
+                || (filter === 'pending' && project.status === 'pending')
                 || (filter === 'pending-payment' && project.status === 'accepted')
                 || (filter === 'in-progress' && project.status === 'in-progress')
                 || (filter === 'completed' && project.status === 'completed')
+                || (filter === 'rejected' && project.status === 'rejected')
 
             if (!matchesStatus) return false
             if (!normalizedQuery) return true
@@ -209,9 +213,11 @@ const AssignedProjects = () => {
 
     const filterOptions = [
         { value: 'all', label: 'All', count: stats.total },
+        { value: 'pending', label: 'Pending', count: stats.pending },
         { value: 'pending-payment', label: 'Pending payment', count: stats.pendingPayment },
         { value: 'in-progress', label: 'In progress', count: stats.inProgress },
         { value: 'completed', label: 'Completed', count: stats.completed },
+        { value: 'rejected', label: 'Rejected', count: stats.rejected },
     ]
 
     const activeProjects = stats.pendingPayment + stats.inProgress

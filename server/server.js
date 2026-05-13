@@ -5,6 +5,7 @@ import express from "express"
 import cors from "cors"
 import "colors"
 import rateLimit from "express-rate-limit"
+import passport from "./config/passport.js"
 import connectDB from "./config/dbConfig.js"
 import { corsOptions } from "./config/cors.js"
 import authRoutes from "./routes/authRoutes.js"
@@ -54,6 +55,7 @@ global.io = io
 connectDB()
 
 app.use(cors(corsOptions))
+app.use(passport.initialize())
 
 
 scheduleJob("0 * * * *", "Running escrow release check...", () => PaymentController.runEscrowReleaseCron())

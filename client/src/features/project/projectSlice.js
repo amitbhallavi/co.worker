@@ -100,6 +100,30 @@ const projectSlice = createSlice({
                 state.assignedProjects = [project, ...state.assignedProjects]
             }
         },
+        patchProjectStatus: (state, action) => {
+            const { projectId, status, project } = action.payload || {}
+            const id = projectId || project?._id
+
+            if (!id) {
+                return
+            }
+
+            const patchProject = (item) => {
+                if (!item || item._id !== id) {
+                    return item
+                }
+
+                return {
+                    ...item,
+                    ...(project || {}),
+                    status: status || project?.status || item.status,
+                }
+            }
+
+            state.listedProjects = state.listedProjects.map(patchProject)
+            state.assignedProjects = state.assignedProjects.map(patchProject)
+            state.project = patchProject(state.project)
+        },
         updateProjectAmount: (state, action) => {
             const { projectId, finalAmount, bidId } = action.payload || {}
 
@@ -198,5 +222,5 @@ const projectSlice = createSlice({
     },
 })
 
-export const { resetUpdate, clearBids, addAssignedProject, updateProjectAmount } = projectSlice.actions
+export const { resetUpdate, clearBids, addAssignedProject, patchProjectStatus, updateProjectAmount } = projectSlice.actions
 export default projectSlice.reducer

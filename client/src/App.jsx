@@ -11,7 +11,7 @@ import { applyTheme, persistTheme } from './features/theme/themeUtils'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
-const HIDE_NAVBAR_ROUTES = new Set(['/login', '/register'])
+const HIDE_NAVBAR_ROUTES = new Set(['/login', '/register', '/oauth/callback'])
 const Home = lazy(() => import('./pages/Home'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard.jsx'))
 const Talent = lazy(() => import('./pages/Talent'))
@@ -29,6 +29,7 @@ const AssignedProjects = lazy(() => import('./pages/AssignedProjects.jsx'))
 const ClientAssignedProjects = lazy(() => import('./pages/ClientAssignedProjects.jsx'))
 const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage.jsx'))
 const SubscriptionManagement = lazy(() => import('./pages/SubscriptionManagement.jsx'))
+const OAuthCallback = lazy(() => import('./pages/OAuthCallback.jsx'))
 
 const RouteFallback = () => (
   <div className="min-h-[calc(100vh-4rem)] bg-white dark:bg-slate-950 flex items-center justify-center px-4">
@@ -57,6 +58,7 @@ const AppShell = () => {
             <Route path='/' element={<Home />} />
             <Route path='/login' element={<Login />} />
             <Route path='/register' element={<Register />} />
+            <Route path='/oauth/callback' element={<OAuthCallback />} />
             <Route path='/how-it-works' element={<HowItWorks />} />
             <Route path='/pricing' element={<PricingPage />} />
 

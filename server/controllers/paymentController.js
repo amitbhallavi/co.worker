@@ -5,11 +5,25 @@ import Payment from "../models/paymentModel.js"
 import Wallet from "../models/walletModel.js"
 import Project from "../models/projectModel.js"
 import { emitAdminDataChanged } from "../utils/adminRealtime.js"
+import { emitProjectStatusUpdate } from "../utils/projectRealtime.js"
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET,
 })
+
+const DEFAULT_RAZORPAY_TEST_MAX_AMOUNT = 50000
+
+const getPositiveNumberEnv = (key, fallback) => {
+    const value = Number(process.env[key])
+    return Number.isFinite(value) && value > 0 ? value : fallback
+}
+
+const isRazorpayTestMode = () => process.env.RAZORPAY_KEY_ID?.startsWith("rzp_test_")
+
+const getRazorpayTestMaxAmount = () => (
+    getPositiveNumberEnv("RAZORPAY_TEST_MAX_AMOUNT", DEFAULT_RAZORPAY_TEST_MAX_AMOUNT)
+)
 
 const calculatePlatformFee = (amount) => {
     if (amount < 5000) return 11
@@ -25,6 +39,13 @@ const getOrCreateWallet = async (userId) => {
     }
     return wallet
 }
+
+const getRazorpayErrorMessage = (error) => (
+    error?.error?.description ||
+    error?.error?.reason ||
+    error?.message ||
+    "Razorpay order creation failed"
+)
 
 const processPendingTransactions = async (wallet, cutoff) => {
     const pendingTxns = wallet.transactions.filter(
@@ -73,6 +94,12 @@ export const createOrder = asyncHandler(async (req, res) => {
         throw new Error("No accepted bid found")
     }
 
+    const freelancerUserId = project.freelancer?.user?._id
+    if (!freelancerUserId) {
+        res.status(409)
+        throw new Error("Accepted freelancer account is missing")
+    }
+
     const existingPayment = await Payment.findOne({
         project: projectId,
         status: { $in: ["escrow", "released"] },
@@ -84,18 +111,41 @@ export const createOrder = asyncHandler(async (req, res) => {
 
     const fee = calculatePlatformFee(Number(amount))
     const freelancerAmt = Number(amount) - fee
+    if (freelancerAmt <= 0) {
+        res.status(400)
+        throw new Error("Payment amount must be greater than platform fee")
+    }
 
-    const order = await razorpay.orders.create({
-        amount: Math.round(Number(amount) * 100),
-        currency: "INR",
-        receipt: `rcpt_${Date.now()}`,
-        notes: { projectId: String(projectId), clientId: String(clientId) },
-    })
+    const testMaxAmount = getRazorpayTestMaxAmount()
+    if (isRazorpayTestMode() && Number(amount) > testMaxAmount) {
+        res.status(400)
+        throw new Error(
+            `Razorpay test mode amount limit is ₹${testMaxAmount.toLocaleString("en-IN")}. Use a smaller test bid or live Razorpay keys.`
+        )
+    }
+
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+        res.status(500)
+        throw new Error("Razorpay keys are not configured on the server")
+    }
+
+    let order
+    try {
+        order = await razorpay.orders.create({
+            amount: Math.round(Number(amount) * 100),
+            currency: "INR",
+            receipt: `rcpt_${Date.now()}`,
+            notes: { projectId: String(projectId), clientId: String(clientId) },
+        })
+    } catch (error) {
+        res.status(error?.statusCode || 502)
+        throw new Error(getRazorpayErrorMessage(error))
+    }
 
     const payment = await Payment.create({
         project: projectId,
         client: clientId,
-        freelancer: project.freelancer?.user?._id || null,
+        freelancer: freelancerUserId,
         razorpayOrderId: order.id,
         totalAmount: Number(amount),
         platformFee: fee,
@@ -164,6 +214,13 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         })
     }
 
+    if (updatedProject) {
+        emitProjectStatusUpdate(updatedProject, {
+            payment,
+            message: `Project "${updatedProject.title}" moved to in-progress`,
+        })
+    }
+
     emitAdminDataChanged("payment_verified", {
         message: `Payment verified for ${updatedProject?.title || "project"}`,
         paymentId: payment._id,
@@ -207,6 +264,15 @@ export const releaseEscrow = asyncHandler(async (req, res) => {
     await payment.save()
 
     const updatedProject = await Project.findByIdAndUpdate(projectId, { status: "completed" }, { new: true })
+        .populate("user", "-password")
+        .populate({ path: "freelancer", populate: { path: "user", select: "-password" } })
+
+    if (updatedProject) {
+        emitProjectStatusUpdate(updatedProject, {
+            payment,
+            message: `Payment released for "${updatedProject.title}"`,
+        })
+    }
 
     emitAdminDataChanged("payment_released", {
         message: `Payment released for ${updatedProject?.title || "project"}`,
@@ -253,8 +319,7 @@ export const getProjectPayment = asyncHandler(async (req, res) => {
         .populate("freelancer", "name email")
 
     if (!payment) {
-        res.status(404)
-        throw new Error("No payment found")
+        return res.status(200).json(null)
     }
     res.status(200).json(payment)
 })

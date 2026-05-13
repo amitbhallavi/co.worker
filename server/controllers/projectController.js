@@ -1,8 +1,10 @@
 import Bid from "../models/bidModel.js"
 import Freelancer from "../models/freelancerModel.js"
+import Payment from "../models/paymentModel.js"
 import Project from "../models/projectModel.js"
 import { emitAdminDataChanged } from "../utils/adminRealtime.js"
 import { ensure } from "../utils/http.js"
+import { emitProjectStatusUpdate } from "../utils/projectRealtime.js"
 
 const freelancerUserPopulate = {
     path: "freelancer",
@@ -15,6 +17,10 @@ const bidFreelancerPopulate = {
 }
 
 const isAcceptedBidStatus = (status) => ["accepted", "Accepted"].includes(status)
+const PROJECT_STATUSES = ["pending", "accepted", "in-progress", "completed", "rejected"]
+const PAYMENT_REQUIRED_STATUSES = new Set(["in-progress", "completed"])
+
+const idsMatch = (a, b) => a && b && a.toString() === b.toString()
 
 const listProject = async (req, res) => {
     const { title, description, budget, technology, category, duration } = req.body
@@ -153,7 +159,7 @@ const getAssignedProjects = async (req, res) => {
 
     const assignedProjects = await Project.find({
         freelancer: freelancer._id,
-        status: { $in: ["accepted", "in-progress", "completed"] },
+        status: { $in: PROJECT_STATUSES },
     })
         .populate("user", "-password")
         .populate(freelancerUserPopulate)
@@ -172,15 +178,43 @@ const getProjectDetails = async (req, res) => {
 }
 
 const updateProjectStatus = async (req, res) => {
-    ensure(req.body.status, 409, "Please Send Status")
+    const { status } = req.body
+    ensure(status, 409, "Please Send Status")
+    ensure(PROJECT_STATUSES.includes(status), 400, `Invalid project status. Allowed: ${PROJECT_STATUSES.join(", ")}`)
 
-    const project = await Project.findByIdAndUpdate(
-        req.params.pid,
-        { status: req.body.status },
-        { new: true }
-    ).populate("user").populate("freelancer")
+    const project = await Project.findById(req.params.pid)
+        .populate("user", "-password")
+        .populate(freelancerUserPopulate)
 
-    ensure(project, 409, "Project Not Found")
+    ensure(project, 404, "Project Not Found")
+
+    const clientId = project.user?._id || project.user
+    const freelancerUserId = project.freelancer?.user?._id || project.freelancer?.user
+    const isClient = idsMatch(clientId, req.user._id)
+    const isAssignedFreelancer = idsMatch(freelancerUserId, req.user._id)
+
+    ensure(isClient || isAssignedFreelancer, 403, "Only the client or assigned freelancer can update this project")
+
+    if (PAYMENT_REQUIRED_STATUSES.has(status)) {
+        const activePayment = await Payment.findOne({
+            project: project._id,
+            status: { $in: ["escrow", "released"] },
+        }).select("_id status")
+
+        ensure(activePayment, 409, "Client payment must be in escrow before this status can be selected")
+    }
+
+    project.status = status
+    await project.save()
+    await project.populate("user", "-password")
+    await project.populate(freelancerUserPopulate)
+
+    emitProjectStatusUpdate(project, {
+        updatedBy: req.user._id,
+        message: `Project "${project.title}" status changed to ${status}`,
+    })
+    emitAdminDataChanged("project_status_updated", { message: `Project status updated: ${project.title} -> ${status}` })
+
     res.status(200).json(project)
 }
 
