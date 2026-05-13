@@ -3,14 +3,27 @@ import SubscriptionPayment from "../models/subscriptionPaymentModel.js"
 import User from "../models/userModel.js"
 import { buildPlanDates, buildSubscriptionReceipt, emitToUser, getPlanAmount, getPlanDetails } from "../utils/subscription.js"
 
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-})
+const hasRazorpayConfig = () => Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)
+
+const getRazorpay = () => {
+    if (!hasRazorpayConfig()) {
+        throw new Error("Razorpay keys are not configured on the server")
+    }
+
+    return new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_KEY_SECRET,
+    })
+}
 
 export const renewSubscriptionsJob = async () => {
     try {
         console.log("Running subscription renewal job...")
+
+        if (!hasRazorpayConfig()) {
+            console.warn("Skipping subscription renewal job: Razorpay keys are not configured on the server")
+            return
+        }
 
         const now = new Date()
         const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000)
@@ -72,7 +85,7 @@ const renewUserPlan = async (user) => {
         return
     }
 
-    const order = await razorpay.orders.create({
+    const order = await getRazorpay().orders.create({
         amount: amount * 100,
         currency: "INR",
         receipt: buildSubscriptionReceipt("auto", user._id),

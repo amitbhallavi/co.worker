@@ -14,11 +14,22 @@ import {
     serializePlans,
 } from "../utils/subscription.js"
 
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-})
+const ensureRazorpayConfigured = () => {
+    ensure(
+        process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET,
+        500,
+        "Razorpay keys are not configured on the server"
+    )
+}
 
+const getRazorpay = () => {
+    ensureRazorpayConfigured()
+
+    return new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_KEY_SECRET,
+    })
+}
 const ensureValidPlanSelection = (planId, planType) => {
     ensure(planId && planType, 400, "Plan ID and type are required")
     ensure(getPlanDetails(planId), 400, "Invalid plan")
@@ -114,7 +125,7 @@ const createSubscriptionOrder = async (req, res) => {
             })
         }
 
-        const order = await razorpay.orders.create({
+        const order = await getRazorpay().orders.create({
             amount: amount * 100,
             currency: "INR",
             receipt: buildSubscriptionReceipt("sub", req.user._id),
@@ -162,6 +173,8 @@ const verifySubscriptionSignature = async (req, res) => {
         })
 
         ensure(payment, 404, "Payment record not found")
+
+        ensureRazorpayConfigured()
 
         const expectedSignature = crypto
             .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -305,7 +318,7 @@ const extendPlan = async (req, res) => {
             })
         }
 
-        const order = await razorpay.orders.create({
+        const order = await getRazorpay().orders.create({
             amount: amount * 100,
             currency: "INR",
             receipt: buildSubscriptionReceipt("renewal", req.user._id),
