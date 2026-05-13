@@ -7,7 +7,7 @@ import Project from "../models/projectModel.js"
 import { emitAdminDataChanged } from "../utils/adminRealtime.js"
 import { emitProjectStatusUpdate } from "../utils/projectRealtime.js"
 
-const razorpay = new Razorpay({
+const getRazorpay = () => new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET,
 })
@@ -131,7 +131,7 @@ export const createOrder = asyncHandler(async (req, res) => {
 
     let order
     try {
-        order = await razorpay.orders.create({
+        order = await getRazorpay().orders.create({
             amount: Math.round(Number(amount) * 100),
             currency: "INR",
             receipt: `rcpt_${Date.now()}`,
